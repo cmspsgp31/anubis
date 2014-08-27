@@ -18,8 +18,8 @@
 # programa. Se não, consulte <http://www.gnu.org/licenses/>.
 
 from django.db import models
-from django.db.models import query
-from django.db import connection, connections
+from django.db.models.query import QuerySet
+from django.db import connection as base_connection, connections
 from operator import itemgetter
 
 def extend_manager(qs_cls):
@@ -65,12 +65,12 @@ def call_single_valued_procedure(procname):
 
 	return wrapper
 
-class ProcedureQuerySet(query.QuerySet):
+class ProcedureQuerySet(QuerySet):
 	def _get_connection(self):
 		if self.db is not None:
 			conn = connections[self.db]
 		else:
-			conn = connection
+			conn = base_connection
 
 		return conn
 
@@ -83,10 +83,10 @@ class ProcedureQuerySet(query.QuerySet):
 
 		args = list(args)
 
-		qm = ["%s"] * len(args)
-		qm = ", ".join(qm)
+		arg_marks = ["%s"] * len(args)
+		arg_marks = ", ".join(arg_marks)
 
-		query = "select * from {}({});".format(procname, qm)
+		query = "select * from {}({});".format(procname, arg_marks)
 
 		cursor.execute(query, args)
 		ids = [i[0] for i in cursor.fetchall()]
@@ -103,10 +103,10 @@ class ProcedureQuerySet(query.QuerySet):
 
 		args = list(args)
 
-		qm = ["%s"] * len(args)
-		qm = ", ".join(qm)
+		arg_marks = ["%s"] * len(args)
+		arg_marks = ", ".join(arg_marks)
 
-		query = "select * from {}({});".format(procname, qm)
+		query = "select * from {}({});".format(procname, arg_marks)
 
 		cursor.execute(query, args)
 
@@ -125,16 +125,14 @@ class ProcedureQuerySet(query.QuerySet):
 
 		args = list(args)
 
-		qm = ["%s"] * len(args)
-		qm = ", ".join(qm)
+		arg_marks = ["%s"] * len(args)
+		arg_marks = ", ".join(arg_marks)
 
-		query = "select * from {}({});".format(procname, qm)
+		query = "select * from {}({});".format(procname, arg_marks)
 
 		cursor.execute(query, args)
 
 		return cursor.fetchone()[0]
-		
-
 class ProcedureManager(models.Manager):
 	def get_queryset(self):
 		return ProcedureQuerySet(self.model, using=self._db)
