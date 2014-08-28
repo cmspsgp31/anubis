@@ -20,6 +20,8 @@
 
 from django_procedures.query import ProcedureQuerySet
 from django.db.models.query import Q
+from functools import reduce
+
 import operator
 
 class Filter:
@@ -49,6 +51,175 @@ class QuerySetFilter(Filter):
 
 		return queryset.filter(reduce(self.connector, complex_filter))
 
+class query_string_parser:
+	quote_char = "\""
+	sep_char = ","
+	escape_char = "$"
+
+	def __init__(self, filter_mark):
+		self.filters = []
+		self.filter_args = None
+		self.current_arg = None
+		self.filter_mark = filter_mark
+		self.context = None
+
+		self.context_map = \
+			{ "no_filter" : \
+				[ self._context_no_filter_filter_mark
+				, self._context_no_filter_any
+				]
+			, "filter_no_arg": [ self._context_filter_no_arg_any ]
+			, "filter_arg_no_quote" : \
+				[ self._context_filter_arg_no_quote_filter_mark
+				, self._context_filter_arg_no_quote_separator
+				, self._context_filter_arg_no_quote_any
+				]
+			, "filter_arg_quote" : \
+				[ self._context_filter_arg_quote_escape
+				, self._context_filter_arg_quote_quote
+				, self._context_filter_arg_quote_any
+				]
+			, "filter_no_arg_next_arg" : \
+				[ self._context_filter_no_arg_next_arg_filter_mark
+				, self._context_filter_no_arg_next_arg_separator
+				, self._context_filter_no_arg_next_arg_any
+				]
+			}
+
+	def _context_no_filter_filter_mark(self, char, query_string):
+		query_string = query_string.lstrip(self.filter_mark)
+		self.filter_args = []
+		self.context = "filter_no_arg"
+
+		return query_string
+
+	_context_no_filter_filter_mark.match = \
+		lambda s, _, q: q.startswith(s.filter_mark)
+
+	def _context_no_filter_any(self, char, query_string):
+		return query_string[1:]
+
+	_context_no_filter_any.match = lambda _, __, ___: True
+
+	def _context_filter_no_arg_any(self, char, query_string):
+		inside_quote = char == self.quote_char
+		self.current_arg = "" if inside_quote else char
+		self.context = "filter_arg"
+		self.context += "_quote" if inside_quote else "_no_quote"
+
+		return query_string[1:]
+
+	_context_filter_no_arg_any.match = lambda _, __, ___: True
+
+	def _context_filter_arg_no_quote_filter_mark(self, char, query_string):
+		self._close_filter()
+
+		return query_string[1:]
+
+	_context_filter_arg_no_quote_filter_mark.match = \
+		lambda s, _, q: q.startswith(s.filter_mark)
+
+	def _context_filter_arg_no_quote_separator(self, char, query_string):
+		self._close_arg()
+
+		return query_string[1:]
+
+	_context_filter_arg_no_quote_separator.match = \
+		lambda s, c, _: c == s.sep_char
+
+	def _context_filter_arg_no_quote_any(self, char, query_string):
+		self.current_arg += char
+
+		return query_string[1:]
+
+	_context_filter_arg_no_quote_any.match = lambda _, __, ___: True
+
+	def _context_filter_arg_quote_escape(self, char, query_string):
+		if len(query_string) > 1:
+			query_string = query_string[1:]
+			char = query_string[0]
+
+		self.current_arg += char
+
+		return query_string[1:]
+
+	_context_filter_arg_quote_escape.match = \
+		lambda s, c, _: c == s.escape_char
+
+	def _context_filter_arg_quote_quote(self, char, query_string):
+		self._close_arg()
+		self.context = "filter_no_arg_next_arg"
+
+		return query_string[1:]
+
+	_context_filter_arg_quote_quote.match = \
+		lambda s, c, _: c == s.quote_char
+
+	def _context_filter_arg_quote_any(self, char, query_string):
+		self.current_arg += char
+
+		return query_string[1:]
+
+	_context_filter_arg_quote_any.match = lambda _, __, ___: True
+
+	def _context_filter_no_arg_next_arg_filter_mark(self, char, query_string):
+		self._close_filter()
+		return self._context_no_filter_filter_mark(char, query_string)
+
+	_context_filter_no_arg_next_arg_filter_mark.match = \
+		lambda s, _, q: q.startswith(s.filter_mark)
+
+
+	def _context_filter_no_arg_next_arg_separator(self, char, query_string):
+		if len(query_string) > 1:
+			query_string = query_string[1:]
+			return self._context_filter_no_arg_any(query_string[0],
+				query_string)
+		else:
+			return query_string[1:]
+
+	_context_filter_no_arg_next_arg_separator.match = \
+		lambda s, c, _: c == s.sep_char
+
+	def _context_filter_no_arg_next_arg_any(self, char, query_string):
+		return query_string[1:]
+
+	_context_filter_no_arg_next_arg_any.match = lambda _, __, ___: True
+
+	def _close_arg(self):
+		if self.current_arg is not None:
+			self.filter_args.append(self.current_arg)
+
+		self.current_arg = None
+		self.context = "filter_no_arg"
+
+	def _close_filter(self):
+		self._close_arg()
+
+		if self.filter_args is not None and len(self.filter_args) > 0:
+			self.filters.append(self.filter_args)
+
+		self.filter_args = None
+		self.context = "no_filter"
+
+	def parse(self, query_string):
+		self.filters = []
+		self.filter_args = None
+		self.current_arg = None
+		self.context = "no_filter"
+
+		while len(query_string) > 0:
+			char = query_string[0]
+
+			for proc in self.context_map[self.context]:
+				if proc.match(self, char, query_string):
+					print(proc.__name__)
+					query_string = proc(char, query_string)
+					break
+
+		self._close_filter()
+
+		return self.filters
 
 def _parse_filter(filter_):
 	args = []
@@ -75,7 +246,9 @@ def _parse_filter(filter_):
 					elem += char
 			else:
 				if char == "$":
-					i, char = advance(i, filter_)
+					if i < len(filter_) - 1:
+						i, char = advance(i, filter_)
+
 					elem += char
 				elif char == "\"":
 					while not char == "," and i < len(filter_) - 1:
@@ -102,9 +275,12 @@ class FilterViewMixin:
 	def _get_queryset_filter(self, queryset, url):
 		url = url.strip()
 		url = url.rstrip("/")
+		parser = query_string_parser("/{}/".format(self.prefix))
 
-		for filter_ in url.split("/{}/".format(self.prefix)):
-			args = _parse_filter(filter_)
+		print(url)
+		for args in parser.parse(url):
+			print(args)
+			# args = _parse_filter(filter_)
 
 			if len(args):
 				queryset = self._apply_filter(queryset, args)
@@ -113,7 +289,7 @@ class FilterViewMixin:
 
 	def get_queryset(self):
 		# MRO do Python garante que haverá um get_queryset definido aqui se
-		# FilterViewMixin for declarado antes da classe base.
+		# FilterViewMixin for declarado como class pai antes da classe de View.
 		original = super().get_queryset()
 
 		if self.kwarg_key in self.kwargs.keys() and self.kwargs[self.kwarg_key]:
