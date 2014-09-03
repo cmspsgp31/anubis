@@ -75,6 +75,12 @@ class ProcedureQuerySet(QuerySet):
 		return conn
 
 	def procedure(self, procname, *args):
+		"""
+			Atenção! *NUNCA*, *JAMAIS* passe valores de input diretamente para
+			a variável procname! Ela *NÃO* é tratada, e valores de nome de
+			nomes de funções devem ser EXPLICITAMENTE permitidos pelo
+			aplicativo!
+		"""
 		connection = self._get_connection()
 		cursor = connection.cursor()
 

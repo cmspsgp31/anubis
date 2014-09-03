@@ -42,8 +42,9 @@ fieldParser = T.pack <$> P.many1 (P.letter <|> P.digit <|> P.oneOf "_-")
 
 quotedArg :: TP.Parser T.Text
 quotedArg = do
-	arg <- T.pack <$> P.many1 (P.noneOf "$\"")
-	escapedSeq "$\"" "\"" arg <|> escapedSeq "$$" "$" arg <|> return arg
+	arg <- T.pack <$> P.many (P.noneOf "$\"")
+	P.try (escapedSeq "$\"" "\"" arg) <|> P.try (escapedSeq "$$" "$" arg)
+		<|> return arg
 	where escapedSeq escapeSeq char arg = do
 			P.string escapeSeq
 			next <- quotedArg

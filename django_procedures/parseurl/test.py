@@ -3,6 +3,50 @@ import ctypes, json
 lib = ctypes.cdll.LoadLibrary("libparseurl.so")
 lib.parseUrl.restype = ctypes.c_char_p
 
+class Expr(object):
+	def __init__(self, field, args):
+		self.field = field
+		self.args = args
+
+	def __str__(self):
+		return "{}: {}".format(*map(repr, [self.field, self.args]))
+
+class Not(Expr):
+	def __init__(self, expr):
+		self.expr = expr
+
+	def __str__(self):
+		return "NOT ({})".format(str(self.expr))
+
+class Or(Expr):
+	def __init__(self, left, right):
+		self.left = left
+		self.right = right
+
+	def __str__(self):
+		return "({}) OR ({})".format(*map(str, [self.left, self.right]))
+
+class And(Expr):
+	def __init__(self, left, right):
+		self.left = left
+		self.right = right
+
+	def __str__(self):
+		return "({}) AND ({})".format(*map(str, [self.left, self.right]))
+
+def hook(dct):
+	if isinstance(dct, dict) and "tag" in dct.keys():
+		if dct["tag"] == "Expr":
+			return Expr(**dct["contents"])
+		elif dct["tag"] == "Not":
+			return Not(hook(dct["contents"]))
+		elif dct["tag"] == "And":
+			return And(hook(dct["left"]), hook(dct["right"]))
+		else:
+			return Or(hook(dct["left"]), hook(dct["right"]))
+
+	return dct
+
 class haskmod:
 	def __init__(self, mod):
 		self._mod = mod
@@ -19,7 +63,7 @@ class haskmod:
 		def wrapper(s):
 			print(s)
 			json_obj = getattr(self._mod, name)(s.encode("utf-8"))
-			print(repr(json.loads(json_obj.decode("utf-8"))))
+			print(json.loads(json_obj.decode("utf-8"), object_hook=hook))
 			print()
 
 		return wrapper
@@ -37,3 +81,4 @@ if __name__ == "__main__":
 		lib.parseUrl("!(k1,v1+k2,v2)/k3,v3")
 		lib.parseUrl("(!k1,v1+k2,v2)/k3,v3")
 		lib.parseUrl("(k1,v1+k2,v2)/!k3,v3")
+		lib.parseUrl("(k1,v1+k2,\"!+/1?$$$\"//!_1-\")/!k3,v3")

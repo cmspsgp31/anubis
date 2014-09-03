@@ -7,7 +7,8 @@ executable libparseurl.so
     default-language: Haskell2010
     main-is: parseurl.hs
     ghc-options: -no-hs-main -fPIC -shared -dynamic
-    ld-options: -shared /usr/lib/ghc-7.8.3/rts-1.0/libHSrts-ghc7.8.3.so
+    -- ld-options: -shared /usr/lib/ghc-7.8.3/rts-1.0/libHSrts-ghc7.8.3.so
+    ld-options: -shared /opt/homebrew-cask/Caskroom/ghc/7.8.3-r1/ghc-7.8.3.app/Contents/lib/ghc-7.8.3/rts-1.0/libHSrts-ghc7.8.3.dylib
     build-depends:
         base >= 4.7
         , bytestring >= 0.10
