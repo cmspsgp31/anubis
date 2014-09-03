@@ -1,6 +1,6 @@
 import ctypes, json
 
-lib = ctypes.cdll.LoadLibrary("libparseurl.so")
+lib = ctypes.cdll.LoadLibrary("libParseUrl.so")
 lib.parseUrl.restype = ctypes.c_char_p
 
 class Expr(object):
@@ -35,15 +35,17 @@ class And(Expr):
 		return "({}) AND ({})".format(*map(str, [self.left, self.right]))
 
 def hook(dct):
-	if isinstance(dct, dict) and "tag" in dct.keys():
-		if dct["tag"] == "Expr":
+	if "tag" in dct.keys():
+		if dct["tag"] == "BooleanExpr":
 			return Expr(**dct["contents"])
 		elif dct["tag"] == "Not":
-			return Not(hook(dct["contents"]))
+			return Not(dct["contents"])
 		elif dct["tag"] == "And":
-			return And(hook(dct["left"]), hook(dct["right"]))
+			return And(dct["left"], dct["right"])
+		elif dct["tag"] == "Or":
+			return Or(dct["left"], dct["right"])
 		else:
-			return Or(hook(dct["left"]), hook(dct["right"]))
+			raise ValueError(dct["contents"])
 
 	return dct
 
@@ -82,3 +84,10 @@ if __name__ == "__main__":
 		lib.parseUrl("(!k1,v1+k2,v2)/k3,v3")
 		lib.parseUrl("(k1,v1+k2,v2)/!k3,v3")
 		lib.parseUrl("(k1,v1+k2,\"!+/1?$$$\"//!_1-\")/!k3,v3")
+		lib.parseUrl("k1,v1 k2,v2")
+		lib.parseUrl("k1,v1 k2,v2/k3,v3")
+		lib.parseUrl("k1,v1 k2,v2/(k3,v3)")
+		lib.parseUrl("k1,v1 k2,v2/!(k3,v3)")
+		lib.parseUrl("k1,\"longo argumento 1\"      k2,\"longo argumento 2\"")
+		lib.parseUrl("k1,\"longo argumento 1\"      !k2,\"longo argumento 2\"")
+		lib.parseUrl("asdfasdfasd")

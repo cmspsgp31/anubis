@@ -22,49 +22,6 @@ from django.db.models.query import QuerySet
 from django.db import connection as base_connection, connections
 from operator import itemgetter
 
-def extend_manager(qs_cls):
-	methods = [m for m in dir(qs_cls) if not m in dir(ProcedureQuerySet)]
-
-	class ExtendedManager(ProcedureManager):
-		_extended_methods = methods
-		_queryset_class = qs_cls
-
-		def get_queryset(self):
-			return self._queryset_class(self.model, using=self._db)
-
-		def __getattr__(self, attr):
-			if attr in self._extended_methods:
-				queryset = self.get_queryset()
-				return getattr(queryset, attr)
-			else:
-				raise AttributeError()
-
-	return ExtendedManager()
-
-def call_procedure(procname):
-	def wrapper(self, *args):
-		return self.procedure(procname, *args)
-
-	wrapper.__name__ = procname
-
-	return wrapper
-
-def call_unchainable_procedure(procname):
-	def wrapper(self, *args):
-		return self.unchainable_procedure(procname, *args)
-
-	wrapper.__name__ = procname
-
-	return wrapper
-
-def call_single_valued_procedure(procname):
-	def wrapper(self, *args):
-		return self.single_valued_procedure(procname, *args)
-
-	wrapper.__name__ = procname
-
-	return wrapper
-
 class ProcedureQuerySet(QuerySet):
 	def _get_connection(self):
 		if self.db is not None:
@@ -139,6 +96,7 @@ class ProcedureQuerySet(QuerySet):
 		cursor.execute(query, args)
 
 		return cursor.fetchone()[0]
+
 class ProcedureManager(models.Manager):
 	def get_queryset(self):
 		return ProcedureQuerySet(self.model, using=self._db)
@@ -151,4 +109,47 @@ class ProcedureManager(models.Manager):
 
 	def single_valued_procedure(self, procname, *args):
 		return self.get_queryset().single_valued_procedure(procname, *args)
+
+# def extend_manager(qs_cls):
+# 	methods = [m for m in dir(qs_cls) if not m in dir(ProcedureQuerySet)]
+
+# 	class ExtendedManager(ProcedureManager):
+# 		_extended_methods = methods
+# 		_queryset_class = qs_cls
+
+# 		def get_queryset(self):
+# 			return self._queryset_class(self.model, using=self._db)
+
+# 		def __getattr__(self, attr):
+# 			if attr in self._extended_methods:
+# 				queryset = self.get_queryset()
+# 				return getattr(queryset, attr)
+# 			else:
+# 				raise AttributeError()
+
+# 	return ExtendedManager()
+
+def call_procedure(procname):
+	def wrapper(self, *args):
+		return self.procedure(procname, *args)
+
+	wrapper.__name__ = procname
+
+	return wrapper
+
+def call_unchainable_procedure(procname):
+	def wrapper(self, *args):
+		return self.unchainable_procedure(procname, *args)
+
+	wrapper.__name__ = procname
+
+	return wrapper
+
+def call_single_valued_procedure(procname):
+	def wrapper(self, *args):
+		return self.single_valued_procedure(procname, *args)
+
+	wrapper.__name__ = procname
+
+	return wrapper
 

@@ -45,8 +45,8 @@ class install(install_):
 		shell("cabal configure --enable-shared", cwd=working)
 		shell("cabal install", cwd=working)
 		src = os.path.join(working, ".cabal-sandbox", "bin",
-			"libparseurl.so")
-		dst = os.path.join(package, "libparseurl.so")
+			"libParseUrl.so")
+		dst = os.path.join(package, "libParseUrl.so")
 		print(src, dst)
 		shutil.copy(src, dst)
 

@@ -19,8 +19,9 @@
 # programa. Se não, consulte <http://www.gnu.org/licenses/>.
 
 from django_procedures.query import ProcedureQuerySet
+from django_procedures.url import BooleanBuilder
 from django.db.models.query import Q
-from functools import reduce
+from functools import reduce, partial
 
 import operator
 
@@ -38,6 +39,42 @@ class ProcedureFilter(Filter):
 
 		return queryset.procedure(self.procedure_name, *args)
 
+class FilterAggregator:
+	def __init__(self, allowed_filters):
+		self.allowed_filters = allowed_filters
+
+	def base_expression_filter(self, queryset, base_expression):
+		raise NotImplementedError()
+
+	def filter_queryset(self, queryset, base_expression=None,
+		not_expression=None, and_expression=None, or_expression=None):
+		if base_expression is not None:
+			return self.base_expression_filter(queryset, base_expression)
+		elif not_expression is not None:
+			# expr_ids = not_expression.values_list('id', flat=True)
+			# return queryset.exclude(id__in=expr_ids)
+			return ~not_expression
+		elif and_expression is not None:
+			left_qset, right_qset = and_expression
+			return left_qset & right_qset
+		elif or_expression is not None:
+			left_qset, right_qset = or_expression
+			return left_qset | right_qset
+		else:
+			return queryset
+
+	def traverse_boolean_expr(self, queryset, boolean_expr):
+		traverse_func = partial(self.filter_queryset, queryset)
+
+		return boolean_expr.traverse(traverse_func)
+
+class ProcedureFilterAggregator(FilterAggregator):
+	def base_expression_filter(self, queryset, base_expression):
+		procedure_filter = self.allowed_filters[base_expression["field"]]
+		procedure_args = base_expression["args"]
+		return procedure_filter.filter_queryset(queryset, procedure_args)
+
+
 class QuerySetFilter(Filter):
 	def __init__(self, field_name, suffix="", connector=operator.or_):
 		super().__init__()
@@ -51,241 +88,236 @@ class QuerySetFilter(Filter):
 
 		return queryset.filter(reduce(self.connector, complex_filter))
 
-class query_string_parser:
-	quote_char = "\""
-	sep_char = ","
-	escape_char = "$"
+# class query_string_parser:
+# 	quote_char = "\""
+# 	sep_char = ","
+# 	escape_char = "$"
 
-	def __init__(self, filter_mark):
-		self.filters = []
-		self.filter_args = None
-		self.current_arg = None
-		self.filter_mark = filter_mark
-		self.context = None
+# 	def __init__(self, filter_mark):
+# 		self.filters = []
+# 		self.filter_args = None
+# 		self.current_arg = None
+# 		self.filter_mark = filter_mark
+# 		self.context = None
 
-		self.context_map = \
-			{ "no_filter" : \
-				[ self._context_no_filter_filter_mark
-				, self._context_no_filter_any
-				]
-			, "filter_no_arg": [ self._context_filter_no_arg_any ]
-			, "filter_arg_no_quote" : \
-				[ self._context_filter_arg_no_quote_filter_mark
-				, self._context_filter_arg_no_quote_separator
-				, self._context_filter_arg_no_quote_any
-				]
-			, "filter_arg_quote" : \
-				[ self._context_filter_arg_quote_escape
-				, self._context_filter_arg_quote_quote
-				, self._context_filter_arg_quote_any
-				]
-			, "filter_no_arg_next_arg" : \
-				[ self._context_filter_no_arg_next_arg_filter_mark
-				, self._context_filter_no_arg_next_arg_separator
-				, self._context_filter_no_arg_next_arg_any
-				]
-			}
+# 		self.context_map = \
+# 			{ "no_filter" : \
+# 				[ self._context_no_filter_filter_mark
+# 				, self._context_no_filter_any
+# 				]
+# 			, "filter_no_arg": [ self._context_filter_no_arg_any ]
+# 			, "filter_arg_no_quote" : \
+# 				[ self._context_filter_arg_no_quote_filter_mark
+# 				, self._context_filter_arg_no_quote_separator
+# 				, self._context_filter_arg_no_quote_any
+# 				]
+# 			, "filter_arg_quote" : \
+# 				[ self._context_filter_arg_quote_escape
+# 				, self._context_filter_arg_quote_quote
+# 				, self._context_filter_arg_quote_any
+# 				]
+# 			, "filter_no_arg_next_arg" : \
+# 				[ self._context_filter_no_arg_next_arg_filter_mark
+# 				, self._context_filter_no_arg_next_arg_separator
+# 				, self._context_filter_no_arg_next_arg_any
+# 				]
+# 			}
 
-	def _context_no_filter_filter_mark(self, char, query_string):
-		query_string = query_string.lstrip(self.filter_mark)
-		self.filter_args = []
-		self.context = "filter_no_arg"
+# 	def _context_no_filter_filter_mark(self, char, query_string):
+# 		query_string = query_string.lstrip(self.filter_mark)
+# 		self.filter_args = []
+# 		self.context = "filter_no_arg"
 
-		return query_string
+# 		return query_string
 
-	_context_no_filter_filter_mark.match = \
-		lambda s, _, q: q.startswith(s.filter_mark)
+# 	_context_no_filter_filter_mark.match = \
+# 		lambda s, _, q: q.startswith(s.filter_mark)
 
-	def _context_no_filter_any(self, char, query_string):
-		return query_string[1:]
+# 	def _context_no_filter_any(self, char, query_string):
+# 		return query_string[1:]
 
-	_context_no_filter_any.match = lambda _, __, ___: True
+# 	_context_no_filter_any.match = lambda _, __, ___: True
 
-	def _context_filter_no_arg_any(self, char, query_string):
-		inside_quote = char == self.quote_char
-		self.current_arg = "" if inside_quote else char
-		self.context = "filter_arg"
-		self.context += "_quote" if inside_quote else "_no_quote"
+# 	def _context_filter_no_arg_any(self, char, query_string):
+# 		inside_quote = char == self.quote_char
+# 		self.current_arg = "" if inside_quote else char
+# 		self.context = "filter_arg"
+# 		self.context += "_quote" if inside_quote else "_no_quote"
 
-		return query_string[1:]
+# 		return query_string[1:]
 
-	_context_filter_no_arg_any.match = lambda _, __, ___: True
+# 	_context_filter_no_arg_any.match = lambda _, __, ___: True
 
-	def _context_filter_arg_no_quote_filter_mark(self, char, query_string):
-		self._close_filter()
+# 	def _context_filter_arg_no_quote_filter_mark(self, char, query_string):
+# 		self._close_filter()
 
-		return query_string[1:]
+# 		return query_string[1:]
 
-	_context_filter_arg_no_quote_filter_mark.match = \
-		lambda s, _, q: q.startswith(s.filter_mark)
+# 	_context_filter_arg_no_quote_filter_mark.match = \
+# 		lambda s, _, q: q.startswith(s.filter_mark)
 
-	def _context_filter_arg_no_quote_separator(self, char, query_string):
-		self._close_arg()
+# 	def _context_filter_arg_no_quote_separator(self, char, query_string):
+# 		self._close_arg()
 
-		return query_string[1:]
+# 		return query_string[1:]
 
-	_context_filter_arg_no_quote_separator.match = \
-		lambda s, c, _: c == s.sep_char
+# 	_context_filter_arg_no_quote_separator.match = \
+# 		lambda s, c, _: c == s.sep_char
 
-	def _context_filter_arg_no_quote_any(self, char, query_string):
-		self.current_arg += char
+# 	def _context_filter_arg_no_quote_any(self, char, query_string):
+# 		self.current_arg += char
 
-		return query_string[1:]
+# 		return query_string[1:]
 
-	_context_filter_arg_no_quote_any.match = lambda _, __, ___: True
+# 	_context_filter_arg_no_quote_any.match = lambda _, __, ___: True
 
-	def _context_filter_arg_quote_escape(self, char, query_string):
-		if len(query_string) > 1:
-			query_string = query_string[1:]
-			char = query_string[0]
+# 	def _context_filter_arg_quote_escape(self, char, query_string):
+# 		if len(query_string) > 1:
+# 			query_string = query_string[1:]
+# 			char = query_string[0]
 
-		self.current_arg += char
+# 		self.current_arg += char
 
-		return query_string[1:]
+# 		return query_string[1:]
 
-	_context_filter_arg_quote_escape.match = \
-		lambda s, c, _: c == s.escape_char
+# 	_context_filter_arg_quote_escape.match = \
+# 		lambda s, c, _: c == s.escape_char
 
-	def _context_filter_arg_quote_quote(self, char, query_string):
-		self._close_arg()
-		self.context = "filter_no_arg_next_arg"
+# 	def _context_filter_arg_quote_quote(self, char, query_string):
+# 		self._close_arg()
+# 		self.context = "filter_no_arg_next_arg"
 
-		return query_string[1:]
+# 		return query_string[1:]
 
-	_context_filter_arg_quote_quote.match = \
-		lambda s, c, _: c == s.quote_char
+# 	_context_filter_arg_quote_quote.match = \
+# 		lambda s, c, _: c == s.quote_char
 
-	def _context_filter_arg_quote_any(self, char, query_string):
-		self.current_arg += char
+# 	def _context_filter_arg_quote_any(self, char, query_string):
+# 		self.current_arg += char
 
-		return query_string[1:]
+# 		return query_string[1:]
 
-	_context_filter_arg_quote_any.match = lambda _, __, ___: True
+# 	_context_filter_arg_quote_any.match = lambda _, __, ___: True
 
-	def _context_filter_no_arg_next_arg_filter_mark(self, char, query_string):
-		self._close_filter()
-		return self._context_no_filter_filter_mark(char, query_string)
+# 	def _context_filter_no_arg_next_arg_filter_mark(self, char, query_string):
+# 		self._close_filter()
+# 		return self._context_no_filter_filter_mark(char, query_string)
 
-	_context_filter_no_arg_next_arg_filter_mark.match = \
-		lambda s, _, q: q.startswith(s.filter_mark)
+# 	_context_filter_no_arg_next_arg_filter_mark.match = \
+# 		lambda s, _, q: q.startswith(s.filter_mark)
 
 
-	def _context_filter_no_arg_next_arg_separator(self, char, query_string):
-		if len(query_string) > 1:
-			query_string = query_string[1:]
-			return self._context_filter_no_arg_any(query_string[0],
-				query_string)
-		else:
-			return query_string[1:]
+# 	def _context_filter_no_arg_next_arg_separator(self, char, query_string):
+# 		if len(query_string) > 1:
+# 			query_string = query_string[1:]
+# 			return self._context_filter_no_arg_any(query_string[0],
+# 				query_string)
+# 		else:
+# 			return query_string[1:]
 
-	_context_filter_no_arg_next_arg_separator.match = \
-		lambda s, c, _: c == s.sep_char
+# 	_context_filter_no_arg_next_arg_separator.match = \
+# 		lambda s, c, _: c == s.sep_char
 
-	def _context_filter_no_arg_next_arg_any(self, char, query_string):
-		return query_string[1:]
+# 	def _context_filter_no_arg_next_arg_any(self, char, query_string):
+# 		return query_string[1:]
 
-	_context_filter_no_arg_next_arg_any.match = lambda _, __, ___: True
+# 	_context_filter_no_arg_next_arg_any.match = lambda _, __, ___: True
 
-	def _close_arg(self):
-		if self.current_arg is not None:
-			self.filter_args.append(self.current_arg)
+# 	def _close_arg(self):
+# 		if self.current_arg is not None:
+# 			self.filter_args.append(self.current_arg)
 
-		self.current_arg = None
-		self.context = "filter_no_arg"
+# 		self.current_arg = None
+# 		self.context = "filter_no_arg"
 
-	def _close_filter(self):
-		self._close_arg()
+# 	def _close_filter(self):
+# 		self._close_arg()
 
-		if self.filter_args is not None and len(self.filter_args) > 0:
-			self.filters.append(self.filter_args)
+# 		if self.filter_args is not None and len(self.filter_args) > 0:
+# 			self.filters.append(self.filter_args)
 
-		self.filter_args = None
-		self.context = "no_filter"
+# 		self.filter_args = None
+# 		self.context = "no_filter"
 
-	def parse(self, query_string):
-		self.filters = []
-		self.filter_args = None
-		self.current_arg = None
-		self.context = "no_filter"
+# 	def parse(self, query_string):
+# 		self.filters = []
+# 		self.filter_args = None
+# 		self.current_arg = None
+# 		self.context = "no_filter"
 
-		while len(query_string) > 0:
-			char = query_string[0]
+# 		while len(query_string) > 0:
+# 			char = query_string[0]
 
-			for proc in self.context_map[self.context]:
-				if proc.match(self, char, query_string):
-					print(proc.__name__)
-					query_string = proc(char, query_string)
-					break
+# 			for proc in self.context_map[self.context]:
+# 				if proc.match(self, char, query_string):
+# 					print(proc.__name__)
+# 					query_string = proc(char, query_string)
+# 					break
 
-		self._close_filter()
+# 		self._close_filter()
 
-		return self.filters
+# 		return self.filters
 
-def _parse_filter(filter_):
-	args = []
-	elem = None
-	quote = False
+# def _parse_filter(filter_):
+# 	args = []
+# 	elem = None
+# 	quote = False
 
-	i = 0
+# 	i = 0
 
-	def advance(i, string):
-		return (i+1, string[i+1])
+# 	def advance(i, string):
+# 		return (i+1, string[i+1])
 
-	while i < len(filter_):
-		char = filter_[i]
+# 	while i < len(filter_):
+# 		char = filter_[i]
 
-		if elem is None:
-			quote = char == "\""
-			elem = "" if quote else char
-		else:
-			if not quote:
-				if char == ",":
-					args.append(elem)
-					elem = None
-				else:
-					elem += char
-			else:
-				if char == "$":
-					if i < len(filter_) - 1:
-						i, char = advance(i, filter_)
+# 		if elem is None:
+# 			quote = char == "\""
+# 			elem = "" if quote else char
+# 		else:
+# 			if not quote:
+# 				if char == ",":
+# 					args.append(elem)
+# 					elem = None
+# 				else:
+# 					elem += char
+# 			else:
+# 				if char == "$":
+# 					if i < len(filter_) - 1:
+# 						i, char = advance(i, filter_)
 
-					elem += char
-				elif char == "\"":
-					while not char == "," and i < len(filter_) - 1:
-						i, char = advance(i, filter_)
+# 					elem += char
+# 				elif char == "\"":
+# 					while not char == "," and i < len(filter_) - 1:
+# 						i, char = advance(i, filter_)
 
-					args.append(elem)
-					elem = None
-					quote = False
-				else:
-					elem += char
+# 					args.append(elem)
+# 					elem = None
+# 					quote = False
+# 				else:
+# 					elem += char
 
-		i += 1
+# 		i += 1
 
-	if elem is not None:
-		args.append(elem)
+# 	if elem is not None:
+# 		args.append(elem)
 
-	return args
+# 	return args
 
 class FilterViewMixin:
-	prefix = "filter"
 	kwarg_key = "search"
 	allowed_filters = {}
+	aggregator = FilterAggregator
+
+	def __init__(self):
+		self.aggregator = self.aggregator(self.allowed_filters)
 
 	def _get_queryset_filter(self, queryset, url):
 		url = url.strip()
 		url = url.rstrip("/")
-		parser = query_string_parser("/{}/".format(self.prefix))
+		boolean_expr = BooleanBuilder(url).build()
 
-		print(url)
-		for args in parser.parse(url):
-			print(args)
-			# args = _parse_filter(filter_)
-
-			if len(args):
-				queryset = self._apply_filter(queryset, args)
-
-		return queryset
+		return self.aggregator.traverse_boolean_expr(queryset, boolean_expr)
 
 	def get_queryset(self):
 		# MRO do Python garante que haverá um get_queryset definido aqui se
