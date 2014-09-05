@@ -7,7 +7,7 @@
 
 # django-procedures é um software livre: você pode redistribuí-lo e/ou
 # modificá-lo sob os termos da Licença Pública Geral GNU (GNU General Public
-# License), # tal como é publicada pela Free Software Foundation, na versão 3 da
+# License), tal como é publicada pela Free Software Foundation, na versão 3 da
 # licença, ou (sua decisão) qualquer versão posterior.
 
 # django-procedures é distribuído na esperança de que seja útil, mas SEM NENHUMA
