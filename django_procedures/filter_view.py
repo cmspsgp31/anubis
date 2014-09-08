@@ -21,14 +21,19 @@
 from django_procedures.query import ProcedureQuerySet
 from django_procedures.url import BooleanBuilder
 from django.db.models.query import Q
+from django import forms
 from functools import reduce, partial
 
 import operator
 
+class FilterForm(forms.Form):
+	pass
+
 class Filter:
 	def __init__(self):
 		self.description = ""
-		self.form = None
+		self._form = None
+		self.fields = {}
 
 	def filter_queryset(self, queryset, args):
 		raise NotImplementedError()
@@ -37,13 +42,27 @@ class Filter:
 		self.description = description
 		return self
 
-	def with_form(self):
+	def field(self, field_name, field_label=None, field_cls=forms.CharField,
+			**field_kwargs):
+		field = field_cls(label=field_label, **field_kwargs)
+		self.fields[field_name] = field
+
 		return self
+
+	@property
+	def form(self):
+		form = FilterForm()
+
+		for field_name, field in self.fields.items():
+			form.fields[field_name] = field
+
+		return form
 
 class ProcedureFilter(Filter):
 	def __init__(self, procedure_name):
 		super().__init__()
 		self.procedure_name = procedure_name
+		self.description = procedure_name
 
 	def filter_queryset(self, queryset, args):
 		assert isinstance(queryset, ProcedureQuerySet)
@@ -76,10 +95,17 @@ class TrigramFilter(Filter):
 	def filter_queryset(self, queryset, args):
 		query_part = "\"{field}\" %% %s".format(field=self.field_name)
 
-		queryset = queryset.extra(where=[query_part], params=args[:1])
-		print(queryset.query)
+		first_arg = args.pop(0)
+		filtered = queryset.extra(where=[query_part], params=[first_arg])
+		print(args)
 
-		return queryset
+		for arg in args:
+			filtered = self.connector(filtered,
+				queryset.extra(where=[query_part], params=[arg]))
+
+		print(filtered.query)
+
+		return filtered
 
 class FilterViewMixin:
 	kwarg_key = "search"
@@ -115,6 +141,13 @@ class FilterViewMixin:
 	def convertFilterToModel(self, target_model):
 		pass
 
+	def get_context_data(self, **kwargs):
+		context = super().get_context_data(**kwargs)
+
+		context["filters"] = self.allowed_filters
+
+		return context
+
 	def get_queryset(self):
 		# MRO do Python garante que haverá um get_queryset definido aqui se
 		# FilterViewMixin for declarado como class pai antes da classe de View.
@@ -134,4 +167,9 @@ class FilterViewMixin:
 				.format(filter_name))
 
 		return self.allowed_filters[filter_name].filter_queryset(queryset, args)
+
+	@classmethod
+	def fieldsets(cls):
+		return {filter_name: filter_.form.as_p() \
+			for filter_name, filter_ in cls.allowed_filters.items()}
 
