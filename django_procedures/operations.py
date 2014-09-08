@@ -39,14 +39,68 @@ class LoadExtension(Operation):
 	def describe(self):
 		return "Creates extension %s" % self.name
 
+class AddCustomIndex(Operation):
+	reduces_to_sql = True
+	reversible = True
+
+	def __init__(self, model, index_name, sql):
+		self.model = model
+		self.table_name = self.model._meta.db_table
+		self.index_name = "{}_{}".format(self.table_name, index_name)
+		self.sql = sql
+
+	def state_forwards(self, app_label, state):
+		pass
+
+	def database_forwards(self, app_label, schema_editor, from_state,
+			to_state):
+		query = """
+			create index {index} on {table} using {text};
+		"""
+
+		query = query.format(table=self.table_name,
+			index=self.index_name, text=self.sql)
+
+		schema_editor.execute(query)
+
+	def database_backwards(self, app_label, schema_editor, from_state,
+			to_state):
+		query = """
+			drop index if exists {index} cascade;
+		"""
+		query = query.format(index=self.index_name)
+
+		schema_editor.execute(query)
+
+	def describe(self):
+		return "Add index {} to table {}".format(self.index_name,
+			self.table_name)
+
+class AddTrigramIndex(AddCustomIndex):
+	reduces_to_sql = True
+	reversible = True
+
+	def __init__(self, model, field_name):
+		index_name = "{}_trgm_index".format(field_name)
+		sql = "gist ({} gist_trgm_ops)".format(field_name)
+
+		super().__init__(model, index_name, sql)
+
+	def describe(self):
+		return "Add trigram index {} to table {}".format(self.index_name,
+			self.table_name)
+
+
+
 
 class AddConstraint(Operation):
 	reduces_to_sql = True
 	reversible = True
 
-	def __init__(self, table_name, constraint_name, sql):
-		self.table_name = table_name
-		self.constraint_name = "{}_{}".format(table_name, constraint_name)
+	def __init__(self, model, constraint_name, sql):
+		self.model = model
+		self.table_name = self.model._meta.db_table
+		self.constraint_name = "{}_{}".format(self.table_name, constraint_name)
 		self.sql = sql
 
 	def state_forwards(self, app_label, state):
@@ -137,11 +191,12 @@ class AddFunction(Operation):
 	reduces_to_sql = True
 	reversible = True
 
-	def __init__(self, table_name, function_name, arguments,
+	def __init__(self, model, function_name, arguments,
 			return_value, function_body):
-		self.table_name = table_name
+		self.model = model
+		self.table_name = self.model._meta.db_table
 		self.arguments = ", ".join(arguments)
-		self.function_name = "{}_{}".format(table_name, function_name)
+		self.function_name = "{}_{}".format(self.table_name, function_name)
 		self.return_value = return_value
 		self.function_body = function_body
 
@@ -184,11 +239,11 @@ class AddSearchFunction(AddFunction):
 	reduces_to_sql = True
 	reversible = True
 
-	def __init__(self, table_name, function_name, arguments, query):
+	def __init__(self, model, function_name, arguments, query):
 		return_value = "table(id int)"
 		function_body = "return query {}".format(query)
 
-		super().__init__(table_name, function_name, arguments, return_value,
+		super().__init__(model, function_name, arguments, return_value,
 			function_body)
 
 

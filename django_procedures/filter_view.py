@@ -67,6 +67,20 @@ class QuerySetFilter(Filter):
 
 		return queryset.filter(reduce(self.connector, complex_filter))
 
+class TrigramFilter(Filter):
+	def __init__(self, field_name, connector=operator.or_):
+		super().__init__()
+		self.field_name = field_name
+		self.connector = connector
+
+	def filter_queryset(self, queryset, args):
+		query_part = "\"{field}\" %% %s".format(field=self.field_name)
+
+		queryset = queryset.extra(where=[query_part], params=args[:1])
+		print(queryset.query)
+
+		return queryset
+
 class FilterViewMixin:
 	kwarg_key = "search"
 	allowed_filters = {}
