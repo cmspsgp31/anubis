@@ -20,7 +20,6 @@
 
 from rest_framework.views import APIView
 from django.template.loaders.app_directories import Loader
-from django.core.urlresolvers import resolve
 from rest_framework.exceptions import NotAcceptable
 from rest_framework.response import Response
 
@@ -58,7 +57,8 @@ class TemplateRetrieverView(APIView):
 
 				views = getattr(view, view_method)()
 
-				response.update(views)
+				response.update({"{}.{}".format(view_name, name): template_body\
+					for name, template_body in views.items()})
 
 		return Response(response)
 

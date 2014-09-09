@@ -55,7 +55,7 @@ setup \
 	( name="django-procedures"
 	, version="0.1"
 	, packages=["django_procedures"]
-	, install_requires= ["Django"]
+	, install_requires= ["Django", "djangorestframework"]
 	, package_data= \
 		{ 'django_procedures':
 			[ 'parseurl/*.hs'
