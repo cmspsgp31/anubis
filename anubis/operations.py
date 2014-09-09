@@ -1,16 +1,16 @@
 # Copyright (C) 2014, Ugo Pozo
 #               2014, Câmara Municipal de São Paulo
 
-# operations.py - operações de migração customizadas para o ROBOKits.
+# operations.py - operações de migração customizadas para o Anubis.
 
-# Este arquivo é parte do software ROBOKits.
+# Este arquivo é parte do software Anubis.
 
-# ROBOKits é um software livre: você pode redistribuí-lo e/ou modificá-lo
+# Anubis é um software livre: você pode redistribuí-lo e/ou modificá-lo
 # sob os termos da Licença Pública Geral GNU (GNU General Public License),
 # tal como é publicada pela Free Software Foundation, na versão 3 da
 # licença, ou (sua decisão) qualquer versão posterior.
 
-# ROBOKits é distribuído na esperança de que seja útil, mas SEM NENHUMA
+# Anubis é distribuído na esperança de que seja útil, mas SEM NENHUMA
 # GARANTIA; nem mesmo a garantia implícita de VALOR COMERCIAL ou ADEQUAÇÃO
 # PARA UM PROPÓSITO EM PARTICULAR. Veja a Licença Pública Geral GNU para
 # mais detalhes.

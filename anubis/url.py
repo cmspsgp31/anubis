@@ -3,14 +3,14 @@
 
 # url.py - parser de URL em expressão booleana.
 
-# Este arquivo é parte do software django-procedures.
+# Este arquivo é parte do software Anubis.
 
-# django-procedures é um software livre: você pode redistribuí-lo e/ou
+# Anubis é um software livre: você pode redistribuí-lo e/ou
 # modificá-lo sob os termos da Licença Pública Geral GNU (GNU General Public
 # License), tal como é publicada pela Free Software Foundation, na versão 3 da
 # licença, ou (sua decisão) qualquer versão posterior.
 
-# django-procedures é distribuído na esperança de que seja útil, mas SEM NENHUMA
+# Anubis é distribuído na esperança de que seja útil, mas SEM NENHUMA
 # GARANTIA; nem mesmo a garantia implícita de VALOR COMERCIAL ou ADEQUAÇÃO
 # PARA UM PROPÓSITO EM PARTICULAR. Veja a Licença Pública Geral GNU para
 # mais detalhes.
@@ -140,8 +140,9 @@ class BooleanBuilder:
 	@property
 	def parser_lib(self):
 		if BooleanBuilder._parser_lib is None:
-			lib_file = pkg_resources.resource_filename("django_procedures",
+			lib_file = pkg_resources.resource_filename("anubis",
 				self.parser_lib_name)
+			print(lib_file)
 			BooleanBuilder._parser_lib = ctypes.cdll.LoadLibrary(lib_file)
 			BooleanBuilder._parser_lib.hs_init(0, 0)
 			BooleanBuilder._parser_lib.parseUrl.restype = ctypes.c_char_p
@@ -155,7 +156,7 @@ def close_lib(lib):
 	libdl.dlclose(hndl)
 
 def build_boolean(url):
-	shared_lib_file = pkg_resources.resource_filename("django_procedures",
+	shared_lib_file = pkg_resources.resource_filename("anubis",
 		"libParseUrl.so")
 	shared_lib = ctypes.cdll.LoadLibrary(shared_lib_file)
 

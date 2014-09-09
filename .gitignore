@@ -1,0 +1,7 @@
+__pycache__
+.cabal-sandbox
+*.egg-info
+a.out
+*.so
+cabal.sandbox.config
+dist

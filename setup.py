@@ -3,14 +3,14 @@
 
 # setup.py - descrição do procedimento de instalação
 
-# Este arquivo é parte do software django-procedures.
+# Este arquivo é parte do software Anubis.
 
-# django-procedures é um software livre: você pode redistribuí-lo e/ou modificá-lo
+# Anubis é um software livre: você pode redistribuí-lo e/ou modificá-lo
 # sob os termos da Licença Pública Geral GNU (GNU General Public License),
 # tal como é publicada pela Free Software Foundation, na versão 3 da
 # licença, ou (sua decisão) qualquer versão posterior.
 
-# django-procedures é distribuído na esperança de que seja útil, mas SEM NENHUMA
+# Anubis é distribuído na esperança de que seja útil, mas SEM NENHUMA
 # GARANTIA; nem mesmo a garantia implícita de VALOR COMERCIAL ou ADEQUAÇÃO
 # PARA UM PROPÓSITO EM PARTICULAR. Veja a Licença Pública Geral GNU para
 # mais detalhes.
@@ -37,7 +37,7 @@ def shell(*args, **kwargs):
 class install(install_):
 	def run(self):
 		install_.run(self)
-		package = os.path.join(self.install_lib, "django_procedures")
+		package = os.path.join(self.install_lib, "anubis")
 		working = os.path.join(package, "parseurl")
 		shell("cabal sandbox init", cwd=working)
 		shell("cabal update", cwd=working)
@@ -52,14 +52,15 @@ class install(install_):
 
 
 setup \
-	( name="django-procedures"
+	( name="anubis"
 	, version="0.1"
-	, packages=["django_procedures"]
-	, install_requires= ["Django", "djangorestframework"]
+	, packages=["anubis"]
+	, install_requires= ["Django", "djangorestframework", "psycopg2"]
 	, package_data= \
-		{ 'django_procedures':
+		{ 'anubis':
 			[ 'parseurl/*.hs'
 			, 'parseurl/*.cabal'
+			, 'parseurl/LICENSE'
 			]
 		}
 	, cmdclass={'install': install}

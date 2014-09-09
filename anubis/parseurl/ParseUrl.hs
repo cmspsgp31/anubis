@@ -3,14 +3,14 @@
 
 -- ParseUrl.hs - parser de URL em Haskell.
 
--- Este arquivo é parte do software django-procedures.
+-- Este arquivo é parte do software Anubis.
 
--- django-procedures é um software livre: você pode redistribuí-lo e/ou modificá-lo
+-- Anubis é um software livre: você pode redistribuí-lo e/ou modificá-lo
 -- sob os termos da Licença Pública Geral GNU (GNU General Public License),
 -- tal como é publicada pela Free Software Foundation, na versão 3 da
 -- licença, ou (sua decisão) qualquer versão posterior.
 
--- django-procedures é distribuído na esperança de que seja útil, mas SEM NENHUMA
+-- Anubis é distribuído na esperança de que seja útil, mas SEM NENHUMA
 -- GARANTIA; nem mesmo a garantia implícita de VALOR COMERCIAL ou ADEQUAÇÃO
 -- PARA UM PROPÓSITO EM PARTICULAR. Veja a Licença Pública Geral GNU para
 -- mais detalhes.
