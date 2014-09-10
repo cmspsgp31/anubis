@@ -58,7 +58,8 @@ class Boolean:
 
 		@staticmethod
 		def traverse(expr, func):
-			return func(not_expression=expr["expr"].traverse(func))
+			return func(not_expression=expr["expr"].traverse(func),
+				inside_type=expr["expr"].type_.__class__)
 
 	class And(Type):
 		fields = ("left", "right")
@@ -70,7 +71,9 @@ class Boolean:
 		@staticmethod
 		def traverse(expr, func):
 			return func(and_expression=(expr["left"].traverse(func),
-				expr["right"].traverse(func)))
+				expr["right"].traverse(func)),
+				left_type=expr["left"].type_.__class__,
+				right_type=expr["right"].type_.__class__)
 
 	class Or(Type):
 		fields = ("left", "right")
@@ -82,7 +85,9 @@ class Boolean:
 		@staticmethod
 		def traverse(expr, func):
 			return func(or_expression=(expr["left"].traverse(func),
-				expr["right"].traverse(func)))
+				expr["right"].traverse(func)),
+				left_type=expr["left"].type_.__class__,
+				right_type=expr["right"].type_.__class__)
 
 	types = \
 		{ "BooleanExpr": Expr()
@@ -90,6 +95,13 @@ class Boolean:
 		, "And": And()
 		, "Or": Or()
 		}
+
+	precedence = \
+		[ Expr
+		, Not
+		, And
+		, Or
+		]
 
 	def __init__(self, contents, type_):
 		assert isinstance(type_, self.Type)
@@ -142,7 +154,6 @@ class BooleanBuilder:
 		if BooleanBuilder._parser_lib is None:
 			lib_file = pkg_resources.resource_filename("anubis",
 				self.parser_lib_name)
-			print(lib_file)
 			BooleanBuilder._parser_lib = ctypes.cdll.LoadLibrary(lib_file)
 			BooleanBuilder._parser_lib.hs_init(0, 0)
 			BooleanBuilder._parser_lib.parseUrl.restype = ctypes.c_char_p

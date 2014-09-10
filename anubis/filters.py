@@ -27,10 +27,12 @@ from functools import reduce
 import operator
 
 class Filter:
-	def __init__(self):
-		self.description = ""
+	def __init__(self, identifier):
+		self.identifier = identifier
+		self.description = identifier
 		self._form = None
 		self.fields = {}
+		self.field_keys = []
 
 	def filter_queryset(self, queryset, args):
 		raise NotImplementedError()
@@ -41,8 +43,15 @@ class Filter:
 
 	def field(self, field_name, field_label=None, field_cls=forms.CharField,
 			**field_kwargs):
+		if len(self.field_keys) == 0 and field_label is None:
+			field_label = self.description
+
+		field_name = "{}_{:04d}_{}".format(self.identifier,
+			len(self.field_keys) + 1, field_name)
+
 		field = field_cls(label=field_label, **field_kwargs)
 		self.fields[field_name] = field
+		self.field_keys.append(field_name)
 
 		return self
 
@@ -50,31 +59,43 @@ class Filter:
 	def form(self):
 		form = FilterForm()
 
-		for field_name, field in self.fields.items():
-			form.fields[field_name] = field
+		for field_name in self.field_keys:
+			form.fields[field_name] = self.fields[field_name]
 
 		return form
 
+	def bound_form(self, args):
+		fields = {}
+		kwargs = {}
+
+		for i, field_name in enumerate(self.field_keys):
+			kwargs[field_name] = args[i]
+			fields[field_name] = self.fields[field_name]
+
+		form = FilterForm(kwargs)
+
+		form.fields.update(fields)
+
+		return form
+
+
 class ProcedureFilter(Filter):
 	def __init__(self, procedure_name):
-		super().__init__()
-		self.procedure_name = procedure_name
-		self.description = procedure_name
+		super().__init__(procedure_name)
 
 	def filter_queryset(self, queryset, args):
 		assert isinstance(queryset, ProcedureQuerySet)
 
-		return queryset.procedure(self.procedure_name, *args)
+		return queryset.procedure(self.identifier, *args)
 
 class QuerySetFilter(Filter):
 	def __init__(self, field_name, suffix="", connector=operator.or_):
-		super().__init__()
-		self.field_name = field_name
+		super().__init__(field_name)
 		self.connector = connector
 		self.suffix = suffix
 
 	def filter_queryset(self, queryset, args):
-		query_field = self.field_name
+		query_field = self.identifier
 
 		if len(self.suffix) > 0:
 			query_field += "__{}".format(self.suffix)
@@ -85,16 +106,14 @@ class QuerySetFilter(Filter):
 
 class TrigramFilter(Filter):
 	def __init__(self, field_name, connector=operator.or_):
-		super().__init__()
-		self.field_name = field_name
+		super().__init__(field_name)
 		self.connector = connector
 
 	def filter_queryset(self, queryset, args):
-		query_part = "\"{field}\" %% %s".format(field=self.field_name)
+		query_part = "\"{field}\" %% %s".format(field=self.identifier)
 
-		first_arg = args.pop(0)
+		first_arg = list(args).pop(0)
 		filtered = queryset.extra(where=[query_part], params=[first_arg])
-		print(args)
 
 		for arg in args:
 			filtered = self.connector(filtered,

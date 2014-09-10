@@ -22,6 +22,8 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 					defer = (t) => $.get(t).done (j) => @received t, j
 					defer t
 
+				if @toTry.length == 0 then @promise.resolve()
+
 				@promise
 			else
 				null
@@ -119,6 +121,7 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 
 			return views
 
+	exports.BooleanTokenView = class BooleanTokenView extends View
 
 	exports.RouteableView = class RouteableView extends View
 		isMatch: false
