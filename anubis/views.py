@@ -60,8 +60,9 @@ class TemplateRetrieverView(APIView):
 
 				views = getattr(view, view_method)()
 
-				response.update({"{}.{}".format(view_name, name): template_body\
-					for name, template_body in views.items()})
+				response[view_name] = views
+				# response.update({"{}.{}".format(view_name, name): template_body\
+				# 	for name, template_body in views.items()})
 
 		return Response(response)
 
@@ -84,6 +85,7 @@ class FilterViewMixin:
 		context = super().get_context_data(**kwargs)
 
 		context["filters"] = self.allowed_filters
+		context["filter_keys"] = ",".join(self.allowed_filters.keys())
 
 		if self.boolean_expression is not None:
 			aggregator = TokenAggregator(self.allowed_filters)
@@ -128,5 +130,6 @@ class FilterViewMixin:
 
 	@classmethod
 	def fieldsets(cls):
-		return {filter_name: filter_.form.as_p() \
-			for filter_name, filter_ in cls.allowed_filters.items()}
+		return {filter_name: { "description": filter_.description,
+			"template": filter_.form.as_p() } \
+				for filter_name, filter_ in cls.allowed_filters.items()}

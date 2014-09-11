@@ -1,4 +1,4 @@
-define ["jquery", "underscore"], ($, _) ->
+define ["jquery", "underscore", "ui"], ($, _, ui) ->
 	class Delegate
 		constructor: (@el, @view) ->
 			@deferUpdate = null
@@ -130,11 +130,60 @@ define ["jquery", "underscore"], ($, _) ->
 			el = @select "[name='#{key}']"
 
 			if not el.length then null else el.val()
+
+	class BoolenTokenDelegate extends Delegate
+		createEditor: ->
+			@editor = $ """
+			<li data-token=\"editor\">
+			<fieldset>
+			<p><input type=\"text\" /></p>
+			</fieldset>
+			</li>
+			"""
+
+			@input = $ "input", @editor
+
+			@el.append @editor
+			console.log @view.autocompleteFilters()
+			@input.autocomplete source: @view.autocompleteFilters()
+			@input.focus()
+
+		inputVal: -> @input.val()
+
+		clearInput: -> @input.val("")
+
+		error: -> @el.effect "pulsate", "slow", times: 3
+
+		makeToken: (tokenType, tokenName, description, contents) ->
+			if contents?
+				legend = " style=\"display: none;\""
+				contents = """
+				<fieldset>
+				<div class="legend"#{legend}>#{description}</div>
+				#{contents}
+				</fieldset>
+				"""
+			else
+				contents = "<p></p>"
+
+			if tokenName?
+				tokenName = " data-name=\"#{tokenName}\""
+			else
+				tokenName = ""
+
+			return $ """
+				<li data-token="#{tokenType}"#{tokenName}>
+				#{contents}
+				</li>
+			"""
+
+
+
+
 	
 	Delegate: Delegate
-	# GroupRouterDelegate: GroupRouterDelegate
-	# GroupRouterParentDelegate: GroupRouterParentDelegate
 	SearchTypeDelegate: SearchTypeDelegate
 	ModalDelegate: ModalDelegate
 	FormDelegate: FormDelegate
 	ActiveOnShowDelegate: ActiveOnShowDelegate
+	BoolenTokenDelegate: BoolenTokenDelegate

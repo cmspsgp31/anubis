@@ -4,6 +4,7 @@
 	, out: "../../static/anubis/anubis.js"
 	, paths:
 		{ "jquery": "empty:"
+		, "ui": "lib/jquery-ui"
 		, "backbone": "lib/backbone"
 		, "swig": "lib/swig"
 		, "underscore": "lib/underscore"

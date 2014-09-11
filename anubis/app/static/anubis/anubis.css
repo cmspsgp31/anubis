@@ -29,57 +29,134 @@ ul[data-view=BooleanTokenView] {
 
 ul[data-view=BooleanTokenView] > li[data-token] {
 	display: inline-block;
+	vertical-align: top;
 	min-width: 5px;
-	border: 1px solid blue;
+	border: 1px solid #137482;
+	background-color: #489da9;
 	border-radius: 5px;
-	margin: 5px;
+	margin: 5px 2px;
 	padding: 5px;
+	color: #a8dde4;
+	height: 36px;
 }
 
 ul[data-view=BooleanTokenView] > li[data-token] > fieldset {
 	display: inline-block;
+	vertical-align: middle;
 	width: auto;
 }
 
 ul[data-view=BooleanTokenView] > li[data-token] > fieldset > div.legend {
 	display: inline-block;
+	vertical-align: middle;
 	width: auto;
-	margin: 0 10px 0 0;
+	margin: 0;
 }
 
 ul[data-view=BooleanTokenView] > li[data-token] > fieldset > p {
 	display: inline-block;
+	vertical-align: middle;
 	width: auto;
 	margin: 0;
 }
 
 ul[data-view=BooleanTokenView] > li[data-token] > fieldset > p > label {
 	display: inline-block;
+	vertical-align: middle;
 	width: auto;
+	margin: 0;
 }
 
 ul[data-view=BooleanTokenView] > li[data-token] > fieldset > p > input {
 	display: inline-block;
+	vertical-align: middle;
 	width: auto;
+	margin: 0;
 }
 
-ul[data-view=BooleanTokenView] > li[data-token="open"]:after {
+ul[data-view=BooleanTokenView] > li[data-token="expression"] input {
+	background-color: #a8dde4;
+	color: #137482;
+	border: 1px solid #137482;
+}
+
+ul[data-view=BooleanTokenView] > li[data-token="open"] {
+	background-color: #ffb16a;
+	color: #ffdbba;
+	border-color: #d4741c;
+	font-weight: bold;
+}
+
+ul[data-view=BooleanTokenView] > li[data-token="open"] > p:after {
 	content: "(";
 }
 
-ul[data-view=BooleanTokenView] > li[data-token="close"]:after {
+ul[data-view=BooleanTokenView] > li[data-token="close"] {
+	background-color: #ffb16a;
+	color: #ffdbba;
+	border-color: #d4741c;
+	font-weight: bold;
+}
+
+ul[data-view=BooleanTokenView] > li[data-token="close"] > p:after {
 	content: ")";
 }
 
-ul[data-view=BooleanTokenView] > li[data-token="and"]:after {
+ul[data-view=BooleanTokenView] > li[data-token="and"] {
+	background-color: #57d257;
+	color: #b0f1b0;
+	border-color: #16aa16;
+	font-weight: bold;
+}
+
+ul[data-view=BooleanTokenView] > li[data-token="and"] > p:after {
 	content: " E ";
 }
 
-ul[data-view=BooleanTokenView] > li[data-token="or"]:after {
+ul[data-view=BooleanTokenView] > li[data-token="or"] {
+	background-color: #57d257;
+	color: #b0f1b0;
+	border-color: #16aa16;
+	font-weight: bold;
+}
+
+ul[data-view=BooleanTokenView] > li[data-token] > p {
+	display: inline-block;
+	vertical-align: middle;
+	width: auto;
+	margin: 0;
+	padding: 1px 0 0 0;
+}
+
+ul[data-view=BooleanTokenView] > li[data-token="or"] > p:after {
 	content: " OU ";
 }
 
-ul[data-view=BooleanTokenView] > li[data-token="negate"]:after {
+ul[data-view=BooleanTokenView] > li[data-token="negate"] {
+	background-color: #ff6a6a;
+	color: #ffbaba;
+	border-color: #d41c1c;
+	font-weight: bold;
+}
+
+ul[data-view=BooleanTokenView] > li[data-token="negate"] > p:after {
 	content: " NÃO ";
 }
+
+ul[data-view=BooleanTokenView] > li[data-token="editor"] {
+	color: black;
+	background-color: white;
+	border: 1px solid black;
+	padding: 5px 0;
+	border-radius: 0px;
+}
+
+ul[data-view=BooleanTokenView] > li[data-token="editor"] input {
+	background-color: white;
+	color: black;
+	border: none;
+	outline: 0;
+	width: 100%;
+}
+
 

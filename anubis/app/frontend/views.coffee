@@ -115,6 +115,7 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 				try
 					views.push new exports[viewName] router, options
 				catch e
+					console.log e
 					console.log exports
 					console.log viewName
 					throw e
@@ -122,6 +123,114 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 			return views
 
 	exports.BooleanTokenView = class BooleanTokenView extends View
+		@delegate: Delegates.BoolenTokenDelegate
+		@tokenTypes:
+			[ "expression"
+			, "and"
+			, "or"
+			, "not"
+			, "open"
+			, "close"
+			]
+
+		constructor: ->
+			super
+			
+			@tokens = @delegate.select "li[data-token]"
+			@delegate.createEditor()
+
+		filters: -> @constructor.templates.get(@getData "filters")
+
+		autocompleteFilters: ->
+			filters = []
+
+			for name, data of @filters()
+				filters.push
+					value: name
+					label: data.description
+
+			filters
+
+		events:
+			"keydown [data-token='editor'] input": "dynamicInputKeydown"
+
+		dynamicInputKeydown: (ev) ->
+			if (ev.which >= 65) and (ev.which <= 90)
+				@handleIgnore(ev)
+			else if (ev.which >= 96) and (ev.which <= 105)
+				@handleIgnore(ev)
+			else if (ev.which >= 49) and (ev.which <= 54)
+				@handleIgnore(ev)
+			else
+				switch ev.which
+					when 8 then @handleBackspace(ev)
+					when 16, 17, 18, 40, 38, 46, 189, 37, 39 then @handleIgnore(ev)
+					when 191, 111, 106 then @handleAnd(ev)
+					when 107 then @handleOr(ev)
+					when 9, 13, 32 then @handleExpression(ev)
+					when 187, 220
+						if ev.shiftKey then @handleOr(ev) else @handleForbid(ev)
+					when 55, 56
+						if ev.shiftKey then @handleAnd(ev) else @handleIgnore(ev)
+					when 57
+						if ev.shiftKey then @handleOpen(ev) else @handleIgnore(ev)
+					when 48
+						if ev.shiftKey then @handleClose(ev) else @handleIgnore(ev)
+					when 27
+						@handleClear(ev)
+					else @handleForbid(ev)
+
+		handleClear: (ev) -> @delegate.clearInput()
+
+		handleForbid: (ev) ->
+			ev.preventDefault()
+			console.log ev.which
+
+		handleIgnore: (ev) ->
+
+		handleBackspace: (ev) ->
+			if @delegate.inputVal().length == 0
+				ev.preventDefault()
+				console.log "Backspace"
+
+		handleExpression: (ev) ->
+			ev.preventDefault()
+			name = @delegate.inputVal()
+			filters = @filters()
+
+			console.log name
+			if name not in _.keys filters
+				@delegate.error()
+			else
+				@insertToken "expression", name, filters[name].description,
+					filters[name].template
+
+		handleOr: (ev) ->
+			ev.preventDefault()
+			@insertToken "or"
+
+		handleAnd: (ev) ->
+			ev.preventDefault()
+			@insertToken "and"
+
+		handleOpen: (ev) ->
+			ev.preventDefault()
+			@insertToken "open"
+
+		handleClose: (ev) ->
+			ev.preventDefault()
+			@insertToken "close"
+
+		insertToken: (tokenType, tokenName, description, contents) ->
+			token = @delegate.makeToken tokenType, tokenName, description,
+				contents
+
+			token.insertBefore @delegate.editor
+
+			@handleClear()
+
+
+
 
 	exports.RouteableView = class RouteableView extends View
 		isMatch: false

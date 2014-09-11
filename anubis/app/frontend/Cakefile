@@ -19,8 +19,12 @@ built = []
 
 compile = (input, callback) ->
 	output = "#{buildDir}#{input}"
-	exec "coffee -c -o #{buildDir} #{input}.coffee", (e, sout, serr) ->
-		return console.error e if e
+	exec "coffee -c -o #{buildDir} #{input}.coffee", (e, stdout, stderr) ->
+		if e
+			console.error stdout
+			console.error stderr
+			console.error e
+			return
 		console.log "Compiled #{input} to #{output}.js"
 		callback input
 

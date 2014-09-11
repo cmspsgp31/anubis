@@ -1,0 +1,8 @@
+<section class="container SearchView">
+	<h2>Pesquisar</h2>
+	<ul data-view="BooleanTokenView" data-filters="{{ filters_key }}">
+	{% if expr %}
+	{{ expr|safe }}
+	{% endif %}
+	</ul>
+</section>

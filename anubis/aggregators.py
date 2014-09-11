@@ -106,8 +106,8 @@ class TokenAggregator(Aggregator):
 		parens_close = ""
 
 		if needed:
-			parens_open = "<li data-token=\"open\"></li>"
-			parens_close = "<li data-token=\"close\"></li>"
+			parens_open = "<li data-token=\"open\"><p></p></li>"
+			parens_close = "<li data-token=\"close\"><p></p></li>"
 
 		return (parens_open, parens_close)
 
@@ -135,7 +135,7 @@ class TokenAggregator(Aggregator):
 		parens_open, parens_close = self.open_close_parens(need_parens)
 
 		return """
-		<li data-token="negate"></li>
+		<li data-token="negate"><p></p></li>
 		{parens_open}
 		{expression}
 		{parens_close}
@@ -151,7 +151,7 @@ class TokenAggregator(Aggregator):
 		{left_open}
 		{left}
 		{left_close}
-		<li data-token="and"></li>
+		<li data-token="and"><p></p></li>
 		{right_open}
 		{right}
 		{right_close}
@@ -168,7 +168,7 @@ class TokenAggregator(Aggregator):
 		{left_open}
 		{left}
 		{left_close}
-		<li data-token="or"></li>
+		<li data-token="or"><p></p></li>
 		{right_open}
 		{right}
 		{right_close}
