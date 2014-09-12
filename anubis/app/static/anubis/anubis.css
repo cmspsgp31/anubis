@@ -18,109 +18,144 @@
 /* Você deve ter recebido uma cópia da Licença Pública Geral GNU junto com */
 /* este programa. Se não, consulte <http://www.gnu.org/licenses/>. */
 
+section.SearchView {
+	display: block;
+	width: 60%;
+	margin: 0 auto 30px auto;
+}
+
+section.SearchView > form >div.buttons {
+	text-align: right;
+}
+
+section.SearchView > form > div.buttons > button{
+	display: inline-block;
+}
+
+div.SearchViewHelp {
+	display: block;
+	margin-bottom: 10px;
+}
+
+div.SearchViewHelp .ui-icon {
+	display: inline-block !important;
+	vertical-align: middle;
+}
+
 ul[data-view=BooleanTokenView] {
 	display: block;
-	margin: 0 auto 10px auto;
+	margin-bottom: 10px;
 	border: 1px solid gray;
 	border-radius: 5px;
 	padding: 5px;
-	width: 60%;
 }
 
-ul[data-view=BooleanTokenView] > li[data-token] {
-	display: inline-block;
+ul[data-view=BooleanTokenView] > div {
+	display: inline-block !important;
+}
+
+ul[data-view=BooleanTokenView] li[data-token] {
+	display: inline-block !important;
 	vertical-align: top;
 	min-width: 5px;
 	border: 1px solid #137482;
 	background-color: #489da9;
 	border-radius: 5px;
-	margin: 5px 2px;
+	margin: 5px 4px 5px 0;
 	padding: 5px;
 	color: #a8dde4;
 	height: 36px;
 }
 
-ul[data-view=BooleanTokenView] > li[data-token] > fieldset {
+ul[data-view=BooleanTokenView] li.ui-sortable-placeholder {
+	display: inline-block !important;
+}
+
+ul[data-view=BooleanTokenView] li[data-token] > fieldset {
 	display: inline-block;
 	vertical-align: middle;
 	width: auto;
 }
 
-ul[data-view=BooleanTokenView] > li[data-token] > fieldset > div.legend {
-	display: inline-block;
-	vertical-align: middle;
-	width: auto;
-	margin: 0;
-}
-
-ul[data-view=BooleanTokenView] > li[data-token] > fieldset > p {
-	display: inline-block;
-	vertical-align: middle;
-	width: auto;
-	margin: 0;
-}
-
-ul[data-view=BooleanTokenView] > li[data-token] > fieldset > p > label {
+ul[data-view=BooleanTokenView] li[data-token] > fieldset > div.legend {
 	display: inline-block;
 	vertical-align: middle;
 	width: auto;
 	margin: 0;
 }
 
-ul[data-view=BooleanTokenView] > li[data-token] > fieldset > p > input {
+ul[data-view=BooleanTokenView] li[data-token] > fieldset > p {
 	display: inline-block;
 	vertical-align: middle;
 	width: auto;
 	margin: 0;
 }
 
-ul[data-view=BooleanTokenView] > li[data-token="expression"] input {
+ul[data-view=BooleanTokenView] li[data-token] > fieldset > p > label {
+	display: inline-block;
+	vertical-align: middle;
+	width: auto;
+	margin: 0;
+}
+
+ul[data-view=BooleanTokenView] li[data-token] > fieldset > p > input {
+	display: inline-block;
+	vertical-align: middle;
+	width: auto;
+	margin: 0;
+}
+
+ul[data-view=BooleanTokenView] li[data-token] > fieldset > p > input[type=number] {
+	width: 75px;
+}
+
+ul[data-view=BooleanTokenView] li[data-token="expression"] input {
 	background-color: #a8dde4;
 	color: #137482;
 	border: 1px solid #137482;
 }
 
-ul[data-view=BooleanTokenView] > li[data-token="open"] {
+ul[data-view=BooleanTokenView] li[data-token="open"] {
 	background-color: #ffb16a;
 	color: #ffdbba;
 	border-color: #d4741c;
 	font-weight: bold;
 }
 
-ul[data-view=BooleanTokenView] > li[data-token="open"] > p:after {
+ul[data-view=BooleanTokenView] li[data-token="open"] > p:after {
 	content: "(";
 }
 
-ul[data-view=BooleanTokenView] > li[data-token="close"] {
+ul[data-view=BooleanTokenView] li[data-token="close"] {
 	background-color: #ffb16a;
 	color: #ffdbba;
 	border-color: #d4741c;
 	font-weight: bold;
 }
 
-ul[data-view=BooleanTokenView] > li[data-token="close"] > p:after {
+ul[data-view=BooleanTokenView] li[data-token="close"] > p:after {
 	content: ")";
 }
 
-ul[data-view=BooleanTokenView] > li[data-token="and"] {
+ul[data-view=BooleanTokenView] li[data-token="and"] {
 	background-color: #57d257;
 	color: #b0f1b0;
 	border-color: #16aa16;
 	font-weight: bold;
 }
 
-ul[data-view=BooleanTokenView] > li[data-token="and"] > p:after {
+ul[data-view=BooleanTokenView] li[data-token="and"] > p:after {
 	content: " E ";
 }
 
-ul[data-view=BooleanTokenView] > li[data-token="or"] {
+ul[data-view=BooleanTokenView] li[data-token="or"] {
 	background-color: #57d257;
 	color: #b0f1b0;
 	border-color: #16aa16;
 	font-weight: bold;
 }
 
-ul[data-view=BooleanTokenView] > li[data-token] > p {
+ul[data-view=BooleanTokenView] li[data-token] > p {
 	display: inline-block;
 	vertical-align: middle;
 	width: auto;
@@ -128,30 +163,35 @@ ul[data-view=BooleanTokenView] > li[data-token] > p {
 	padding: 1px 0 0 0;
 }
 
-ul[data-view=BooleanTokenView] > li[data-token="or"] > p:after {
+ul[data-view=BooleanTokenView] li[data-token="or"] > p:after {
 	content: " OU ";
 }
 
-ul[data-view=BooleanTokenView] > li[data-token="negate"] {
+ul[data-view=BooleanTokenView] li[data-token="negate"] {
 	background-color: #ff6a6a;
 	color: #ffbaba;
 	border-color: #d41c1c;
 	font-weight: bold;
 }
 
-ul[data-view=BooleanTokenView] > li[data-token="negate"] > p:after {
+ul[data-view=BooleanTokenView] li[data-token="negate"] > p:after {
 	content: " NÃO ";
 }
 
-ul[data-view=BooleanTokenView] > li[data-token="editor"] {
+ul[data-view=BooleanTokenView] li[data-token="editor"] {
 	color: black;
 	background-color: white;
-	border: 1px solid black;
+	/* border: 1px solid black; */
+	border: none;
 	padding: 5px 0;
 	border-radius: 0px;
 }
 
-ul[data-view=BooleanTokenView] > li[data-token="editor"] input {
+ul[data-view=BooleanTokenView] li[data-token="editor"] > fieldset > p {
+	padding: 2px 0 0 0;
+}
+
+ul[data-view=BooleanTokenView] li[data-token="editor"] > fieldset > p > input {
 	background-color: white;
 	color: black;
 	border: none;

@@ -131,5 +131,6 @@ class FilterViewMixin:
 	@classmethod
 	def fieldsets(cls):
 		return {filter_name: { "description": filter_.description,
-			"template": filter_.form.as_p() } \
+			"template": filter_.form.as_p(),
+			"arg_count": len(filter_.field_keys) } \
 				for filter_name, filter_ in cls.allowed_filters.items()}

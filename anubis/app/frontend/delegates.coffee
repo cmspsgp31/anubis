@@ -132,6 +132,12 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 			if not el.length then null else el.val()
 
 	class BoolenTokenDelegate extends Delegate
+		constructor: ->
+			super
+			@el.sortable
+				containment: "parent"
+				# axis: "x"
+
 		createEditor: ->
 			@editor = $ """
 			<li data-token=\"editor\">
@@ -141,26 +147,35 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 			</li>
 			"""
 
+			@el.append @editor
+
 			@input = $ "input", @editor
 
-			@el.append @editor
-			console.log @view.autocompleteFilters()
-			@input.autocomplete source: @view.autocompleteFilters()
+			@input.autocomplete
+				source: @view.autocompleteFilters()
+				minLength: 0
+
 			@input.focus()
 
 		inputVal: -> @input.val()
 
 		clearInput: -> @input.val("")
 
-		error: -> @el.effect "pulsate", "slow", times: 3
+		error: -> @el.effect
+			effect: "pulsate"
+			duration: "slow"
+			times: 3
 
-		makeToken: (tokenType, tokenName, description, contents) ->
-			if contents?
-				legend = " style=\"display: none;\""
+		makeToken: (tokenType, tokenName, filter) ->
+			if filter?
+				if filter.arg_count == 1
+					legend = " style=\"display: none;\""
+				else
+					legend = ""
 				contents = """
 				<fieldset>
-				<div class="legend"#{legend}>#{description}</div>
-				#{contents}
+				<div class="legend"#{legend}>#{filter.description}</div>
+				#{filter.template}
 				</fieldset>
 				"""
 			else
@@ -171,11 +186,49 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 			else
 				tokenName = ""
 
-			return $ """
+			newToken = $ """
 				<li data-token="#{tokenType}"#{tokenName}>
 				#{contents}
 				</li>
 			"""
+
+			newToken
+
+		findToken: (source) ->
+			el = source
+			token = null
+
+			while el.parent()
+				if (el.data "token")?
+					token = el
+					break
+				
+				el = el.parent()
+
+			token
+
+		insertToken: (token) ->
+			token.hide()
+			token.insertBefore @editor
+
+			token.show
+				effect: "puff"
+				duration: 150
+				complete: ->
+					firstInput = $ "p:first-of-type > :focusable", token
+					if firstInput.size() then firstInput.focus()
+
+
+		removeToken: (token) ->
+			effect = token.effect
+				effect: "puff"
+				duration: 150
+
+			effect.promise().then -> token.remove()
+
+		removeLastToken: ->
+			nextToLast = $ "li[data-token]:nth-last-child(2)", @el
+			@removeToken nextToLast
 
 
 

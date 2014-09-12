@@ -37,6 +37,10 @@ class Filter:
 	def filter_queryset(self, queryset, args):
 		raise NotImplementedError()
 
+	def identify(self, identifier):
+		self.identifier = identifier
+		return self
+
 	def describe(self, description):
 		self.description = description
 		return self
@@ -75,27 +79,30 @@ class Filter:
 		form = FilterForm(kwargs)
 
 		form.fields.update(fields)
+		form.fields.keyOrder = self.field_keys
 
 		return form
 
 
 class ProcedureFilter(Filter):
 	def __init__(self, procedure_name):
+		self.procedure_name = procedure_name
 		super().__init__(procedure_name)
 
 	def filter_queryset(self, queryset, args):
 		assert isinstance(queryset, ProcedureQuerySet)
 
-		return queryset.procedure(self.identifier, *args)
+		return queryset.procedure(self.procedure_name, *args)
 
 class QuerySetFilter(Filter):
 	def __init__(self, field_name, suffix="", connector=operator.or_):
+		self.field_name = field_name
 		super().__init__(field_name)
 		self.connector = connector
 		self.suffix = suffix
 
 	def filter_queryset(self, queryset, args):
-		query_field = self.identifier
+		query_field = self.field_name
 
 		if len(self.suffix) > 0:
 			query_field += "__{}".format(self.suffix)
@@ -106,13 +113,17 @@ class QuerySetFilter(Filter):
 
 class TrigramFilter(Filter):
 	def __init__(self, field_name, connector=operator.or_):
+		self.field_name = field_name
 		super().__init__(field_name)
 		self.connector = connector
 
 	def filter_queryset(self, queryset, args):
-		query_part = "\"{field}\" %% %s".format(field=self.identifier)
+		args = list(args)
+		table = queryset.model._meta.db_table
+		query_part = "\"{table}\".\"{field}\" %% %s" \
+			.format(table=table, field=self.field_name)
 
-		first_arg = list(args).pop(0)
+		first_arg = args.pop(0)
 		filtered = queryset.extra(where=[query_part], params=[first_arg])
 
 		for arg in args:

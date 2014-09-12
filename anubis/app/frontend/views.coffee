@@ -128,18 +128,24 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 			[ "expression"
 			, "and"
 			, "or"
-			, "not"
+			, "negate"
 			, "open"
 			, "close"
 			]
 
+		@tokenExpressions:
+			"and": "E, e (operador)"
+			"or": "Ou, ou (operador)"
+			"negate": "Não, Exceto (operador)"
+
 		constructor: ->
 			super
-			
-			@tokens = @delegate.select "li[data-token]"
+
 			@delegate.createEditor()
 
 		filters: -> @constructor.templates.get(@getData "filters")
+
+		tokens: -> @delegate.select "li[data-token]"
 
 		autocompleteFilters: ->
 			filters = []
@@ -149,36 +155,97 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 					value: name
 					label: data.description
 
+			for name, data of @constructor.tokenExpressions
+				filters.push
+					value: name
+					label: data
+
 			filters
 
 		events:
 			"keydown [data-token='editor'] input": "dynamicInputKeydown"
+			"dblclick [data-token]": "tokenDoubleClick"
+			"click": "fieldClick"
+
+		fieldClick: (ev) ->
+			target = $ ev.target
+			if not (target.is ":focusable")
+				ev.preventDefault()
+				@delegate.input.focus()
+
+		tokenDoubleClick: (ev) ->
+			target = $ ev.target
+			token = @delegate.findToken target
+			if not ((token.data "token") == "editor")
+				@delegate.removeToken token
 
 		dynamicInputKeydown: (ev) ->
 			if (ev.which >= 65) and (ev.which <= 90)
+				# letters
 				@handleIgnore(ev)
 			else if (ev.which >= 96) and (ev.which <= 105)
+				# numpad numbers
 				@handleIgnore(ev)
-			else if (ev.which >= 49) and (ev.which <= 54)
+			else if (ev.which >= 50) and (ev.which <= 54)
+				# top row numbers
 				@handleIgnore(ev)
 			else
 				switch ev.which
+					# backspace
 					when 8 then @handleBackspace(ev)
-					when 16, 17, 18, 40, 38, 46, 189, 37, 39 then @handleIgnore(ev)
+					# modifiers, arrows, delete, underscore and hyphen
+					when 16, 17, 18, 38, 46, 189, 37, 39, 40
+						@handleIgnore(ev)
+					# down arrow
+					# when 40 then @handleTrigger(ev)
+					# numpad star, both slashes
 					when 191, 111, 106 then @handleAnd(ev)
+					# numpad plus
 					when 107 then @handleOr(ev)
-					when 9, 13, 32 then @handleExpression(ev)
+					# enter, space
+					when 13, 32 then @handleExpression(ev)
+					# esc
+					when 27 then @handleClear(ev)
+					# caret, inactive due to trouble with dead keys
+					# when 229 then @handleNot(ev)
+					# bang
+					when 49
+						if ev.shiftKey
+							@handleNot(ev)
+						else
+							@handleIgnore(ev)
+					# tab
+					when 9
+						if ev.shiftKey
+							@handleIgnore(ev)
+						else
+							@handleExpression(ev)
+					# shift equal, shift backslash
 					when 187, 220
-						if ev.shiftKey then @handleOr(ev) else @handleForbid(ev)
+						if ev.shiftKey
+							@handleOr(ev)
+						else
+							@handleForbid(ev)
+					# shift seven, shift eight
 					when 55, 56
-						if ev.shiftKey then @handleAnd(ev) else @handleIgnore(ev)
+						if ev.shiftKey
+							@handleAnd(ev)
+						else
+							@handleIgnore(ev)
+					# shift nine
 					when 57
-						if ev.shiftKey then @handleOpen(ev) else @handleIgnore(ev)
+						if ev.shiftKey
+							@handleOpen(ev)
+						else
+							@handleIgnore(ev)
+					# shift zero
 					when 48
-						if ev.shiftKey then @handleClose(ev) else @handleIgnore(ev)
-					when 27
-						@handleClear(ev)
+						if ev.shiftKey
+							@handleClose(ev)
+						else
+							@handleIgnore(ev)
 					else @handleForbid(ev)
+			@serialize()
 
 		handleClear: (ev) -> @delegate.clearInput()
 
@@ -190,20 +257,20 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 
 		handleBackspace: (ev) ->
 			if @delegate.inputVal().length == 0
-				ev.preventDefault()
-				console.log "Backspace"
+				console.log @delegate.inputVal()
+				@delegate.removeLastToken()
 
 		handleExpression: (ev) ->
 			ev.preventDefault()
 			name = @delegate.inputVal()
 			filters = @filters()
 
-			console.log name
-			if name not in _.keys filters
-				@delegate.error()
+			if name in _.keys filters
+				@insertToken "expression", name, filters[name]
+			else if name in @constructor.tokenTypes
+				@insertToken name
 			else
-				@insertToken "expression", name, filters[name].description,
-					filters[name].template
+				@delegate.error()
 
 		handleOr: (ev) ->
 			ev.preventDefault()
@@ -217,17 +284,49 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 			ev.preventDefault()
 			@insertToken "open"
 
+		handleNot: (ev) ->
+			ev.preventDefault()
+			@insertToken "negate"
+
 		handleClose: (ev) ->
 			ev.preventDefault()
 			@insertToken "close"
 
-		insertToken: (tokenType, tokenName, description, contents) ->
-			token = @delegate.makeToken tokenType, tokenName, description,
-				contents
+		insertToken: (tokenType, tokenName, filter) ->
+			token = @delegate.makeToken tokenType, tokenName, filter
 
-			token.insertBefore @delegate.editor
+			@delegate.insertToken token
 
 			@handleClear()
+
+		serialize: ->
+			expression = ""
+
+			for token in @tokens()
+				token = $ token
+				if (token.data "token") == "editor" then continue
+
+				switch token.data "token"
+					when "and" then expression += "/"
+					when "negate" then expression += "!"
+					when "or" then expression += "+"
+					when "open" then expression += "("
+					when "close" then expression += ")"
+					else
+						identifier = token.data "name"
+						args = []
+
+						for elem in ($ "input, textarea, select", token)
+							arg = ($ elem).val().replace(/\$/, "$$") \
+							.replace(/"/, "$\"")
+							arg = "\"#{arg}\""
+							args.push arg
+
+						expression += "#{identifier}," + args.join()
+
+			console.log expression
+
+
 
 
 
@@ -382,7 +481,7 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 			@collection.comparator = (m1, m2) ->
 				v1 = m1.get "sort_#{sortBy}"
 				v2 = m2.get "sort_#{sortBy}"
-				
+
 				if asDate
 					v1 = new Date "#{v1}T12:00:00"
 					v2 = new Date "#{v2}T12:00:00"
@@ -412,7 +511,7 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 			target = @delegate.select "[data-container]"
 			if target.length == 0 then target = @$el
 			target.empty()
-			
+
 			if @collection.length > 0
 				for i in [0..@collection.length - 1]
 					model = @collection.at i
@@ -423,7 +522,7 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 					view.render()
 
 					target.append view.$el
-				
+
 				@delegate.update @$el.html()
 			else
 				(new $.Deferred).resolve()
@@ -517,14 +616,6 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 
 			if action.length then action.data "action" else @$el.attr "action"
 
-		saveUrl: (url) ->
-			saveUrlTo = (@delegate.select "[data-save-url-to]").filter(":visible")
-			
-			if saveUrlTo.length
-				id = saveUrlTo.data "saveUrlTo"
-				($ "##{id}").attr "href", url
-
-
 		url: (data) -> swig.render @action(), locals: data
 
 		events:
@@ -540,7 +631,6 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 			while url.match /\/\//
 				url = url.replace /\/\//g, "/"
 
-			# @saveUrl url
 			@router.navigate url, trigger: true
 
 
