@@ -4,6 +4,13 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 			@deferUpdate = null
 			@el.data "viewObject", @view
 
+		@forElement: (el) ->
+			el = $ el
+			if (el.data "viewObject")?
+				(el.data "viewObject").delegate
+			else
+				null
+
 		setActive: (active) ->
 			if active
 				@el.addClass "active"
@@ -74,7 +81,7 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 		show: -> @setActive true
 		hide: -> @setActive false
 
-	
+
 	class GroupRouterDelegate extends Delegate
 		switcherByURI: (uri) -> @select "[data-router][href='#{uri}']"
 		activateSwitcher: (uri) -> (@switcherByURI uri).addClass "active"
@@ -102,15 +109,26 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 		bindEvents: ->
 			(@select "[data-close]").on "click", =>
 				@view.router.navigate @view.router.lastNonModalMatch, trigger: true
-			
+
 		show: -> @el.modal("show")
 
 		hide: -> @el.modal("hide")
 
 	class FormDelegate extends Delegate
 		filter: ":not(form):visible"
-		serialize: ->
-			array = (@select @filter).serializeArray()
+
+		findSerializer: (element) ->
+			element = $ element
+
+			if (element.is "[data-form-control]")
+				return "serializeFormControl"
+			else if (element.is "[data-form-control] *")
+				return "serializeSkip"
+			else
+				return "serializeJQuery"
+
+		serializeJQuery: (elements) ->
+			array = ($ elements).serializeArray()
 			obj = {}
 
 			for field in array
@@ -124,6 +142,27 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 
 			obj
 
+		serializeSkip: -> {}
+
+		serializeFormControl: (elements) ->
+			obj = {}
+
+			for element in elements
+				view = ($ element).data "viewObject"
+				_.extend obj, view.serialize()
+
+			obj
+
+		serialize: ->
+			controls = _.groupBy (@select @filter), @findSerializer
+			obj = {}
+
+			for serializer, elements of controls
+				serializer = $.proxy @[serializer], @
+				_.extend obj, serializer elements
+
+			obj
+
 		format: (value) -> (encodeURIComponent value).replace /%2F/ig, "/"
 
 		value: (key) ->
@@ -131,112 +170,10 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 
 			if not el.length then null else el.val()
 
-	class BoolenTokenDelegate extends Delegate
-		constructor: ->
-			super
-			@el.sortable
-				containment: "parent"
-				# axis: "x"
-
-		createEditor: ->
-			@editor = $ """
-			<li data-token=\"editor\">
-			<fieldset>
-			<p><input type=\"text\" /></p>
-			</fieldset>
-			</li>
-			"""
-
-			@el.append @editor
-
-			@input = $ "input", @editor
-
-			@input.autocomplete
-				source: @view.autocompleteFilters()
-				minLength: 0
-
-			@input.focus()
-
-		inputVal: -> @input.val()
-
-		clearInput: -> @input.val("")
-
-		error: -> @el.effect
-			effect: "pulsate"
-			duration: "slow"
-			times: 3
-
-		makeToken: (tokenType, tokenName, filter) ->
-			if filter?
-				if filter.arg_count == 1
-					legend = " style=\"display: none;\""
-				else
-					legend = ""
-				contents = """
-				<fieldset>
-				<div class="legend"#{legend}>#{filter.description}</div>
-				#{filter.template}
-				</fieldset>
-				"""
-			else
-				contents = "<p></p>"
-
-			if tokenName?
-				tokenName = " data-name=\"#{tokenName}\""
-			else
-				tokenName = ""
-
-			newToken = $ """
-				<li data-token="#{tokenType}"#{tokenName}>
-				#{contents}
-				</li>
-			"""
-
-			newToken
-
-		findToken: (source) ->
-			el = source
-			token = null
-
-			while el.parent()
-				if (el.data "token")?
-					token = el
-					break
-				
-				el = el.parent()
-
-			token
-
-		insertToken: (token) ->
-			token.hide()
-			token.insertBefore @editor
-
-			token.show
-				effect: "puff"
-				duration: 150
-				complete: ->
-					firstInput = $ "p:first-of-type > :focusable", token
-					if firstInput.size() then firstInput.focus()
 
 
-		removeToken: (token) ->
-			effect = token.effect
-				effect: "puff"
-				duration: 150
-
-			effect.promise().then -> token.remove()
-
-		removeLastToken: ->
-			nextToLast = $ "li[data-token]:nth-last-child(2)", @el
-			@removeToken nextToLast
-
-
-
-
-	
 	Delegate: Delegate
 	SearchTypeDelegate: SearchTypeDelegate
 	ModalDelegate: ModalDelegate
 	FormDelegate: FormDelegate
 	ActiveOnShowDelegate: ActiveOnShowDelegate
-	BoolenTokenDelegate: BoolenTokenDelegate

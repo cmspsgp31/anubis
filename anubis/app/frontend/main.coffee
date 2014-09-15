@@ -1,8 +1,17 @@
-define ["backbone", "underscore", "anubis/views", "anubis/router", "anubis/delegates", "swig"], (Backbone, _, Views, Router, Delegates, swig) ->
+define ["backbone"
+	, "underscore"
+	, "anubis/views"
+	, "anubis/router"
+	, "anubis/delegates"
+	, "anubis/token_view"
+	, "swig"],
+(Backbone, _, Views, Router, Delegates, TokenView, swig) ->
 	_.templateSettings =
 		interpolate: /\[\[(.+?)\]\]/g
 		escape: /\[\-(.+?)\]\]/g
 		evaluate: /\[\=(.+?)\]\]/g
+
+	swig.setFilter "getitem", (input, key) -> input[key]
 
 	start = (historyArgs) ->
 		for t in $("link[data-template]")
@@ -12,10 +21,9 @@ define ["backbone", "underscore", "anubis/views", "anubis/router", "anubis/deleg
 		Views.View.templates.pull().done ->
 			router = new Router.ObjectRouter
 		
-			views = Views.View.scanViews router, $ "body"
+			views = Views.View.scanViews router, ($ "body"), TokenView
 
 			Backbone.history.start historyArgs
-	
 	start: start
 
 

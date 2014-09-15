@@ -14,6 +14,6 @@
 		{ "*": { "backbone": "anubis/csrf_backbone" }
 		, "anubis/csrf_backbone": { "backbone": "backbone" }
 		}
-	, include: [ "requireLib" ]
+	, include: [ "requireLib", "anubis/token_view" ]
 	}
 )

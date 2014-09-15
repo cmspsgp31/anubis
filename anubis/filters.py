@@ -69,17 +69,11 @@ class Filter:
 		return form
 
 	def bound_form(self, args):
-		fields = {}
-		kwargs = {}
+		form = FilterForm({field_name: args[i] \
+			for i, field_name in enumerate(self.field_keys)})
 
-		for i, field_name in enumerate(self.field_keys):
-			kwargs[field_name] = args[i]
-			fields[field_name] = self.fields[field_name]
-
-		form = FilterForm(kwargs)
-
-		form.fields.update(fields)
-		form.fields.keyOrder = self.field_keys
+		for field_name in self.field_keys:
+			form.fields[field_name] = self.fields[field_name]
 
 		return form
 

@@ -9,6 +9,7 @@ scripts =
 	, "views"
 	, "router"
 	, "delegates"
+	, "token_view"
 	]
 
 

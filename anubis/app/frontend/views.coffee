@@ -50,9 +50,6 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 		setView: (t, v) -> @templates[t].view = v
 
 
-
-
-
 	exports.View = class View extends Backbone.View
 		@delegate: Delegates.Delegate
 		@templates: new TemplateManager
@@ -88,7 +85,7 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 
 		setElement: (element) ->
 			super element
-			if @delegate then delete @delegate
+			if @delegate? then delete @delegate
 			@delegate = new (@delegateClass()) @$el, this
 
 		template: ->
@@ -101,7 +98,10 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 				(@delegate.update @template()).then =>
 					@subviews = @constructor.scanViews @router, @$el
 
-		@scanViews: (router, parent) ->
+		@scanViews: (router, parent, viewClasses) ->
+			if not viewClasses? then viewClasses = {}
+			_.extend viewClasses, exports
+
 			views = []
 
 			for el in $ "[data-view]", parent
@@ -113,7 +113,7 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 					options.delegateClass = Delegates[el.data "delegate"]
 
 				try
-					views.push new exports[viewName] router, options
+					views.push new viewClasses[viewName] router, options
 				catch e
 					console.log e
 					console.log exports
@@ -121,214 +121,6 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 					throw e
 
 			return views
-
-	exports.BooleanTokenView = class BooleanTokenView extends View
-		@delegate: Delegates.BoolenTokenDelegate
-		@tokenTypes:
-			[ "expression"
-			, "and"
-			, "or"
-			, "negate"
-			, "open"
-			, "close"
-			]
-
-		@tokenExpressions:
-			"and": "E, e (operador)"
-			"or": "Ou, ou (operador)"
-			"negate": "Não, Exceto (operador)"
-
-		constructor: ->
-			super
-
-			@delegate.createEditor()
-
-		filters: -> @constructor.templates.get(@getData "filters")
-
-		tokens: -> @delegate.select "li[data-token]"
-
-		autocompleteFilters: ->
-			filters = []
-
-			for name, data of @filters()
-				filters.push
-					value: name
-					label: data.description
-
-			for name, data of @constructor.tokenExpressions
-				filters.push
-					value: name
-					label: data
-
-			filters
-
-		events:
-			"keydown [data-token='editor'] input": "dynamicInputKeydown"
-			"dblclick [data-token]": "tokenDoubleClick"
-			"click": "fieldClick"
-
-		fieldClick: (ev) ->
-			target = $ ev.target
-			if not (target.is ":focusable")
-				ev.preventDefault()
-				@delegate.input.focus()
-
-		tokenDoubleClick: (ev) ->
-			target = $ ev.target
-			token = @delegate.findToken target
-			if not ((token.data "token") == "editor")
-				@delegate.removeToken token
-
-		dynamicInputKeydown: (ev) ->
-			if (ev.which >= 65) and (ev.which <= 90)
-				# letters
-				@handleIgnore(ev)
-			else if (ev.which >= 96) and (ev.which <= 105)
-				# numpad numbers
-				@handleIgnore(ev)
-			else if (ev.which >= 50) and (ev.which <= 54)
-				# top row numbers
-				@handleIgnore(ev)
-			else
-				switch ev.which
-					# backspace
-					when 8 then @handleBackspace(ev)
-					# modifiers, arrows, delete, underscore and hyphen
-					when 16, 17, 18, 38, 46, 189, 37, 39, 40
-						@handleIgnore(ev)
-					# down arrow
-					# when 40 then @handleTrigger(ev)
-					# numpad star, both slashes
-					when 191, 111, 106 then @handleAnd(ev)
-					# numpad plus
-					when 107 then @handleOr(ev)
-					# enter, space
-					when 13, 32 then @handleExpression(ev)
-					# esc
-					when 27 then @handleClear(ev)
-					# caret, inactive due to trouble with dead keys
-					# when 229 then @handleNot(ev)
-					# bang
-					when 49
-						if ev.shiftKey
-							@handleNot(ev)
-						else
-							@handleIgnore(ev)
-					# tab
-					when 9
-						if ev.shiftKey
-							@handleIgnore(ev)
-						else
-							@handleExpression(ev)
-					# shift equal, shift backslash
-					when 187, 220
-						if ev.shiftKey
-							@handleOr(ev)
-						else
-							@handleForbid(ev)
-					# shift seven, shift eight
-					when 55, 56
-						if ev.shiftKey
-							@handleAnd(ev)
-						else
-							@handleIgnore(ev)
-					# shift nine
-					when 57
-						if ev.shiftKey
-							@handleOpen(ev)
-						else
-							@handleIgnore(ev)
-					# shift zero
-					when 48
-						if ev.shiftKey
-							@handleClose(ev)
-						else
-							@handleIgnore(ev)
-					else @handleForbid(ev)
-			@serialize()
-
-		handleClear: (ev) -> @delegate.clearInput()
-
-		handleForbid: (ev) ->
-			ev.preventDefault()
-			console.log ev.which
-
-		handleIgnore: (ev) ->
-
-		handleBackspace: (ev) ->
-			if @delegate.inputVal().length == 0
-				console.log @delegate.inputVal()
-				@delegate.removeLastToken()
-
-		handleExpression: (ev) ->
-			ev.preventDefault()
-			name = @delegate.inputVal()
-			filters = @filters()
-
-			if name in _.keys filters
-				@insertToken "expression", name, filters[name]
-			else if name in @constructor.tokenTypes
-				@insertToken name
-			else
-				@delegate.error()
-
-		handleOr: (ev) ->
-			ev.preventDefault()
-			@insertToken "or"
-
-		handleAnd: (ev) ->
-			ev.preventDefault()
-			@insertToken "and"
-
-		handleOpen: (ev) ->
-			ev.preventDefault()
-			@insertToken "open"
-
-		handleNot: (ev) ->
-			ev.preventDefault()
-			@insertToken "negate"
-
-		handleClose: (ev) ->
-			ev.preventDefault()
-			@insertToken "close"
-
-		insertToken: (tokenType, tokenName, filter) ->
-			token = @delegate.makeToken tokenType, tokenName, filter
-
-			@delegate.insertToken token
-
-			@handleClear()
-
-		serialize: ->
-			expression = ""
-
-			for token in @tokens()
-				token = $ token
-				if (token.data "token") == "editor" then continue
-
-				switch token.data "token"
-					when "and" then expression += "/"
-					when "negate" then expression += "!"
-					when "or" then expression += "+"
-					when "open" then expression += "("
-					when "close" then expression += ")"
-					else
-						identifier = token.data "name"
-						args = []
-
-						for elem in ($ "input, textarea, select", token)
-							arg = ($ elem).val().replace(/\$/, "$$") \
-							.replace(/"/, "$\"")
-							arg = "\"#{arg}\""
-							args.push arg
-
-						expression += "#{identifier}," + args.join()
-
-			console.log expression
-
-
-
-
 
 
 	exports.RouteableView = class RouteableView extends View
@@ -422,6 +214,7 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 
 			@itemTemplate = @getData "itemTemplate"
 			@fetchUrl = @getData "fetchUrl"
+			@fetchUrl = @fetchUrl.replace /\/$/, ""
 
 			if (@getData "searchString")?
 				@currentData = @getData "searchString"
@@ -625,6 +418,7 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 			ev.preventDefault()
 			data = @delegate.serialize()
 			url = @url data
+			console.log data, url
 			@updateAll data
 			@updateAllUrl url
 

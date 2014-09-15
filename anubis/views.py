@@ -66,7 +66,17 @@ class TemplateRetrieverView(APIView):
 
 		return Response(response)
 
+class TranslationView(APIView):
+	allowed_filters = {}
 
+	def get(self, _, query):
+		query = query.strip().rstrip("/")
+		expression = BooleanBuilder(query).build()
+
+		aggregator = TokenAggregator(self.allowed_filters)
+		tokenized = expression.traverse(aggregator)
+
+		return Response(dict(expression=tokenized))
 
 class FilterViewMixin:
 	kwarg_key = "search"
@@ -86,16 +96,17 @@ class FilterViewMixin:
 
 		context["filters"] = self.allowed_filters
 		context["filter_keys"] = ",".join(self.allowed_filters.keys())
+		context["search_text"] = self.kwarg_val
 
 		if self.boolean_expression is not None:
 			aggregator = TokenAggregator(self.allowed_filters)
 			context["search_expression"] = \
 				self.boolean_expression.traverse(aggregator)
 
-		for evento in context["evento_list"]:
-			print(evento.nome)
-			for tag in evento.tags.all():
-				print (tag.nome)
+		# for evento in context["evento_list"]:
+		# 	print(evento.nome)
+		# 	for tag in evento.tags.all():
+		# 		print (tag.nome)
 
 		return context
 
