@@ -21,6 +21,7 @@
 import ctypes
 import pkg_resources
 import json
+from threading import Lock
 
 class Boolean:
 	class Type:
@@ -135,6 +136,7 @@ class Boolean:
 		return str(self)
 
 class BooleanBuilder:
+	_loader_lock = Lock()
 	parser_lib_name = "libParseUrl.so"
 	_parser_lib = None
 
@@ -152,11 +154,12 @@ class BooleanBuilder:
 	@property
 	def parser_lib(self):
 		if BooleanBuilder._parser_lib is None:
-			lib_file = pkg_resources.resource_filename("anubis",
-				self.parser_lib_name)
-			BooleanBuilder._parser_lib = ctypes.cdll.LoadLibrary(lib_file)
-			BooleanBuilder._parser_lib.hs_init(0, 0)
-			BooleanBuilder._parser_lib.parseUrl.restype = ctypes.c_char_p
+			with self._loader_lock:
+				lib_file = pkg_resources.resource_filename("anubis",
+					self.parser_lib_name)
+				BooleanBuilder._parser_lib = ctypes.cdll.LoadLibrary(lib_file)
+				BooleanBuilder._parser_lib.hs_init(0, 0)
+				BooleanBuilder._parser_lib.parseUrl.restype = ctypes.c_char_p
 
 		return BooleanBuilder._parser_lib
 

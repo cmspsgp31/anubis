@@ -22,7 +22,10 @@ from django.db.models.query import QuerySet
 from django.db import connection as base_connection, connections
 from operator import itemgetter
 
+from anubis.sql_aggregators import ProcedureAggregate
+
 class ProcedureQuerySet(QuerySet):
+	order_by_procedure_column = "anubis_index"
 	def _get_connection(self):
 		if self.db is not None:
 			conn = connections[self.db]
@@ -30,6 +33,30 @@ class ProcedureQuerySet(QuerySet):
 			conn = base_connection
 
 		return conn
+
+	@staticmethod
+	def _test_order_direction(source, dest):
+		if source.startswith("-"):
+			source = source[1:]
+			dest = "-{}".format(dest)
+		elif source.startswith("+"):
+			source = source[1:]
+			dest = "+{}".format(dest)
+
+		return (source, dest)
+
+	def order_by_procedure(self, procname, *args):
+		order_by_name = str(self.order_by_procedure_column)
+
+		procname, order_by_name = self._test_order_direction(procname,
+			order_by_name)
+
+		procname = "{}_{}".format(self.model._meta.db_table, procname)
+
+		annotation = { self.order_by_procedure_column:
+			ProcedureAggregate(procname, "id", *args) }
+
+		return self.annotate(**annotation).order_by(order_by_name, "id")
 
 	def procedure(self, procname, *args):
 		"""
@@ -132,6 +159,14 @@ class ProcedureManager(models.Manager):
 def call_procedure(procname):
 	def wrapper(self, *args):
 		return self.procedure(procname, *args)
+
+	wrapper.__name__ = procname
+
+	return wrapper
+
+def call_order_by_procedure(procname):
+	def wrapper(self, field, *args):
+		return self.order_by_procedure(procname, field, *args)
 
 	wrapper.__name__ = procname
 

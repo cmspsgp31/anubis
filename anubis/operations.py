@@ -246,7 +246,15 @@ class AddSearchFunction(AddFunction):
 		super().__init__(model, function_name, arguments, return_value,
 			function_body)
 
+class AddSortFunction(AddFunction):
+	reduces_to_sql = True
+	reversible = True
 
+	def __init__(self, model, function_name, arguments, query):
+		return_value = "table(id int, rank numeric)"
+		function_body = "return query {}".format(query)
 
+		super().__init__(model, function_name, arguments, return_value,
+			function_body)
 
 

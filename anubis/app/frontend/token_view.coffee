@@ -330,7 +330,7 @@ define [ "backbone"
 						expression += "#{identifier}," + args.join()
 
 			obj = {}
-			obj[@getData "name"] = expression
+			obj[@getData "name"] = "(#{expression})"
 
 			console.log obj
 
