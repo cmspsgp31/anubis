@@ -130,6 +130,8 @@ define [ "backbone"
 
 			@delegate.createEditor()
 
+		translator: -> (@getData "translator").replace /\/$/, ""
+
 		deactivate: ->
 
 		activate: (expression) ->
@@ -137,7 +139,7 @@ define [ "backbone"
 				defer = $.ajax
 					type: "GET"
 					dataType: "json"
-					url: "#{@getData 'translator'}/#{expression}"
+					url: "#{@translator()}/#{expression}"
 			else
 				defer = new $.Deferred
 				defer.resolve expression: @tokenCache[expression]
