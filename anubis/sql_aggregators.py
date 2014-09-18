@@ -35,7 +35,6 @@ class ProcedureSqlAggregate(SqlAggregate):
 		super().__init__(col, source, is_summary, **extra)
 
 	def as_sql(self, qn, connection):
-		print(self.col, self.sql_function, self.args)
 		if isinstance(self.col, (list, tuple)):
 			field_name = '.'.join(qn(c) for c in self.col)
 		else:
@@ -51,7 +50,7 @@ class ProcedureSqlAggregate(SqlAggregate):
 			args=arg_marks, field=field_name), params
 
 class ProcedureAggregate(Aggregate):
-	def __init__(self, function, lookup, *args, **kwargs):
+	def __init__(self, function, *args, lookup="id", **kwargs):
 		kwargs.update({ 'function': function, 'args': args })
 		super().__init__(lookup, **kwargs)
 		self.name = function

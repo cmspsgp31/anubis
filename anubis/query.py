@@ -21,6 +21,7 @@ from django.db import models
 from django.db.models.query import QuerySet
 from django.db import connection as base_connection, connections
 from operator import itemgetter
+from collections import OrderedDict
 
 from anubis.sql_aggregators import ProcedureAggregate
 
@@ -45,18 +46,21 @@ class ProcedureQuerySet(QuerySet):
 
 		return (source, dest)
 
-	def order_by_procedure(self, procname, *args):
-		order_by_name = str(self.order_by_procedure_column)
+	def order_by_aggregates(self, *aggregates, field="id"):
+		annotation = OrderedDict([("{}_{}".format(agg.default_alias, i), agg) \
+				for i, agg in enumerate(aggregates)])
+		fields = list(annotation.keys())
+		fields.append(field)
 
-		procname, order_by_name = self._test_order_direction(procname,
-			order_by_name)
+		return self.annotate(**annotation).order_by(*fields)
 
+	def procedure_aggregate(self, procname, *args, **kwargs):
 		procname = "{}_{}".format(self.model._meta.db_table, procname)
 
-		annotation = { self.order_by_procedure_column:
-			ProcedureAggregate(procname, "id", *args) }
+		return ProcedureAggregate(procname, *args, **kwargs)
 
-		return self.annotate(**annotation).order_by(order_by_name, "id")
+
+
 
 	def procedure(self, procname, *args):
 		"""

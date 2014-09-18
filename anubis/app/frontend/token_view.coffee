@@ -28,15 +28,37 @@ define [ "backbone"
 
 			@input = $ "input", @editor
 
+			@makeInputAutocompletable()
+
+			@input.focus()
+
+		makeInputAutocompletable: ->
 			@input.autocomplete
 				source: @view.autocompleteFilters()
 				minLength: 0
 
-			@input.focus()
 
 		inputVal: -> @input.val()
 
 		clearInput: -> @input.val("")
+
+		moveEditorTo: (anchor, after=true) ->
+			method = if after then "insertAfter" else "insertBefore"
+
+			@editor.remove()
+			@editor[method] anchor
+			@makeInputAutocompletable()
+			@input.focus()
+
+		moveEditorLeft: ->
+			prev = @editor.prev()
+
+			if prev.length > 0 then @moveEditorTo prev, false
+
+		moveEditorRight: ->
+			next = @editor.next()
+
+			if next.length > 0 then @moveEditorTo next
 
 		error: -> @el.effect
 			effect: "pulsate"
@@ -103,9 +125,10 @@ define [ "backbone"
 
 			effect.promise().then -> token.remove()
 
-		removeLastToken: ->
-			nextToLast = $ "li[data-token]:nth-last-child(2)", @el
-			@removeToken nextToLast
+		removePreviousToken: ->
+			previous = @editor.prev()
+
+			if previous.length > 0 then @removeToken previous
 
 
 	exports.BooleanTokenView = class BooleanTokenView extends Views.RouteableView
@@ -200,7 +223,7 @@ define [ "backbone"
 					# backspace
 					when 8 then @handleBackspace(ev)
 					# modifiers, arrows, delete, underscore and hyphen
-					when 16, 17, 18, 38, 46, 189, 37, 39, 40
+					when 16, 17, 18, 38, 46, 189, 40
 						@handleIgnore(ev)
 					# down arrow
 					# when 40 then @handleTrigger(ev)
@@ -214,6 +237,12 @@ define [ "backbone"
 					when 27 then @handleClear(ev)
 					# caret, inactive due to trouble with dead keys
 					# when 229 then @handleNot(ev)
+					# left, right
+					when 37, 39
+						if @delegate.inputVal() == ""
+							@handleEditorMovement(ev)
+						else
+							@handleIgnore(ev)
 					# bang
 					when 49
 						if ev.shiftKey
@@ -252,6 +281,13 @@ define [ "backbone"
 							@handleIgnore(ev)
 					else @handleForbid(ev)
 
+		handleEditorMovement: (ev) ->
+			if ev.which == 37
+				@delegate.moveEditorLeft()
+			else
+				@delegate.moveEditorRight()
+
+
 		handleClear: (ev) -> @delegate.clearInput()
 
 		handleForbid: (ev) ->
@@ -263,7 +299,7 @@ define [ "backbone"
 		handleBackspace: (ev) ->
 			if @delegate.inputVal().length == 0
 				console.log @delegate.inputVal()
-				@delegate.removeLastToken()
+				@delegate.removePreviousToken()
 
 		handleExpression: (ev) ->
 			ev.preventDefault()
@@ -332,9 +368,6 @@ define [ "backbone"
 			obj = {}
 			obj[@getData "name"] = "(#{expression})"
 
-			console.log obj
-
 			obj
-
 
 	exports

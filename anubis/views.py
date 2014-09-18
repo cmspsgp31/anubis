@@ -31,6 +31,10 @@ class TemplateRetrieverView(APIView):
 	allowed_templates = []
 	allowed_methods = {}
 
+	@staticmethod
+	def reformat_template(original):
+		return original.replace("forloop", "loop")
+
 	def get(self, _, templates):
 		templates = templates.split(",")
 		response = {}
@@ -46,7 +50,7 @@ class TemplateRetrieverView(APIView):
 				name = "{}.html".format(template)
 				template_body = loader.load_template_source(name)[0]
 
-				response[template] = template_body
+				response[template] = self.reformat_template(template_body)
 			else:
 				if view_name not in self.allowed_views.keys():
 					raise NotAcceptable("View: {}".format(view_name))
