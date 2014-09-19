@@ -155,9 +155,13 @@ define [ "backbone"
 
 		translator: -> (@getData "translator").replace /\/$/, ""
 
-		deactivate: ->
-
 		activate: (expression) ->
+			(@translationPromise expression).done (obj) =>
+				@tokenCache[expression] = obj["expression"]
+				@delegate.update obj["expression"]
+				@delegate.createEditor()
+
+		translationPromise: (expression) ->
 			if expression not in _.keys @tokenCache
 				defer = $.ajax
 					type: "GET"
@@ -167,10 +171,7 @@ define [ "backbone"
 				defer = new $.Deferred
 				defer.resolve expression: @tokenCache[expression]
 
-			defer.done (obj) =>
-				@tokenCache[expression] = obj["expression"]
-				@delegate.update obj["expression"]
-				@delegate.createEditor()
+			defer
 
 		filters: -> @constructor.templates.get(@getData "filters")
 
@@ -227,7 +228,7 @@ define [ "backbone"
 						@handleIgnore(ev)
 					# down arrow
 					# when 40 then @handleTrigger(ev)
-					# numpad star, both slashes
+					# numpad star, both forward slashes
 					when 191, 111, 106 then @handleAnd(ev)
 					# numpad plus
 					when 107 then @handleOr(ev)
@@ -298,7 +299,6 @@ define [ "backbone"
 
 		handleBackspace: (ev) ->
 			if @delegate.inputVal().length == 0
-				console.log @delegate.inputVal()
 				@delegate.removePreviousToken()
 
 		handleExpression: (ev) ->

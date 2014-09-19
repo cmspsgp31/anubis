@@ -157,7 +157,7 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 			if @isMatch
 				@isMatch = false
 
-				if not @active then @activate.apply this, @matchArgs
+				if not @active then @activate.apply @, @matchArgs
 
 				@lastMatchArgs = @matchArgs
 				@matchArgs = null
@@ -212,6 +212,7 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 		constructor: ->
 			super
 
+			@cache = if (@getData "cache")? then {} else null
 			@itemTemplate = @getData "itemTemplate"
 			@fetchUrl = @getData "fetchUrl"
 			@fetchUrl = @fetchUrl.replace /\/$/, ""
@@ -233,11 +234,35 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 		activate: (fetchData) ->
 			fetchData = fetchData.replace /\/$/, ""
 
-			if @currentData != fetchData or @shouldReload
+			differentData = @currentData != fetchData
+			haveCache = @cache?
+			inCache = if haveCache then (fetchData in _.keys @cache) else false
+
+			@currentData = fetchData
+
+			if not @shouldReload and not differentData
+				return
+			else if not @shouldReload and differentData and haveCache and
+					inCache
+				@collection = @cache[fetchData]
+				@render()
+			else
 				@collectionFor fetchData
-				@currentData = fetchData
+
+				if not @shouldReload and differentData and haveCache and
+						not inCache
+					@cache[fetchData] = @collection
+
 				@shouldReload = false
 				@sync()
+
+		sync: ->
+			@delegate.wait()
+			@collection.fetch()
+				.always => @delegate.stopWaiting()
+				.done => @render()
+				.fail -> window.history.back()
+				.progress (p...) -> console.log p
 
 		reload: (ev) ->
 			ev.preventDefault()
@@ -319,14 +344,6 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 				@delegate.update @$el.html()
 			else
 				(new $.Deferred).resolve()
-
-		sync: ->
-			@delegate.wait()
-			@collection.fetch()
-				.always => @delegate.stopWaiting()
-				.done => @render()
-				.fail -> window.history.back()
-				.progress (p...) -> console.log p
 
 	class ItemView extends View
 
@@ -418,7 +435,6 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 			ev.preventDefault()
 			data = @delegate.serialize()
 			url = @url data
-			console.log data, url
 			@updateAll data
 			@updateAllUrl url
 

@@ -36,7 +36,7 @@
 
 
 	<form data-action="{{ action }}" data-view="FormRouterView">
-		<ul data-view="BooleanTokenView" data-filters="{{ template_key }}" data-name="{{ form_name }}" data-route="{{ route }}(.*)$" data-translator="{{ translate_route }}" data-form-control{% if expr %} data-active{% endif %}>
+		<ul data-view="BooleanTokenView" data-filters="{{ template_key }}" data-name="{{ form_name }}" data-route="{{ route }}(.*)$" data-translator="{{ translate_route }}" data-form-control>
 		{% if expr %}
 		{{ expr|safe }}
 		{% endif %}
