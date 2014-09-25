@@ -331,22 +331,25 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 			target.empty()
 
 			if @collection.length > 0
-				for i in [0..@collection.length - 1]
-					model = @collection.at i
-					view = new ItemView @router,
-						template: @itemTemplate
-						model: model
+				end_range = @collection.length - 1
+				contents = (@renderSingleItem @itemTemplate, i, end_range \
+					for i in [0..end_range])
 
-					view.render()
-
-					target.append view.$el
-
-				@delegate.update @$el.html()
+				@delegate.update contents.join ""
 			else
 				(new $.Deferred).resolve()
 
-	class ItemView extends View
-
+		renderSingleItem: (templateName, index, end_range) ->
+			model = @collection.at index
+			template = @constructor.templates.get templateName
+			swig.render template, locals:
+				obj: model.attributes
+				loop:
+					first: index == 0
+					last: index == end_range
+					index: index + 1
+					index0: index
+					key: index
 
 	exports.RouterView = class RouterView extends View
 		events:

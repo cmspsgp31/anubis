@@ -30,8 +30,8 @@ def search(context, template_key, route, form_name, translate_route,
 		extra_forms=extra_forms)
 
 @register.inclusion_tag("available_filters.html", takes_context=True)
-def download_templates(context, *templates):
+def download_templates(context, url_='templates', *templates):
 	source = ",".join(templates)
-	return dict(source=source)
+	return dict(source=source, url_=url_)
 
 

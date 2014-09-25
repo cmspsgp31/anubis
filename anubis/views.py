@@ -33,7 +33,7 @@ class TemplateRetrieverView(APIView):
 
 	@staticmethod
 	def reformat_template(original):
-		return original.replace("forloop", "loop")
+		return original.replace("forloop", "loop").replace("elif", "elseif")
 
 	def get(self, _, templates):
 		templates = templates.split(",")
