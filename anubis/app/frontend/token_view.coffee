@@ -17,9 +17,9 @@ define [ "backbone"
 
 		createEditor: ->
 			@editor = $ """
-			<li data-token=\"editor\">
+			<li data-token="editor">
 			<fieldset>
-			<p><input type=\"text\" /></p>
+			<p><input type="text" /></p>
 			</fieldset>
 			</li>
 			"""
@@ -242,7 +242,7 @@ define [ "backbone"
 					# enter
 					when 13 then @handleSubmit(ev)
 					# space
-					when 32 then @handleForbid(ev)
+					when 32 then @handleDefaultExpression(ev)
 					# esc
 					when 27 then @handleClear(ev)
 					# caret, inactive due to trouble with dead keys
@@ -270,7 +270,7 @@ define [ "backbone"
 						if ev.shiftKey
 							@handleOr(ev)
 						else
-							@handleForbid(ev)
+							@handleDefaultExpression(ev)
 					# shift seven, shift eight
 					when 55, 56
 						if ev.shiftKey
@@ -289,7 +289,7 @@ define [ "backbone"
 							@handleClose(ev)
 						else
 							@handleIgnore(ev)
-					else @handleForbid(ev)
+					else @handleDefaultExpression(ev)
 
 		handleEditorMovement: (ev) ->
 			if ev.which == 37
@@ -300,13 +300,14 @@ define [ "backbone"
 		handleSubmit: (ev) ->
 			tokens = @tokens()
 
-			if tokens.length < 2 then @handleForbid()
+			if tokens.length < 2
+				@insertTokenWithData (@getData "default"),
+					[@delegate.inputVal()]
 
 
 		handleClear: (ev) -> @delegate.clearInput()
 
-		handleForbid: (ev) ->
-			console.log ev.which
+		handleDefaultExpression: (ev) ->
 			@insertTokenWithData (@getData "default"), [@delegate.inputVal()]
 
 		handleIgnore: (ev) ->

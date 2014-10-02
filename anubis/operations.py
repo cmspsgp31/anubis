@@ -257,4 +257,149 @@ class AddSortFunction(AddFunction):
 		super().__init__(model, function_name, arguments, return_value,
 			function_body)
 
+class AddView(Operation):
+	reduces_to_sql = True
+	reversible = True
+
+	def __init__(self, base_model, name, query):
+		self.model = base_model
+		self.name = "{}_{}".format(self.model._meta.db_table, name)
+		self.query = query
+
+	def state_forwards(self, app_label, state):
+		pass
+
+	def database_forwards(self, app_label, schema_editor, from_state, to_state):
+		sql = "create or replace view {name} as {query};".format(name=self.name,
+			query=self.query)
+		schema_editor.execute(sql)
+
+	def database_backwards(self, app_label, schema_editor, from_state,
+			to_state):
+		sql = "drop view if exists {name};".format(name=self.name)
+		schema_editor.execute(sql)
+
+	def describe(self):
+		return "Creates view {}.".format(self.name)
+
+class AddMaterializedView(AddView):
+	reduces_to_sql = True
+	reversible = True
+
+	def database_forwards(self, app_label, schema_editor, from_state, to_state):
+		sql = "create materialized view {name} as {query};" \
+			.format(name=self.name, query=self.query)
+		schema_editor.execute(sql)
+
+	def database_backwards(self, app_label, schema_editor, from_state,
+			to_state):
+		sql = "drop materialized view if exists {name};".format(name=self.name)
+		schema_editor.execute(sql)
+
+	def describe(self):
+		return "Creates materialized view {}.".format(self.name)
+
+class AddTrigger(Operation):
+	reduces_to_sql = True
+	reversible = True
+
+	class On:
+		UPDATE = 1 << 0
+		INSERT = 1 << 1
+		DELETE = 1 << 2
+		ALL = UPDATE | INSERT | DELETE
+
+		_list = \
+			[ ("update", UPDATE)
+			, ("insert", INSERT)
+			, ("delete", DELETE)
+			]
+
+	def __init__(self, model, name, commands, after=True, on=On.ALL,
+			defer=False, row_level=False, condition=None):
+		self.model = model
+		self.table_name = self.model._meta.db_table
+		self.name = "{}_{}_trigger".format(self.table_name, name)
+		self.function_name = "{}_{}_fn()".format(self.table_name, name)
+		self._events = on
+		self.commands = commands
+		self.when = "after" if after else "before"
+		self.defer = "deferrable initially deferred" if defer else ""
+		self.row_level = "for each row" if row_level else ""
+		self.condition = "" if condition is None else "when ( {} )" \
+			.format(condition)
+
+	@property
+	def events(self):
+		events = [event for event, mask in self.On._list if self._events & mask]
+
+		return " or ".join(events)
+
+
+	def _sql(self):
+		sql = """
+			create function {function_name} returns trigger
+			language 'plpgsql' as $$
+			begin
+				{commands}
+				return null;
+			end
+			$$;
+
+			create trigger {name} {when} update {events} on {table}
+			{defer} {row_level} execute procedure {function_name};
+		""".format(function_name=self.function_name, commands=self.commands,
+			name=self.name, when=self.when, events=self.events,
+			table=self.table_name, defer=self.defer, row_level=self.row_level)
+
+		return sql
+
+	def state_forwards(self, app_label, state):
+		pass
+
+	def database_forwards(self, app_label, schema_editor, from_state, to_state):
+		schema_editor.execute(self._sql())
+
+	def database_backwards(self, app_label, schema_editor, from_state,
+			to_state):
+		sql = """
+			drop function if exists {function_name};
+			drop trigger if exists {name} on {table} cascade;
+		""".format(name=self.name, function_name=self.function_name,
+			table=self.table_name)
+
+		schema_editor.execute(sql)
+
+	def describe(self):
+		return "Creates trigger {} and corresponding function {}." \
+			.format(self.name, self.function_name)
+
+class AddRefreshMateriliazedViewTrigger(AddTrigger):
+	reduces_to_sql = True
+	reversible = True
+
+	def __init__(self, trigger_model, materialized_view_model,
+			materialized_view_name):
+		view_name = "{}_{}" \
+			.format(materialized_view_model._meta.db_table,
+				materialized_view_name)
+
+		commands = "refresh materialized view {};".format(view_name)
+
+		# def __init__(self, model, name, commands, after=True, on=On.ALL,
+		# 		defer=False, row_level=False, condition=None):
+		super().__init__ \
+			( trigger_model
+			, "refresh_{}".format(view_name)
+			, commands
+			, defer=True
+			)
+
+
+
+
+
+
+
+
 
