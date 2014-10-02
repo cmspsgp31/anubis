@@ -4,6 +4,7 @@ define ["backbone", "underscore", "anubis/views"], (Backbone, _, Views) ->
 
 		constructor: ->
 			super
+			@error = false
 			@route /^(.*)$/, "", @routeEvent
 
 		_objRoutes:
@@ -14,6 +15,12 @@ define ["backbone", "underscore", "anubis/views"], (Backbone, _, Views) ->
 		_modalRoutes: {}
 
 		routeEvent: (route, args...) ->
+			if @error
+				Views.View.showError()
+				@error = false
+			else
+				Views.View.hideError()
+
 			modalMatch = false
 			
 			for routeName, routeInfo of @_modalRoutes

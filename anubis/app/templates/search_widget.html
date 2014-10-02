@@ -35,13 +35,13 @@
 
 
 	<form data-action="{{ action }}" data-view="FormRouterView">
-		<ul data-view="BooleanTokenView" data-filters="{{ template_key }}" data-name="{{ form_name }}" data-route="{{ route }}(.*)$" data-translator="{{ translate_route }}" data-form-control>
+		<ul data-view="BooleanTokenView" data-filters="{{ template_key }}" data-name="{{ form_name }}" data-route="{{ route }}(.*)$" data-translator="{{ translate_route }}" data-form-control data-default="{{ default_unit }}">
 		{% if expr %}
 		{{ expr|safe }}
 		{% endif %}
 		</ul>
 		<div class="buttons">
-			<button class="btn btn-default" data-toggle="modal" data-target=".SearchViewHelp">Ajuda</button>
+			<button type="button" class="btn btn-default" data-toggle="modal" data-target=".SearchViewHelp">Ajuda</button>
 			<button type="submit" class="btn btn-primary">Pesquisar</button>
 		</div>
 	</form>

@@ -18,7 +18,7 @@ def getitem(obj, key):
 
 @register.inclusion_tag("search_widget.html", takes_context=True)
 def search(context, template_key, route, form_name, translate_route,
-		extra_forms=None):
+		default_unit, extra_forms=None):
 	expr = context.get("search_expression", None)
 	action = reverse(route,
 		kwargs={form_name: "{{{{ {}|safe }}}}".format(form_name)})
@@ -27,7 +27,7 @@ def search(context, template_key, route, form_name, translate_route,
 
 	return dict(expr=expr, template_key=template_key, action=unquote(action),
 		form_name=form_name, route=route, translate_route=translate_route,
-		extra_forms=extra_forms)
+		extra_forms=extra_forms, default_unit=default_unit)
 
 @register.inclusion_tag("available_filters.html", takes_context=True)
 def download_templates(context, url_='templates', *templates):

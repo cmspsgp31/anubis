@@ -36,6 +36,9 @@ define [ "backbone"
 			@input.autocomplete
 				source: @view.autocompleteFilters()
 				minLength: 0
+				select: (ev, ui) =>
+					@input.val ui.item.value
+					@view.handleExpression ev
 
 
 		inputVal: -> @input.val()
@@ -94,15 +97,13 @@ define [ "backbone"
 			newToken
 
 		findToken: (source) ->
-			el = source
-			token = null
+			sources = ($ el for el in source.parents())
+			sources.unshift $ source
 
-			while el.parent()
+			for el in sources
 				if (el.data "token")?
 					token = el
 					break
-
-				el = el.parent()
 
 			token
 
@@ -129,6 +130,11 @@ define [ "backbone"
 			previous = @editor.prev()
 
 			if previous.length > 0 then @removeToken previous
+
+		setTokenData: (token, data) ->
+			for [el, datum] in _.zip ($ "input, select, textarea", token), data
+				($ el).val datum
+
 
 
 	exports.BooleanTokenView = class BooleanTokenView extends Views.RouteableView
@@ -194,20 +200,21 @@ define [ "backbone"
 
 		events:
 			"keydown [data-token='editor'] input": "dynamicInputKeydown"
-			"dblclick [data-token]": "tokenDoubleClick"
 			"click": "fieldClick"
 
 		fieldClick: (ev) ->
 			target = $ ev.target
-			if not (target.is ":focusable")
+			token = @delegate.findToken target
+			if not token?
 				ev.preventDefault()
 				@delegate.input.focus()
-
-		tokenDoubleClick: (ev) ->
-			target = $ ev.target
-			token = @delegate.findToken target
-			if not ((token.data "token") == "editor")
+			else if (token.data "token") == "editor"
+				@delegate.input.autocomplete "search", ""
+			else if ev.which == 2
+				ev.preventDefault()
+				ev.stopPropagation()
 				@delegate.removeToken token
+				@delegate.input.focus()
 
 		dynamicInputKeydown: (ev) ->
 			if (ev.which >= 65) and (ev.which <= 90)
@@ -224,7 +231,7 @@ define [ "backbone"
 					# backspace
 					when 8 then @handleBackspace(ev)
 					# modifiers, arrows, delete, underscore and hyphen
-					when 16, 17, 18, 38, 46, 189, 40
+					when 16, 17, 18, 20, 38, 46, 189, 40
 						@handleIgnore(ev)
 					# down arrow
 					# when 40 then @handleTrigger(ev)
@@ -232,8 +239,10 @@ define [ "backbone"
 					when 191, 111, 106 then @handleAnd(ev)
 					# numpad plus
 					when 107 then @handleOr(ev)
-					# enter, space
-					when 13, 32 then @handleExpression(ev)
+					# enter
+					when 13 then @handleSubmit(ev)
+					# space
+					when 32 then @handleForbid(ev)
 					# esc
 					when 27 then @handleClear(ev)
 					# caret, inactive due to trouble with dead keys
@@ -288,12 +297,17 @@ define [ "backbone"
 			else
 				@delegate.moveEditorRight()
 
+		handleSubmit: (ev) ->
+			tokens = @tokens()
+
+			if tokens.length < 2 then @handleForbid()
+
 
 		handleClear: (ev) -> @delegate.clearInput()
 
 		handleForbid: (ev) ->
-			ev.preventDefault()
 			console.log ev.which
+			@insertTokenWithData (@getData "default"), [@delegate.inputVal()]
 
 		handleIgnore: (ev) ->
 
@@ -303,6 +317,8 @@ define [ "backbone"
 
 		handleExpression: (ev) ->
 			ev.preventDefault()
+			if ev.type == "autocompleteselect" then ev.stopPropagation()
+
 			name = @delegate.inputVal()
 			filters = @filters()
 
@@ -339,6 +355,15 @@ define [ "backbone"
 			@delegate.insertToken token
 
 			@handleClear()
+
+			token
+
+		insertTokenWithData: (tokenName, data) ->
+			filter = @filters()[tokenName]
+			token = @insertToken "expression", tokenName, filter
+
+			@delegate.setTokenData token, data
+
 
 		serialize: ->
 			expression = ""

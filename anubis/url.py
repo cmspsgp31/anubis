@@ -136,59 +136,63 @@ class Boolean:
 		return str(self)
 
 class BooleanBuilder:
-	_loader_lock = Lock()
 	parser_lib_name = "libParseUrl.so"
-	_parser_lib = None
 
 	def __init__(self, url):
 		self.url = url
 
 	def build(self):
 		url_bytestr = self.url.encode("utf-8")
-		json_bytestr = self.parser_lib.parseUrl(url_bytestr)
+
+		with HaskellLibrary(self.parser_lib_path) as parser_lib:
+			parser_lib.parseUrl.argtypes = [ctypes.c_char_p]
+			parser_lib.parseUrl.restype = ctypes.c_char_p
+			json_bytestr = parser_lib.parseUrl(url_bytestr)
+
 		json_str = json_bytestr.decode("utf-8")
 		json_obj = json.loads(json_str, object_hook=Boolean.build)
 
 		return json_obj
 
 	@property
-	def parser_lib(self):
-		if BooleanBuilder._parser_lib is None:
-			with self._loader_lock:
-				lib_file = pkg_resources.resource_filename("anubis",
-					self.parser_lib_name)
-				BooleanBuilder._parser_lib = ctypes.cdll.LoadLibrary(lib_file)
-				BooleanBuilder._parser_lib.hs_init(0, 0)
-				BooleanBuilder._parser_lib.parseUrl.restype = ctypes.c_char_p
+	def parser_lib_path(self):
+		return pkg_resources.resource_filename("anubis", self.parser_lib_name)
 
-		return BooleanBuilder._parser_lib
+class HaskellLibrary:
+	libdl = "/usr/lib/libdl.so.2"
+	_locks = {}
+	_master_lock = Lock()
 
-def close_lib(lib):
-	# On Windows: ctypes.windll.kernel32.FreeLibrary(lib._handle)
-	libdl = ctypes.cdll.LoadLibrary("libdl.so")
-	hndl = lib._handle
-	libdl.dlclose(hndl)
+	def __init__(self, lib_path):
+		self.lib_path = lib_path
+		self.library = None
 
-def build_boolean(url):
-	shared_lib_file = pkg_resources.resource_filename("anubis",
-		"libParseUrl.so")
-	shared_lib = ctypes.cdll.LoadLibrary(shared_lib_file)
+		with self._master_lock:
+			if self.lib_path not in self._locks.keys():
+				self._locks[self.lib_path] = Lock()
 
-	shared_lib.hs_init(0, 0)
-	shared_lib.parseUrl.restype = ctypes.c_char_p
+			self.lock = self._locks[self.lib_path]
 
-	try:
-		json_bytestr = shared_lib.parseUrl(url.encode("utf-8"))
-	finally:
-		shared_lib.hs_exit()
-		close_lib(shared_lib)
-		# É necessário fechar completamente a DLL para que o runtime do Haskell
-		# seja completamente fechado; caso contrário, o Python segfaulta quando
-		# tentando reutilizar a biblioteca.
-		# del shared_lib
-		# print("deleted")
+	def __enter__(self):
+		self.lock.acquire()
+		self.library = ctypes.cdll.LoadLibrary(self.lib_path)
 
-	json_str = json_bytestr.decode("utf-8")
-	json_obj = json.loads(json_str, object_hook=Boolean.build)
+		self.library.hs_init(0, 0)
 
-	return json_obj
+		return self.library
+
+	def __exit__(self, type_, value, traceback):
+		self.library.hs_exit()
+		self._dlclose()
+
+		del self.library
+		self.library = None
+
+		self.lock.release()
+
+	def _dlclose(self):
+		libdl = ctypes.cdll.LoadLibrary(self.libdl)
+		libdl.dlclose.argtypes = [ctypes.c_void_p]
+		libdl.dlclose.restype = ctypes.c_int
+		libdl.dlclose(self.library._handle)
+

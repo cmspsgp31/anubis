@@ -122,6 +122,23 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 
 			return views
 
+		@error: (router, transport) ->
+			errorEl = $ ".anubis-error"
+
+			if transport.responseJSON
+				($ "[data-error-name]", errorEl).html \
+					transport.responseJSON.name
+				($ "[data-error-description]", errorEl).html \
+					transport.responseJSON.detail
+
+			router.error = true
+
+			window.history.back()
+
+		@showError: -> ($ ".anubis-error").show()
+
+		@hideError: -> ($ ".anubis-error").hide()
+
 
 	exports.RouteableView = class RouteableView extends View
 		isMatch: false
@@ -199,10 +216,11 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 				.done =>
 					@render()
 					RouteableView::activate.apply this, []
-				.fail -> window.history.back()
+				.fail (t) => @constructor.error @router, t
 				.progress (p...) -> console.log p
 
 	exports.CollectionView = class CollectionView extends RouteableView
+		@delegate = Delegates.CollectionDelegate
 		shouldFetch: true
 
 		events:
@@ -261,7 +279,7 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 			@collection.fetch()
 				.always => @delegate.stopWaiting()
 				.done => @render()
-				.fail -> window.history.back()
+				.fail (t) => @constructor.error @router, t
 				.progress (p...) -> console.log p
 
 		reload: (ev) ->
@@ -326,6 +344,7 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 					@subviews = @constructor.scanViews @router, @$el
 
 		renderItems: ->
+			defer = new $.Deferred
 			target = @delegate.select "[data-container]"
 			if target.length == 0 then target = @$el
 			target.empty()
@@ -335,9 +354,17 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 				contents = (@renderSingleItem @itemTemplate, i, end_range \
 					for i in [0..end_range])
 
-				@delegate.update contents.join ""
+				defer.then =>
+					target.html contents.join ""
+					@delegate.found()
+
+				defer.resolve()
 			else
-				(new $.Deferred).resolve()
+				defer.then => @delegate.notFound()
+
+				defer.resolve()
+
+			defer
 
 		renderSingleItem: (templateName, index, end_range) ->
 			model = @collection.at index

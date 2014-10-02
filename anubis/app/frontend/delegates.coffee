@@ -1,8 +1,17 @@
 define ["jquery", "underscore", "ui"], ($, _, ui) ->
 	class Delegate
 		constructor: (@el, @view) ->
-			@deferUpdate = null
 			@el.data "viewObject", @view
+
+			@waitEl = @select "> [data-wait]"
+
+			if @waitEl.length == 0
+				@waitEl = $ "<h1>AGUARDE...</h1>"
+			else
+				@waitEl.remove()
+
+			@waiting = null
+			@updating = null
 
 		@forElement: (el) ->
 			el = $ el
@@ -43,58 +52,55 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 
 		bindEvents: ->
 
-		update: (text) ->
-			update = new $.Deferred
+		update: (contents) ->
+			if not @updating
+				@updating = new $.Deferred
 
-			if @deferUpdate?
-				@deferUpdate.then =>
-					@performUpdate text
-					update.resolve()
-			else
-				@performUpdate text
-				update.resolve()
+				if @waiting?
+					@waiting.then => @updating.resolve()
+				else
+					@updating.resolve()
 
-			return update
+			updating = @updating
 
-		performUpdate: (text) ->
-			@el.html text
-			@bindEvents()
+			updating.then =>
+				@el.html contents
+				@bindEvents()
+				@updating = null
+
+			updating
 
 		wait: ->
-			if not @deferUpdate?
-				@deferUpdate = new $.Deferred
-				@deferUpdate.then => @exitWaitMode()
+			if not @waiting?
+				@waiting = new $.Deferred
+
+				if (($ 'body').has @waitEl).length == 0
+					@waitEl.insertAfter @el
+					@waiting.then => @waitEl.remove()
+
 				@enterWaitMode()
 
-		enterWaitMode: ->
-			@_waitText = @el.html()
-			@performUpdate "AGUARDE"
-
-		exitWaitMode: -> @performUpdate @_waitText
+			@waiting
 
 		stopWaiting: ->
-			if @deferUpdate?
-				@deferUpdate.resolve()
-				@deferUpdate = null
+			if @waiting?
+				@exitWaitMode()
+
+				@waiting.resolve()
+				@waiting = null
+
+		enterWaitMode: ->
+			@el.hide()
+			@waitEl.show()
+
+		exitWaitMode: ->
+			@waitEl.hide()
+			@el.show()
+
 
 	class ActiveOnShowDelegate extends Delegate
 		show: -> @setActive true
 		hide: -> @setActive false
-
-
-	class GroupRouterDelegate extends Delegate
-		switcherByURI: (uri) -> @select "[data-router][href='#{uri}']"
-		activateSwitcher: (uri) -> (@switcherByURI uri).addClass "active"
-		deactivateSwitcher: (uri) -> (@switcherByURI uri).removeClass "active"
-
-	class GroupRouterParentDelegate extends GroupRouterDelegate
-		activateSwitcher: (uri) ->
-			el = (@switcherByURI uri).parent()
-			el.addClass "active"
-
-		deactivateSwitcher: (uri) ->
-			el = (@switcherByURI uri).parent()
-			el.removeClass "active"
 
 
 	class SearchTypeDelegate extends Delegate
@@ -170,6 +176,20 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 
 			if not el.length then null else el.val()
 
+	class CollectionDelegate extends Delegate
+		constructor: ->
+			super
+
+			@notFoundEl = @select "> [data-not-found]"
+
+			if @notFoundEl.length == 0
+				@notFoundEl = $ "<div><h1>NÃO ENCONTRADO</h1></div>"
+
+			@notFoundEl.hide()
+
+		found: -> @notFoundEl.hide()
+		notFound: -> @notFoundEl.show()
+
 
 
 	Delegate: Delegate
@@ -177,3 +197,4 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 	ModalDelegate: ModalDelegate
 	FormDelegate: FormDelegate
 	ActiveOnShowDelegate: ActiveOnShowDelegate
+	CollectionDelegate: CollectionDelegate
