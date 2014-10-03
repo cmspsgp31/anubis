@@ -76,6 +76,20 @@ class AddCustomIndex(Operation):
 		return "Add index {} to table {}".format(self.index_name,
 			self.table_name)
 
+class AddCustomViewIndex(AddCustomIndex):
+	reduces_to_sql = True
+	reversible = True
+
+	def __init__(self, model, view_name, index_name, sql):
+		super().__init__(model, index_name, sql)
+		self.table_name = "{}_{}".format(self.table_name, view_name)
+
+	def describe(self):
+		return "Add index {} to view {}".format(self.index_name,
+			self.table_name)
+
+
+
 class AddTrigramIndex(AddCustomIndex):
 	reduces_to_sql = True
 	reversible = True
@@ -287,7 +301,7 @@ class AddMaterializedView(AddView):
 	reversible = True
 
 	def database_forwards(self, app_label, schema_editor, from_state, to_state):
-		sql = "create materialized view {name} as {query};" \
+		sql = "create materialized view {name} as ({query});" \
 			.format(name=self.name, query=self.query)
 		schema_editor.execute(sql)
 
@@ -316,7 +330,7 @@ class AddTrigger(Operation):
 			]
 
 	def __init__(self, model, name, commands, after=True, on=On.ALL,
-			defer=False, row_level=False, condition=None):
+			row_level=False, condition=None):
 		self.model = model
 		self.table_name = self.model._meta.db_table
 		self.name = "{}_{}_trigger".format(self.table_name, name)
@@ -324,7 +338,6 @@ class AddTrigger(Operation):
 		self._events = on
 		self.commands = commands
 		self.when = "after" if after else "before"
-		self.defer = "deferrable initially deferred" if defer else ""
 		self.row_level = "for each row" if row_level else ""
 		self.condition = "" if condition is None else "when ( {} )" \
 			.format(condition)
@@ -346,11 +359,10 @@ class AddTrigger(Operation):
 			end
 			$$;
 
-			create trigger {name} {when} update {events} on {table}
-			{defer} {row_level} execute procedure {function_name};
+			create trigger {name} {when} {events} on "{table}" {row_level} execute procedure {function_name};
 		""".format(function_name=self.function_name, commands=self.commands,
 			name=self.name, when=self.when, events=self.events,
-			table=self.table_name, defer=self.defer, row_level=self.row_level)
+			table=self.table_name, row_level=self.row_level)
 
 		return sql
 
@@ -363,8 +375,8 @@ class AddTrigger(Operation):
 	def database_backwards(self, app_label, schema_editor, from_state,
 			to_state):
 		sql = """
-			drop function if exists {function_name};
 			drop trigger if exists {name} on {table} cascade;
+			drop function if exists {function_name};
 		""".format(name=self.name, function_name=self.function_name,
 			table=self.table_name)
 
@@ -374,7 +386,25 @@ class AddTrigger(Operation):
 		return "Creates trigger {} and corresponding function {}." \
 			.format(self.name, self.function_name)
 
-class AddRefreshMateriliazedViewTrigger(AddTrigger):
+class AddTableTrigger(AddTrigger):
+	reduces_to_sql = True
+	reversible = True
+
+	def __init__(self, table_name, name, commands, after=True,
+			on=AddTrigger.On.ALL, row_level=False, condition=None):
+		self.model = None
+		self.table_name = table_name
+		self.name = "{}_{}_trigger".format(self.table_name, name)
+		self.function_name = "{}_{}_fn()".format(self.table_name, name)
+		self._events = on
+		self.commands = commands
+		self.when = "after" if after else "before"
+		self.row_level = "for each row" if row_level else ""
+		self.condition = "" if condition is None else "when ( {} )" \
+			.format(condition)
+
+
+class AddRefreshMaterializedViewTrigger(AddTrigger):
 	reduces_to_sql = True
 	reversible = True
 
@@ -392,9 +422,27 @@ class AddRefreshMateriliazedViewTrigger(AddTrigger):
 			( trigger_model
 			, "refresh_{}".format(view_name)
 			, commands
-			, defer=True
 			)
 
+class AddRefreshMaterializedViewTableTrigger(AddTableTrigger):
+	reduces_to_sql = True
+	reversible = True
+
+	def __init__(self, trigger_table, materialized_view_model,
+			materialized_view_name):
+		view_name = "{}_{}" \
+			.format(materialized_view_model._meta.db_table,
+				materialized_view_name)
+
+		commands = "refresh materialized view {};".format(view_name)
+
+		# def __init__(self, model, name, commands, after=True, on=On.ALL,
+		# 		defer=False, row_level=False, condition=None):
+		super().__init__ \
+			( trigger_table
+			, "refresh_{}".format(view_name)
+			, commands
+			)
 
 
 

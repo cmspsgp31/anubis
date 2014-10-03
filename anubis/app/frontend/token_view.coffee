@@ -149,8 +149,8 @@ define [ "backbone"
 			]
 
 		@tokenExpressions:
-			"and": "E, e (operador)"
 			"or": "Ou, ou (operador)"
+			"and": "E, e (operador)"
 			"negate": "Não, Exceto (operador)"
 
 		constructor: ->
@@ -191,8 +191,10 @@ define [ "backbone"
 					value: name
 					label: data.description
 
+			filters = _.sortBy filters, (filter) -> filter.label
+
 			for name, data of @constructor.tokenExpressions
-				filters.push
+				filters.unshift
 					value: name
 					label: data
 
@@ -300,7 +302,7 @@ define [ "backbone"
 		handleSubmit: (ev) ->
 			tokens = @tokens()
 
-			if tokens.length < 2
+			if @delegate.inputVal() != ""
 				@insertTokenWithData (@getData "default"),
 					[@delegate.inputVal()]
 

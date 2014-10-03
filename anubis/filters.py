@@ -105,6 +105,27 @@ class QuerySetFilter(Filter):
 
 		return queryset.filter(reduce(self.connector, complex_filter))
 
+class FullTextFilter(Filter):
+	def __init__(self, field_name):
+		self.field_name = field_name
+		super().__init__(field_name)
+
+	def filter_queryset(self, queryset, args):
+		arg = " ".join(list(args))
+		table = queryset.model._meta.db_table
+		query_part = """
+			to_tsvector(unaccent("{table}"."{field}")) @@
+			plainto_tsquery(unaccent(%s)) \
+			""".format(table=table, field=self.field_name)
+
+		filtered = queryset.extra(where=[query_part], params=[arg])
+
+		print(filtered.query)
+
+		return filtered
+
+
+
 class TrigramFilter(Filter):
 	def __init__(self, field_name, connector=operator.or_):
 		self.field_name = field_name
@@ -123,8 +144,6 @@ class TrigramFilter(Filter):
 		for arg in args:
 			filtered = self.connector(filtered,
 				queryset.extra(where=[query_part], params=[arg]))
-
-		print(filtered.query)
 
 		return filtered
 
