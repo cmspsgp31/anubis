@@ -158,9 +158,30 @@ define [ "backbone"
 
 		constructor: ->
 			super
+			@listenAll()
+
 			@tokenCache = {}
 
-			@delegate.createEditor(focus: true)
+			@delegate.createEditor focus: true
+
+		listenAll: ->
+			id = @$el.attr "id"
+			($ "[data-token-clear=#{id}]").on "click", => @clearAllTokens()
+			($ "[data-token-insert=#{id}]").on "click", (ev) =>
+				target = $ ev.target
+
+				tokens = @tokens()
+				if (tokens.length > 1)
+					lastToken = $ @delegate.editor.prev()
+					if (lastToken.data "token") in ["expression", "close"]
+						@insertToken "and"
+
+				@insertTokenWithData (target.data "tokenName"),
+					[target.data "tokenValue"]
+
+		clearAllTokens: (ev) ->
+			@delegate.update ""
+			@delegate.createEditor focus: true
 
 		translator: -> (@getData "translator").replace /\/$/, ""
 
@@ -182,7 +203,7 @@ define [ "backbone"
 
 			defer
 
-		filters: -> @constructor.templates.get(@getData "filters")
+		filters: -> @constructor.templates.get (@getData "tokenList")
 
 		tokens: -> @delegate.select "li[data-token]"
 
@@ -205,7 +226,7 @@ define [ "backbone"
 
 		events:
 			"keydown [data-token='editor'] input": "dynamicInputKeydown"
-			"click [data-insert]": "showTokenList"
+			"click [data-remove]": "removeClick"
 			"click": "fieldClick"
 
 		fieldClick: (ev) ->
@@ -221,6 +242,11 @@ define [ "backbone"
 				ev.stopPropagation()
 				@delegate.removeToken token
 				@delegate.input.focus()
+
+		removeClick: (ev) ->
+			token = @delegate.findToken ($ ev.target)
+
+			if token? then @delegate.removeToken token
 
 		showTokenList: -> @delegate.input.autocomplete "search", ""
 
@@ -400,7 +426,7 @@ define [ "backbone"
 						expression += "#{identifier}," + args.join()
 
 			obj = {}
-			obj[@getData "name"] = "(#{expression})"
+			obj[@getData "name"] = expression
 
 			obj
 

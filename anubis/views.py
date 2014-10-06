@@ -129,7 +129,13 @@ class FilterViewMixin:
 
 		if kwarg is not None:
 			kwarg = kwarg.strip().rstrip("/")
-			self.boolean_expression = BooleanBuilder(kwarg).build()
+
+			try:
+				self.boolean_expression = BooleanBuilder(kwarg).build()
+			except ValueError:
+				error = ValueError("Confira sua expressão e verifique se não esqueceu algum conector, por exemplo.")
+				error.name = lambda : "Erro de Sintaxe"
+				raise error
 
 		return super().get(*args, **kwargs)
 
@@ -149,3 +155,13 @@ class FilterViewMixin:
 			"template": filter_.form.as_p(),
 			"arg_count": len(filter_.field_keys) } \
 				for filter_name, filter_ in cls.allowed_filters.items()}
+
+class NoCacheMixin:
+	def get(self, *args, **kwargs):
+		response = super().get(*args, **kwargs)
+
+		response['Cache-Control'] = "no-cache, no-store, must-revalidate"
+		response['Pragma'] = "no-cache"
+		response['Expires'] = "0"
+
+		return response

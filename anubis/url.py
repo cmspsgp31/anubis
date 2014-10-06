@@ -159,7 +159,7 @@ class BooleanBuilder:
 		return pkg_resources.resource_filename("anubis", self.parser_lib_name)
 
 class HaskellLibrary:
-	libdl = "/usr/lib/libdl.so.2"
+	libdl = "libdl.so"
 	_locks = {}
 	_master_lock = Lock()
 

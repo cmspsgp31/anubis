@@ -17,17 +17,19 @@ def getitem(obj, key):
 	return obj[key]
 
 @register.inclusion_tag("search_widget.html", takes_context=True)
-def search(context, template_key, route, form_name, translate_route,
-		default_unit, extra_forms=None):
-	expr = context.get("search_expression", None)
-	action = reverse(route,
-		kwargs={form_name: "{{{{ {}|safe }}}}".format(form_name)})
-	route = reverse(route, kwargs={form_name: ""}).lstrip("/")
-	translate_route = reverse(translate_route, args=[""]).rstrip("/")
+def search(context, search_id, search_route, translate_route, index_route,
+		token_list, default_unit, extra_fields=None):
+	expression = context.get("search_expression", None)
+	action = reverse(search_route,
+		kwargs={search_id: "{{{{ {}|safe }}}}".format(search_id)})
+	search_url = reverse(search_route, kwargs={search_id: ""}).lstrip("/")
+	translate_url = reverse(translate_route, args=[""]).rstrip("/")
+	index_url = reverse(index_route).rstrip("/")
 
-	return dict(expr=expr, template_key=template_key, action=unquote(action),
-		form_name=form_name, route=route, translate_route=translate_route,
-		extra_forms=extra_forms, default_unit=default_unit)
+	return dict(expression=expression, token_list=token_list,
+		action=unquote(action), search_id=search_id, search_url=search_url,
+		translate_url=translate_url, index_url=index_url,
+		default_unit=default_unit, extra_fields=extra_fields)
 
 @register.inclusion_tag("available_filters.html", takes_context=True)
 def download_templates(context, url_='templates', *templates):

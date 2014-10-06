@@ -1,5 +1,5 @@
 <section class="container SearchView">
-	<div class="SearchViewHelp modal fade" style="display: none;">
+	<div id="{{ search_id }}-help" class="SearchViewHelp modal fade" style="display: none;">
 		<div class="modal-dialog">
 			<div class="modal-content">
 				<div class="modal-header">
@@ -33,16 +33,15 @@
 		</div>
 	</div>
 
-
+	<h4>Digite sua pesquisa:</h4>
 	<form data-action="{{ action }}" data-view="FormRouterView">
-		<ul data-view="BooleanTokenView" data-filters="{{ template_key }}" data-name="{{ form_name }}" data-route="{{ route }}(.*)$" data-translator="{{ translate_route }}" data-form-control data-default="{{ default_unit }}">
-		{% if expr %}
-		{{ expr|safe }}
+		<ul data-view="BooleanTokenView" data-token-list="{{ token_list }}" data-name="{{ search_id }}" data-route="{{ search_url }}(.*)$" data-translator="{{ translate_url }}" data-form-control data-default="{{ default_unit }}" id="{{ search_id }}-control">
+		{% if expression %}
+		{{ expression|safe }}
 		{% endif %}
 		</ul>
 		<div class="buttons left">
-			<button type="button" class="btn btn-info" data-insert>Inserir</button>
-			<button type="button" class="btn btn-info" data-clear>Limpar</button>
+			<button type="button" class="btn btn-danger" data-token-clear="{{ search_id }}-control" data-view="RouterView" data-router data-route-uri="{{ index_url }}">Limpar</button>
 		</div>
 		<div class="buttons right">
 			<button type="button" class="btn btn-default" data-toggle="modal" data-target=".SearchViewHelp">Ajuda</button>
