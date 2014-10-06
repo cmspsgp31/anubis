@@ -15,7 +15,9 @@ define [ "backbone"
 				containment: "parent"
 				# axis: "x"
 
-		createEditor: ->
+		createEditor: (options=focus: false) ->
+			{focus} = options
+
 			@editor = $ """
 			<li data-token="editor">
 			<fieldset>
@@ -30,7 +32,7 @@ define [ "backbone"
 
 			@makeInputAutocompletable()
 
-			@input.focus()
+			if focus then @input.focus()
 
 		makeInputAutocompletable: ->
 			@input.autocomplete
@@ -91,6 +93,7 @@ define [ "backbone"
 			newToken = $ """
 				<li data-token="#{tokenType}"#{tokenName}>
 				#{contents}
+				<button type="button" class="close" tabindex="-1" data-remove>&times;</button>
 				</li>
 			"""
 
@@ -157,7 +160,7 @@ define [ "backbone"
 			super
 			@tokenCache = {}
 
-			@delegate.createEditor()
+			@delegate.createEditor(focus: true)
 
 		translator: -> (@getData "translator").replace /\/$/, ""
 
@@ -202,6 +205,7 @@ define [ "backbone"
 
 		events:
 			"keydown [data-token='editor'] input": "dynamicInputKeydown"
+			"click [data-insert]": "showTokenList"
 			"click": "fieldClick"
 
 		fieldClick: (ev) ->
@@ -211,12 +215,14 @@ define [ "backbone"
 				ev.preventDefault()
 				@delegate.input.focus()
 			else if (token.data "token") == "editor"
-				@delegate.input.autocomplete "search", ""
+				@showTokenList()
 			else if ev.which == 2
 				ev.preventDefault()
 				ev.stopPropagation()
 				@delegate.removeToken token
 				@delegate.input.focus()
+
+		showTokenList: -> @delegate.input.autocomplete "search", ""
 
 		dynamicInputKeydown: (ev) ->
 			if (ev.which >= 65) and (ev.which <= 90)

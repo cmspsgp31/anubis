@@ -40,9 +40,14 @@
 		{{ expr|safe }}
 		{% endif %}
 		</ul>
-		<div class="buttons">
+		<div class="buttons left">
+			<button type="button" class="btn btn-info" data-insert>Inserir</button>
+			<button type="button" class="btn btn-info" data-clear>Limpar</button>
+		</div>
+		<div class="buttons right">
 			<button type="button" class="btn btn-default" data-toggle="modal" data-target=".SearchViewHelp">Ajuda</button>
 			<button type="submit" class="btn btn-primary">Pesquisar</button>
 		</div>
+		<div class="clearfix"></div>
 	</form>
 </section>

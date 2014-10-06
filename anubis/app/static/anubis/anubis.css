@@ -25,6 +25,16 @@ section.SearchView {
 }
 
 section.SearchView > form >div.buttons {
+	width: 50%;
+	display: inline-block;
+}
+
+section.SearchView > form >div.buttons.left {
+	text-align: left;
+	float: left;
+}
+
+section.SearchView > form >div.buttons.right {
 	text-align: right;
 }
 
@@ -200,4 +210,9 @@ ul[data-view=BooleanTokenView] li[data-token="editor"] > fieldset > p > input {
 	width: 100%;
 }
 
-
+ul[data-view=BooleanTokenView] li[data-token] > button {
+	display: inline-block;
+	/* border: 1px solid black; */
+	margin-left: 5px;
+	padding-top: 2px;
+t

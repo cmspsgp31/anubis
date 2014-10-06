@@ -113,8 +113,9 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 			@el.addClass("modal").addClass "fade"
 
 		bindEvents: ->
-			(@select "[data-close]").on "click", =>
-				@view.router.navigate @view.router.lastNonModalMatch, trigger: true
+			(@select "[data-close]").on "click", (ev) =>
+				@view.router.navigate @view.router.lastNonModalMatch,
+					trigger: true
 
 		show: -> @el.modal("show")
 

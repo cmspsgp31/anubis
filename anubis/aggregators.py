@@ -100,16 +100,31 @@ class TokenAggregator(Aggregator):
 		super().__init__()
 		self.allowed_filters = allowed_filters
 
-	@staticmethod
-	def open_close_parens(needed):
+	@classmethod
+	def open_close_parens(cls, needed):
 		parens_open = ""
 		parens_close = ""
 
 		if needed:
-			parens_open = "<li data-token=\"open\"><p></p></li>"
-			parens_close = "<li data-token=\"close\"><p></p></li>"
+			parens_open = cls.make_token("open")
+			parens_close = cls.make_token("close")
 
 		return (parens_open, parens_close)
+
+	@staticmethod
+	def make_token(name, contents="", attributes={}):
+		attrs = ""
+
+		if len(attributes) > 0:
+			attrs = " ".join(["{}=\"{}\"".format(k, v) \
+					for k, v in attributes.items()])
+			attrs = " {}".format(attrs)
+
+		return """<li data-token="{name}"{attrs}>
+			<p>{contents}</p>
+			<button type="button" class="close" tabindex="-1" data-remove>&times;</button>
+			</li>""" \
+			.format(name=name, contents=contents, attrs=attrs)
 
 	def handle_base_expression(self, base_expression):
 		filter_ = self.allowed_filters[base_expression["field"]]
@@ -120,27 +135,28 @@ class TokenAggregator(Aggregator):
 			hide_legend = " style=\"display: none;\""
 		else:
 			hide_legend = ""
-
-		return """
-		<li data-token="expression" data-name="{name}">
+		
+		contents = """
 			<fieldset>
 			<div class="legend"{hide_legend}>{full_name}</div>
 			{rendered_form}
 			</fieldset>
-		</li>
-		""".format(name=filter_.identifier, full_name=filter_.description,
-				rendered_form=form.as_p(), hide_legend=hide_legend)
+		""".format(hide_legend=hide_legend, rendered_form=form.as_p(),
+				full_name=filter_.description)
+
+		return self.make_token("expression", contents,
+			{"data-name": filter_.identifier})
 
 	def handle_not_expression(self, not_expression, need_parens):
 		parens_open, parens_close = self.open_close_parens(need_parens)
 
 		return """
-		<li data-token="negate"><p></p></li>
+		{negate_token}
 		{parens_open}
 		{expression}
 		{parens_close}
 		""".format(expression=not_expression, parens_open=parens_open,
-			parens_close=parens_close)
+			parens_close=parens_close, negate_token=self.make_token("negate"))
 
 	def handle_and_expression(self, left_expression, right_expression,
 			left_parens, right_parens):
@@ -151,13 +167,13 @@ class TokenAggregator(Aggregator):
 		{left_open}
 		{left}
 		{left_close}
-		<li data-token="and"><p></p></li>
+		{and_token}
 		{right_open}
 		{right}
 		{right_close}
 		""".format(left=left_expression, right=right_expression,
 			left_open=left_open, left_close=left_close, right_open=right_open,
-			right_close=right_close)
+			right_close=right_close, and_token=self.make_token("and"))
 
 	def handle_or_expression(self, left_expression, right_expression,
 			left_parens, right_parens):
@@ -168,11 +184,11 @@ class TokenAggregator(Aggregator):
 		{left_open}
 		{left}
 		{left_close}
-		<li data-token="or"><p></p></li>
+		{or_token}
 		{right_open}
 		{right}
 		{right_close}
 		""".format(left=left_expression, right=right_expression,
 			left_open=left_open, left_close=left_close, right_open=right_open,
-			right_close=right_close)
+			right_close=right_close, or_token=self.make_token("or"))
 
