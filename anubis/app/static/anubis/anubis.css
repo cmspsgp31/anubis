@@ -215,4 +215,8 @@ ul[data-view=BooleanTokenView] li[data-token] > button {
 	/* border: 1px solid black; */
 	margin-left: 5px;
 	padding-top: 2px;
-t
+}
+
+body > .ui-autocomplete {
+	z-index: 9999;
+}

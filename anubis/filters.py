@@ -53,18 +53,27 @@ class Filter:
 		field_name = "{}_{:04d}_{}".format(self.identifier,
 			len(self.field_keys) + 1, field_name)
 
+		# mudamos o padrão do Django em que o campo era obrigatório por padrão
+		# para o campo ser opcional por padrão, porque no contexto da pesquisa
+		# faz mais sentido
+		if "required" not in field_kwargs.keys():
+			field_kwargs["required"] = False
+
 		field = field_cls(label=field_label, **field_kwargs)
 		self.fields[field_name] = field
 		self.field_keys.append(field_name)
 
 		return self
 
+	def _add_fields_to_form(self, form):
+		for field_name in self.field_keys:
+			form.fields[field_name] = self.fields[field_name]
+
 	@property
 	def form(self):
 		form = FilterForm()
 
-		for field_name in self.field_keys:
-			form.fields[field_name] = self.fields[field_name]
+		self._add_fields_to_form(form)
 
 		return form
 
@@ -72,8 +81,7 @@ class Filter:
 		form = FilterForm({field_name: args[i] \
 			for i, field_name in enumerate(self.field_keys)})
 
-		for field_name in self.field_keys:
-			form.fields[field_name] = self.fields[field_name]
+		self._add_fields_to_form(form)
 
 		return form
 

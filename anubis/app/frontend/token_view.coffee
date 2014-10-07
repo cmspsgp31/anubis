@@ -255,7 +255,7 @@ define [ "backbone"
 				# numpad plus
 				when 107 then @handleOr(ev)
 				# enter
-				when 13 then @handleSubmit(ev)
+				# when 13 then @handleIgnore(ev)
 				# space
 				# when 32 then @handleDefaultExpression(ev)
 				# esc
@@ -311,17 +311,6 @@ define [ "backbone"
 				@delegate.moveEditorLeft()
 			else
 				@delegate.moveEditorRight()
-
-		handleSubmit: (ev) ->
-			inputContents = @delegate.inputVal()
-			if inputContents != ""
-				@insertTokenWithData (@getData "default"), [inputContents]
-
-			tokens = @tokens()
-
-			if tokens.length < 2
-				ev.preventDefault()
-				ev.stopPropagation()
 
 		handleClear: (ev) -> @delegate.clearInput()
 
@@ -384,6 +373,7 @@ define [ "backbone"
 
 		serialize: ->
 			expression = ""
+			@handleDefaultExpression()
 
 			for token in @tokens()
 				token = $ token
