@@ -167,6 +167,7 @@ define [ "backbone"
 		listenAll: ->
 			id = @$el.attr "id"
 			($ "[data-token-clear=#{id}]").on "click", => @clearAllTokens()
+			($ "[data-token-show-list=#{id}]").on "click", => @showTokenList()
 			($ "[data-token-insert=#{id}]").on "click", (ev) =>
 				target = $ ev.target
 
@@ -235,13 +236,6 @@ define [ "backbone"
 			if not token?
 				ev.preventDefault()
 				@delegate.input.focus()
-			else if (token.data "token") == "editor"
-				@showTokenList()
-			else if ev.which == 2
-				ev.preventDefault()
-				ev.stopPropagation()
-				@delegate.removeToken token
-				@delegate.input.focus()
 
 		removeClick: (ev) ->
 			token = @delegate.findToken ($ ev.target)
@@ -251,79 +245,66 @@ define [ "backbone"
 		showTokenList: -> @delegate.input.autocomplete "search", ""
 
 		dynamicInputKeydown: (ev) ->
-			if (ev.which >= 65) and (ev.which <= 90)
-				# letters
-				@handleIgnore(ev)
-			else if (ev.which >= 96) and (ev.which <= 105)
-				# numpad numbers
-				@handleIgnore(ev)
-			else if (ev.which >= 50) and (ev.which <= 54)
-				# top row numbers
-				@handleIgnore(ev)
-			else
-				switch ev.which
-					# backspace
-					when 8 then @handleBackspace(ev)
-					# modifiers, arrows, delete, underscore and hyphen
-					when 16, 17, 18, 20, 38, 46, 189, 40
+			switch ev.which
+				# backspace
+				when 8 then @handleBackspace(ev)
+				# down arrow
+				# when 40 then @handleTrigger(ev)
+				# numpad star, both forward slashes
+				when 191, 111, 106 then @handleAnd(ev)
+				# numpad plus
+				when 107 then @handleOr(ev)
+				# enter
+				when 13 then @handleSubmit(ev)
+				# space
+				# when 32 then @handleDefaultExpression(ev)
+				# esc
+				when 27 then @handleClear(ev)
+				# caret, inactive due to trouble with dead keys
+				# when 229 then @handleNot(ev)
+				# left, right
+				when 37, 39
+					if @delegate.inputVal() == ""
+						@handleEditorMovement(ev)
+					else
 						@handleIgnore(ev)
-					# down arrow
-					# when 40 then @handleTrigger(ev)
-					# numpad star, both forward slashes
-					when 191, 111, 106 then @handleAnd(ev)
-					# numpad plus
-					when 107 then @handleOr(ev)
-					# enter
-					when 13 then @handleSubmit(ev)
-					# space
-					when 32 then @handleDefaultExpression(ev)
-					# esc
-					when 27 then @handleClear(ev)
-					# caret, inactive due to trouble with dead keys
-					# when 229 then @handleNot(ev)
-					# left, right
-					when 37, 39
-						if @delegate.inputVal() == ""
-							@handleEditorMovement(ev)
-						else
-							@handleIgnore(ev)
-					# bang
-					when 49
-						if ev.shiftKey
-							@handleNot(ev)
-						else
-							@handleIgnore(ev)
-					# tab
-					when 9
-						if ev.shiftKey
-							@handleIgnore(ev)
-						else
-							@handleExpression(ev)
-					# shift equal, shift backslash
-					when 187, 220
-						if ev.shiftKey
-							@handleOr(ev)
-						else
-							@handleDefaultExpression(ev)
-					# shift seven, shift eight
-					when 55, 56
-						if ev.shiftKey
-							@handleAnd(ev)
-						else
-							@handleIgnore(ev)
-					# shift nine
-					when 57
-						if ev.shiftKey
-							@handleOpen(ev)
-						else
-							@handleIgnore(ev)
-					# shift zero
-					when 48
-						if ev.shiftKey
-							@handleClose(ev)
-						else
-							@handleIgnore(ev)
-					else @handleDefaultExpression(ev)
+				# bang
+				when 49
+					if ev.shiftKey
+						@handleNot(ev)
+					else
+						@handleIgnore(ev)
+				# tab
+				when 9
+					if ev.shiftKey
+						@handleIgnore(ev)
+					else
+						@handleExpression(ev)
+				# shift equal, shift backslash
+				when 187, 220
+					if ev.shiftKey
+						@handleOr(ev)
+					else
+						@handleIgnore(ev)
+				# shift seven, shift eight
+				when 55, 56
+					if ev.shiftKey
+						@handleAnd(ev)
+					else
+						@handleIgnore(ev)
+				# shift nine
+				when 57
+					if ev.shiftKey
+						@handleOpen(ev)
+					else
+						@handleIgnore(ev)
+				# shift zero
+				when 48
+					if ev.shiftKey
+						@handleClose(ev)
+					else
+						@handleIgnore(ev)
+				else @handleIgnore(ev)
 
 		handleEditorMovement: (ev) ->
 			if ev.which == 37
@@ -332,17 +313,22 @@ define [ "backbone"
 				@delegate.moveEditorRight()
 
 		handleSubmit: (ev) ->
+			inputContents = @delegate.inputVal()
+			if inputContents != ""
+				@insertTokenWithData (@getData "default"), [inputContents]
+
 			tokens = @tokens()
 
-			if @delegate.inputVal() != ""
-				@insertTokenWithData (@getData "default"),
-					[@delegate.inputVal()]
-
+			if tokens.length < 2
+				ev.preventDefault()
+				ev.stopPropagation()
 
 		handleClear: (ev) -> @delegate.clearInput()
 
 		handleDefaultExpression: (ev) ->
-			@insertTokenWithData (@getData "default"), [@delegate.inputVal()]
+			inputContents = @delegate.inputVal()
+			if inputContents != ""
+				@insertTokenWithData (@getData "default"), [inputContents]
 
 		handleIgnore: (ev) ->
 
@@ -364,25 +350,21 @@ define [ "backbone"
 			else
 				@delegate.error()
 
-		handleOr: (ev) ->
+		handleNonExpressionToken: (ev, tokenName) ->
 			ev.preventDefault()
-			@insertToken "or"
+			@handleDefaultExpression ev
+			@insertToken tokenName
+			@delegate.input.focus()
 
-		handleAnd: (ev) ->
-			ev.preventDefault()
-			@insertToken "and"
+		handleOr: (ev) -> @handleNonExpressionToken ev, "or"
 
-		handleOpen: (ev) ->
-			ev.preventDefault()
-			@insertToken "open"
+		handleAnd: (ev) -> @handleNonExpressionToken ev, "and"
 
-		handleNot: (ev) ->
-			ev.preventDefault()
-			@insertToken "negate"
+		handleNot: (ev) -> @handleNonExpressionToken ev, "negate"
 
-		handleClose: (ev) ->
-			ev.preventDefault()
-			@insertToken "close"
+		handleOpen: (ev) -> @handleNonExpressionToken ev, "open"
+
+		handleClose: (ev) -> @handleNonExpressionToken ev, "close"
 
 		insertToken: (tokenType, tokenName, filter) ->
 			token = @delegate.makeToken tokenType, tokenName, filter
