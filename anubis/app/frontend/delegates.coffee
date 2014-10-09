@@ -110,7 +110,17 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 	class ModalDelegate extends Delegate
 		constructor: ->
 			super
+			@shouldHide = false
 			@el.addClass("modal").addClass "fade"
+
+			@el.on "hide.bs.modal", (ev) =>
+				if not @shouldHide
+					ev.preventDefault()
+					(@select "[data-close]").trigger "click"
+
+				@shouldHide
+
+			@el.on "hidden.bs.modal", => @shouldHide = false
 
 		bindEvents: ->
 			(@select "[data-close]").on "click", (ev) =>
@@ -119,7 +129,9 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 
 		show: -> @el.modal("show")
 
-		hide: -> @el.modal("hide")
+		hide: ->
+			@shouldHide = true
+			@el.modal("hide")
 
 	class FormDelegate extends Delegate
 		filter: ":not(form):visible"

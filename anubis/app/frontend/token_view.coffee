@@ -39,8 +39,12 @@ define [ "backbone"
 				source: @view.autocompleteFilters()
 				minLength: 0
 				select: (ev, ui) =>
+					@view.handleDefaultExpression()
 					@input.val ui.item.value
-					@view.handleExpression ev
+					token = @view.handleExpression ev
+
+					if (token.data "token") != "expression"
+						@input.focus()
 
 
 		inputVal: -> @input.val()
