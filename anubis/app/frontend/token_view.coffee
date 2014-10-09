@@ -11,9 +11,7 @@ define [ "backbone"
 	exports.BooleanTokenDelegate = class BooleanTokenDelegate extends Delegates.Delegate
 		constructor: ->
 			super
-			@el.sortable
-				containment: "parent"
-				# axis: "x"
+			@el.sortable containment: "parent"
 
 		createEditor: (options=focus: false) ->
 			{focus} = options
@@ -39,7 +37,9 @@ define [ "backbone"
 				source: @view.autocompleteFilters()
 				minLength: 0
 				select: (ev, ui) =>
-					@view.handleDefaultExpression()
+					if ui.item.value in _.keys BooleanTokenView.tokenExpressions
+						@view.handleDefaultExpression()
+
 					@input.val ui.item.value
 					token = @view.handleExpression ev
 
@@ -156,9 +156,11 @@ define [ "backbone"
 			]
 
 		@tokenExpressions:
+			"close": ") (fecha parênteses)"
+			"open": "( (abre parênteses)"
 			"or": "Ou, ou (operador)"
 			"and": "E, e (operador)"
-			"negate": "Não, Exceto (operador)"
+			"negate": "Não (operador)"
 
 		constructor: ->
 			super
