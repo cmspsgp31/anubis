@@ -10,14 +10,16 @@ registros e/ou alterações.
 ### Recursos
 
 * Criação e acesso a Functions do PostgreSQL direto no projeto Django;
-* Fácil definição de filtros e pesquisas baseadas em Functions, Trigramas e
+* Fácil definição de filtros e pesquisas baseadas em Functions, Texto Completo e
 QuerySets simples;
 * Biblioteca front-end em CoffeeScript para facilitar manutenção de URLs de
 pesquisas feitas em AJAX.
 
 ### Requerimentos
 
-* PostgreSQL 9.3+
+* PostgreSQL 9.3+, com as seguintes extensões instaladas:
+	- btree\_gist
+	- unaccent
 * GHC 7.8+
 * Node.js com os seguintes pacotes instalados:
 	- coffeescript
@@ -27,5 +29,6 @@ separadamente e colocadas na pasta ```anubis/app/frontend/build/lib```)
 	- Backbone.js
 	- require.js
 	- jQuery
+	- jQueryUI
 	- Underscore.js
 	- swig

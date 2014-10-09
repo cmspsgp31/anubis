@@ -396,8 +396,8 @@ define [ "backbone"
 						args = []
 
 						for elem in ($ "input, textarea, select", token)
-							arg = ($ elem).val().replace(/\$/, "$$") \
-							.replace(/"/, "$\"")
+							arg = ($ elem).val().replace(/\$/g, "$$") \
+							.replace(/"/g, "$\"")
 							arg = "\"#{arg}\""
 							args.push arg
 
