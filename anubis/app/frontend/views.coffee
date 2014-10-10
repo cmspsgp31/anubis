@@ -431,7 +431,24 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 			router.data "routeUri", url
 			if (router.attr "href")? then router.attr "href", url
 
+	exports.RouteableFieldView = class RouteableFieldView extends RouteableView
+		constructor: ->
+			super
 
+			if (@getData "fieldIndex")?
+				@fieldIndex = @getData "fieldIndex"
+			else
+				@fieldIndex = 0
+
+		activate: (args...) ->
+			name = @$el.attr "name"
+			value = args[@fieldIndex]
+
+			for form in $ "form"
+				if $.contains form, @el
+					($ "[name=#{name}]", ($ form)).val [value]
+
+		deactivate: ->
 
 	exports.FormRouterView = class FormRouterView extends View
 		@delegate: Delegates.FormDelegate

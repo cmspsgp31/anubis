@@ -102,7 +102,6 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 		show: -> @setActive true
 		hide: -> @setActive false
 
-
 	class SearchTypeDelegate extends Delegate
 		hide: -> @el.slideUp(200)
 		show: -> @el.slideDown(200)
@@ -134,7 +133,7 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 			@el.modal("hide")
 
 	class FormDelegate extends Delegate
-		filter: ":not(form):visible"
+		filter: ":input:visible, [data-form-control]:visible"
 
 		findSerializer: (element) ->
 			element = $ element
@@ -143,6 +142,7 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 				return "serializeFormControl"
 			else if (element.is "[data-form-control] *")
 				return "serializeSkip"
+			# else if (element.is "input[type=radio]")
 			else
 				return "serializeJQuery"
 

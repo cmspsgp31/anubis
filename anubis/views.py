@@ -25,6 +25,7 @@ from rest_framework.response import Response
 
 from anubis.url import BooleanBuilder
 from anubis.aggregators import QuerySetAggregator, TokenAggregator
+from anubis.filters import Filter
 
 class TemplateRetrieverView(APIView):
 	allowed_views = {}
@@ -82,8 +83,72 @@ class TranslationView(APIView):
 
 		return Response(dict(expression=tokenized))
 
+class MultiModelMeta(type):
+	@property
+	def allowed_filters(cls):
+		return cls._fieldset_filters
+
+	def __new__(mcs, cls_name, bases, dct):
+		model_filters = {}
+		fieldset_filters = {}
+
+		if "_allowed_filters" in dct.keys():
+			filters_source = dct["_allowed_filters"]
+			common_filters = {}
+
+			for name, obj in filters_source.items():
+				if isinstance(obj, Filter):
+					common_filters[name] = obj
+					base_filter = obj
+				else:
+					base_filter = obj[0][1]
+					for model_name, filter_ in obj:
+						model_filters.setdefault(model_name, {})[name] = filter_
+
+				fieldset_filters[name] = base_filter
+
+			for model_name in model_filters.keys():
+				model_filters[model_name].update(common_filters)
+		else:
+			for base_cls in bases:
+				if hasattr(base_cls, "_model_filters"):
+					model_filters = base_cls._model_filters
+
+				if hasattr(base_cls, "_fieldset_filters"):
+					fieldset_filters = base_cls._fieldset_filters
+
+		dct["_model_filters"] = model_filters
+		dct["_fieldset_filters"] = fieldset_filters
+
+		return super().__new__(mcs, cls_name, bases, dct)
+
+
+class MultiModelMixin(metaclass=MultiModelMeta):
+	model_parameter = None
+	model_lookup = {}
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+		self._model = None
+
+	@property
+	def allowed_filters(self):
+		try:
+			return self._model_filters[self.kwargs[self.model_parameter]]
+		except KeyError:
+			return self.__class__.allowed_filters
+
+	@property
+	def model(self):
+		if self._model is None:
+			model_key = self.kwargs[self.model_parameter]
+			self._model = self.model_lookup[model_key]
+
+		return self._model
+
 class FilterViewMixin:
-	kwarg_key = "search"
+	expression_parameter = "search"
 	allowed_filters = {}
 
 	def __init__(self, *args, **kwargs):
@@ -107,11 +172,6 @@ class FilterViewMixin:
 			context["search_expression"] = \
 				self.boolean_expression.traverse(aggregator)
 
-		# for evento in context["evento_list"]:
-		# 	print(evento.nome)
-		# 	for tag in evento.tags.all():
-		# 		print (tag.nome)
-
 		return context
 
 	def kwarg_or_none(self, key):
@@ -122,7 +182,7 @@ class FilterViewMixin:
 
 	@property
 	def kwarg_val(self):
-		return self.kwarg_or_none(self.kwarg_key)
+		return self.kwarg_or_none(self.expression_parameter)
 
 	def get(self, *args, **kwargs):
 		kwarg = self.kwarg_val
@@ -133,7 +193,8 @@ class FilterViewMixin:
 			try:
 				self.boolean_expression = BooleanBuilder(kwarg).build()
 			except ValueError:
-				error = ValueError("Confira sua expressão e verifique se não esqueceu algum conector, por exemplo.")
+				error = ValueError("Confira sua expressão e verifique se não \
+					esqueceu algum conector, por exemplo.")
 				error.name = lambda : "Erro de Sintaxe"
 				raise error
 

@@ -164,6 +164,11 @@ define [ "backbone"
 
 		constructor: ->
 			super
+			if (@getData "expressionIndex")?
+				@expressionIndex = parseInt (@getData "expressionIndex")
+			else
+				@expressionIndex = 0
+
 			@listenAll()
 
 			@tokenCache = {}
@@ -192,7 +197,9 @@ define [ "backbone"
 
 		translator: -> (@getData "translator").replace /\/$/, ""
 
-		activate: (expression) ->
+		activate: (args...) ->
+			expression = args[@expressionIndex]
+
 			(@translationPromise expression).done (obj) =>
 				@tokenCache[expression] = obj["expression"]
 				@delegate.update obj["expression"]
