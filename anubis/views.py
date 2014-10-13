@@ -25,7 +25,7 @@ from rest_framework.response import Response
 
 from anubis.url import BooleanBuilder
 from anubis.aggregators import QuerySetAggregator, TokenAggregator
-from anubis.filters import Filter
+from anubis.filters import Filter, ConversionFilter
 
 class TemplateRetrieverView(APIView):
 	allowed_views = {}
@@ -103,6 +103,10 @@ class MultiModelMeta(type):
 				else:
 					base_filter = obj[0][1]
 					for model_name, filter_ in obj:
+						if isinstance(filter_, type) and \
+								issubclass(filter_, ConversionFilter):
+							filter_ = filter_(base_filter)
+
 						model_filters.setdefault(model_name, {})[name] = filter_
 
 				fieldset_filters[name] = base_filter
@@ -146,6 +150,10 @@ class MultiModelMixin(metaclass=MultiModelMeta):
 			self._model = self.model_lookup[model_key]
 
 		return self._model
+
+	@model.setter
+	def model(self, value):
+		self._model = value
 
 class FilterViewMixin:
 	expression_parameter = "search"

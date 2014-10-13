@@ -30,7 +30,6 @@ class Filter:
 	def __init__(self, identifier):
 		self.identifier = identifier
 		self.description = identifier
-		self._form = None
 		self.fields = {}
 		self.field_keys = []
 
@@ -84,6 +83,29 @@ class Filter:
 		self._add_fields_to_form(form)
 
 		return form
+
+class ConversionFilter(Filter):
+	def __init__(self, base_filter):
+		assert isinstance(base_filter, Filter)
+
+		self.base_filter = base_filter
+		self.identifier = base_filter.identifier
+		self.description = base_filter.description
+		self.fields = base_filter.fields
+		self.field_keys = base_filter.field_keys
+
+	def filter_queryset(self, queryset, args):
+		base_queryset = self.base_filter.filter_queryset(self.source_queryset(),
+			args)
+
+		return queryset & self.convert_queryset(base_queryset)
+
+	def source_queryset(self):
+		raise NotImplementedError()
+
+	def convert_queryset(self, base_queryset):
+		raise NotImplementedError()
+
 
 
 class ProcedureFilter(Filter):
