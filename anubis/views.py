@@ -165,7 +165,7 @@ class FilterViewMixin:
 
 		context["filters"] = self.allowed_filters
 		context["filter_keys"] = ",".join(self.allowed_filters.keys())
-		context["search_text"] = self.kwarg_val
+		context["search_text"] = self.kwarg_or_empty(self.expression_parameter)
 
 		if self.boolean_expression is not None:
 			aggregator = TokenAggregator(self.allowed_filters)
@@ -179,6 +179,12 @@ class FilterViewMixin:
 			return self.kwargs[key]
 		else:
 			return None
+
+	def kwarg_or_empty(self, key):
+		if key in self.kwargs.keys() and self.kwargs[key]:
+			return self.kwargs[key]
+		else:
+			return ""
 
 	@property
 	def kwarg_val(self):

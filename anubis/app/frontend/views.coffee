@@ -231,45 +231,59 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 			super
 
 			@cache = if (@getData "cache")? then {} else null
-			@itemTemplate = @getData "itemTemplate"
-			@fetchUrl = @getData "fetchUrl"
-			@fetchUrl = @fetchUrl.replace /\/$/, ""
 
-			if (@getData "searchString")?
-				@currentData = @getData "searchString"
-				@currentData = @currentData.replace /\/$/, ""
+			@retrieveTemplate = @getData "retrieveTemplate"
+			
+			if (@getData "current")?
+				@currentData = @getData "current"
 			else
 				@currentData = ""
 
+			@usesDynamicTemplates = (@getData "itemTemplateIndex")?
+
+			if @usesDynamicTemplates
+				@_itemTemplate = parseInt (@getData "itemTemplateIndex")
+			else
+				@_itemTemplate = @getData "itemTemplate"
+
 			@shouldReload = false
 
-		collectionFor: (@fetchData) ->
+		retrieveUrl: ->
+			swig.render @retrieveTemplate, locals: args: @retrieveData
+
+		itemTemplate: ->
+			if @usesDynamicTemplates
+				@retrieveData[@_itemTemplate]
+			else
+				@_itemTemplate
+
+		collectionFor: (retrieveUrl) ->
 			@collection = new Backbone.Collection
-			@collection.url = "#{@fetchUrl}/#{@fetchData}"
+			@collection.url = retrieveUrl
 
 		template: -> @baseTemplate
 
-		activate: (fetchData) ->
-			fetchData = fetchData.replace /\/$/, ""
+		activate: (@retrieveData...) ->
+			retrieveUrl = @retrieveUrl()
 
-			differentData = @currentData != fetchData
+			differentData = @currentData != retrieveUrl
 			haveCache = @cache?
-			inCache = if haveCache then (fetchData in _.keys @cache) else false
+			inCache = if haveCache then (retrieveUrl in _.keys @cache) else false
 
-			@currentData = fetchData
+			@currentData = retrieveUrl
 
 			if not @shouldReload and not differentData
 				return
 			else if not @shouldReload and differentData and haveCache and
 					inCache
-				@collection = @cache[fetchData]
+				@collection = @cache[retrieveUrl]
 				@render()
 			else
-				@collectionFor fetchData
+				@collectionFor retrieveUrl
 
 				if not @shouldReload and differentData and haveCache and
 						not inCache
-					@cache[fetchData] = @collection
+					@cache[retrieveUrl] = @collection
 
 				@shouldReload = false
 				@sync()
@@ -282,10 +296,56 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 				.fail (t) => @constructor.error @router, t
 				.progress (p...) -> console.log p
 
+		render: ->
+			delete @subviews
+
+			if @baseTemplate?
+				(@delegate.update @template()).then =>
+					@renderItems().then =>
+						@subviews = @constructor.scanViews @router, @$el
+			else
+				@renderItems().then =>
+					@subviews = @constructor.scanViews @router, @$el
+
+		renderItems: ->
+			defer = new $.Deferred
+			target = @delegate.select "[data-container]"
+			if target.length == 0 then target = @$el
+			target.empty()
+
+			if @collection.length > 0
+				end_range = @collection.length - 1
+				contents = (@renderSingleItem @itemTemplate(), i, end_range \
+					for i in [0..end_range])
+
+				defer.then =>
+					target.html contents.join ""
+					@delegate.found()
+
+				defer.resolve()
+			else
+				defer.then => @delegate.notFound()
+
+				defer.resolve()
+
+			defer
+
+		renderSingleItem: (templateName, index, end_range) ->
+			model = @collection.at index
+			template = @constructor.templates.get templateName
+			swig.render template, locals:
+				obj: model.attributes
+				loop:
+					first: index == 0
+					last: index == end_range
+					index: index + 1
+					index0: index
+					key: index
+
 		reload: (ev) ->
 			ev.preventDefault()
 			@shouldReload = true
-			@activate @currentData
+			@activate @retrieveData...
 
 		sort: (ev) ->
 			ev.preventDefault()
@@ -331,52 +391,6 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 			@collection.sort()
 
 			@render()
-
-		render: ->
-			delete @subviews
-
-			if @baseTemplate?
-				(@delegate.update @template()).then =>
-					@renderItems().then =>
-						@subviews = @constructor.scanViews @router, @$el
-			else
-				@renderItems().then =>
-					@subviews = @constructor.scanViews @router, @$el
-
-		renderItems: ->
-			defer = new $.Deferred
-			target = @delegate.select "[data-container]"
-			if target.length == 0 then target = @$el
-			target.empty()
-
-			if @collection.length > 0
-				end_range = @collection.length - 1
-				contents = (@renderSingleItem @itemTemplate, i, end_range \
-					for i in [0..end_range])
-
-				defer.then =>
-					target.html contents.join ""
-					@delegate.found()
-
-				defer.resolve()
-			else
-				defer.then => @delegate.notFound()
-
-				defer.resolve()
-
-			defer
-
-		renderSingleItem: (templateName, index, end_range) ->
-			model = @collection.at index
-			template = @constructor.templates.get templateName
-			swig.render template, locals:
-				obj: model.attributes
-				loop:
-					first: index == 0
-					last: index == end_range
-					index: index + 1
-					index0: index
-					key: index
 
 	exports.RouterView = class RouterView extends View
 		events:
