@@ -135,6 +135,18 @@ class QuerySetFilter(Filter):
 
 		return queryset.filter(reduce(self.connector, complex_filter))
 
+class MultiQuerySetFilter(Filter):
+	def __init__(self, identifier, *fields_names, connector=operator.and_):
+		self.fields_names = fields_names
+		super().__init__(identifier)
+		self.connector = connector
+
+	def filter_queryset(self, queryset, args):
+		complex_filter = [Q(**{field: arg}) \
+				for field, arg in zip(self.fields_names, args) if arg != ""]
+
+		return queryset.filter(reduce(self.connector, complex_filter))
+
 class FullTextFilter(Filter):
 	def __init__(self, field_name):
 		self.field_name = field_name
