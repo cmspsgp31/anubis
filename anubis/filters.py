@@ -19,7 +19,7 @@
 # programa. Se não, consulte <http://www.gnu.org/licenses/>.
 
 from anubis.query import ProcedureQuerySet
-from anubis.forms import FilterForm
+from anubis.forms import FilterForm, RangeForm
 from django.db.models.query import Q
 from django import forms
 from functools import reduce
@@ -27,6 +27,8 @@ from functools import reduce
 import operator
 
 class Filter:
+	base_form = FilterForm
+
 	def __init__(self, identifier):
 		self.identifier = identifier
 		self.description = identifier
@@ -43,6 +45,16 @@ class Filter:
 	def describe(self, description):
 		self.description = description
 		return self
+
+	def validate(self, args):
+		bound_form = self.bound_form(args)
+
+		if not bound_form.is_valid():
+			exc = ValueError(bound_form.errors)
+			exc.name = lambda : "Erro de validação"
+			raise exc
+
+		return [bound_form.cleaned_data[key] for key in self.field_keys]
 
 	def field(self, field_name, field_label=None, field_cls=forms.CharField,
 			**field_kwargs):
@@ -68,21 +80,22 @@ class Filter:
 		for field_name in self.field_keys:
 			form.fields[field_name] = self.fields[field_name]
 
+	def process_form(self, form):
+		self._add_fields_to_form(form)
+
+		return form
+
 	@property
 	def form(self):
-		form = FilterForm()
+		form = self.base_form()
 
-		self._add_fields_to_form(form)
-
-		return form
+		return self.process_form(form)
 
 	def bound_form(self, args):
-		form = FilterForm({field_name: args[i] \
+		form = self.base_form({field_name: args[i] \
 			for i, field_name in enumerate(self.field_keys)})
 
-		self._add_fields_to_form(form)
-
-		return form
+		return self.process_form(form)
 
 class ConversionFilter(Filter):
 	def __init__(self, base_filter):
@@ -118,6 +131,36 @@ class ProcedureFilter(Filter):
 
 		return queryset.procedure(self.procedure_name, *args)
 
+class RangeProcedureFilter(ProcedureFilter):
+	base_form = RangeForm
+
+	def __init__(self, procedure_name):
+		super().__init__(procedure_name)
+		self.range_fields = []
+		self.range_buffer = []
+
+	def field(self, field_name, field_label=None, field_cls=forms.CharField,
+			range_field=False, **field_kwargs):
+		super().field(field_name, field_label, field_cls, **field_kwargs)
+
+		if range_field:
+			self._add_range_field(self.field_keys[-1])
+
+		return self
+
+	def _add_range_field(self, range_field):
+		self.range_buffer.append(range_field)
+
+		if len(self.range_buffer) > 1:
+			self.range_fields.append(tuple(self.range_buffer[:2]))
+			self.range_buffer = []
+
+	def process_form(self, form):
+		form = super().process_form(form)
+		form.range_fields = self.range_fields
+
+		return form
+
 class QuerySetFilter(Filter):
 	def __init__(self, field_name, suffix="", connector=operator.or_):
 		self.field_name = field_name
@@ -143,9 +186,10 @@ class MultiQuerySetFilter(Filter):
 
 	def filter_queryset(self, queryset, args):
 		complex_filter = [Q(**{field: arg}) \
-				for field, arg in zip(self.fields_names, args) if arg != ""]
+				for field, arg in zip(self.fields_names, args) \
+				if arg is not None]
 
-		return queryset.filter(reduce(self.connector, complex_filter))
+		return queryset.filter(reduce(self.connector, complex_filter, Q()))
 
 class FullTextFilter(Filter):
 	def __init__(self, field_name):

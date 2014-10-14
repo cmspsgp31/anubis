@@ -220,3 +220,11 @@ ul[data-view=BooleanTokenView] li[data-token] > button {
 body > .ui-autocomplete {
 	z-index: 9999;
 }
+
+ul[data-view=BooleanTokenView] li[data-token] ul.errorlist {
+	display: none;
+}
+
+ul[data-view=BooleanTokenView] li[data-token] ul.errorlist + p > input {
+	border: 2px solid #d41c1c;
+}

@@ -22,3 +22,24 @@ from django import forms
 
 class FilterForm(forms.Form):
 	pass
+
+class RangeForm(FilterForm):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+		self.range_fields = []
+
+	def clean(self):
+		cleaned_data = super().clean()
+
+		for start_field, end_field in self.range_fields:
+			start_value = cleaned_data.get(start_field)
+			end_value = cleaned_data.get(end_field)
+
+			if start_value and end_value and end_value < start_value:
+				message = "O campo {} deve ter valor maior que o campo {}" \
+					.format(start_field, end_field)
+				self.add_error(start_field, message)
+				self.add_error(end_field, message)
+
+		return cleaned_data

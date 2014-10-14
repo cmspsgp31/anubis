@@ -81,6 +81,7 @@ class QuerySetAggregator(Aggregator):
 	def handle_base_expression(self, base_expression):
 		filter_ = self.allowed_filters[base_expression["field"]]
 		args = base_expression["args"]
+		args = filter_.validate(args)
 		return filter_.filter_queryset(self.base_queryset, args)
 
 	def handle_not_expression(self, not_expression, _):

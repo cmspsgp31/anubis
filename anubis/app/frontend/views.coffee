@@ -234,8 +234,8 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 
 			@retrieveTemplate = @getData "retrieveTemplate"
 			
-			if (@getData "current")?
-				@currentData = @getData "current"
+			if (@getData "currentData")?
+				@currentData = @getData "currentData"
 			else
 				@currentData = ""
 
