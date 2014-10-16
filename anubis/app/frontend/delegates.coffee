@@ -133,7 +133,7 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 			@el.modal("hide")
 
 	class FormDelegate extends Delegate
-		filter: ":input:visible, [data-form-control]:visible"
+		filter: ":input:visible, [data-form-control]:visible, :visible > input[type=hidden]"
 
 		findSerializer: (element) ->
 			element = $ element
@@ -199,6 +199,26 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 				@notFoundEl = $ "<div><h1>NÃO ENCONTRADO</h1></div>"
 
 			@notFoundEl.hide()
+
+			@advancing = null
+
+			if @el.is "[data-paginate]"
+				@paginationTrigger = @select "[data-next-page]"
+				($ window).scroll (ev) => @checkPaginate ev
+				($ window).resize (ev) => @checkPaginate ev
+
+		checkPaginate: (ev) ->
+			rect = @paginationTrigger[0].getBoundingClientRect()
+
+			if rect.bottom < ($ window).height() and not @advancing?
+				@advancing = @view.gotoNextPage()
+				@advancing.then => @advancing = null
+
+		updateCurrentPage: (page) ->
+			(@select "[data-current-page-display]").html page
+
+		updateTotalPages: (totalPages) ->
+			(@select "[data-total-pages-display]").html totalPages
 
 		found: -> @notFoundEl.hide()
 		notFound: -> @notFoundEl.show()

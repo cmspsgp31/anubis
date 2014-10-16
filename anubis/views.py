@@ -20,12 +20,15 @@
 
 from rest_framework.views import APIView
 from django.template.loaders.app_directories import Loader
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from rest_framework.exceptions import NotAcceptable
 from rest_framework.response import Response
 
 from anubis.url import BooleanBuilder
 from anubis.aggregators import QuerySetAggregator, TokenAggregator
 from anubis.filters import Filter, ConversionFilter
+
+from functools import reduce
 
 class TemplateRetrieverView(APIView):
 	allowed_views = {}
@@ -158,10 +161,16 @@ class MultiModelMixin(metaclass=MultiModelMeta):
 class FilterViewMixin:
 	expression_parameter = "search"
 	allowed_filters = {}
+	page_parameter = "page"
+	objects_per_page = None
+	pagination_cumulative = False
 
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.boolean_expression = None
+		self.current_page = None
+		self.current_page_object = None
+		self.paginator = None
 
 	def _get_queryset_filter(self, queryset):
 		aggregator = QuerySetAggregator(queryset, self.allowed_filters)
@@ -179,6 +188,10 @@ class FilterViewMixin:
 			aggregator = TokenAggregator(self.allowed_filters)
 			context["search_expression"] = \
 				self.boolean_expression.traverse(aggregator)
+
+		context["current_page"] = self.current_page
+		context["current_page_object"] = self.current_page_object
+		context["paginator"] = self.paginator
 
 		return context
 
@@ -214,15 +227,54 @@ class FilterViewMixin:
 
 		return super().get(*args, **kwargs)
 
+	def get_serializer_context(self):
+		if self.objects_per_page is not None:
+			return \
+				{ "current_page": self.current_page
+				, "total_pages": self.paginator.num_pages
+				, "last_page": self.paginator.num_pages == self.current_page
+				}
+
+		return super().get_serializer_context()
+
 	def get_queryset(self):
 		# MRO do Python garante que haverá um get_queryset definido aqui se
 		# FilterViewMixin for declarado como class pai antes da classe de View.
 		original = super().get_queryset()
 
 		if self.boolean_expression is not None:
-			return self._get_queryset_filter(original)
+			queryset = self._get_queryset_filter(original)
 		else:
-			return original.none()
+			queryset = original.none()
+
+		if self.objects_per_page is not None:
+			queryset = self.get_queryset_on_page(queryset)
+
+		return queryset
+
+	def get_queryset_on_page(self, queryset):
+		self.current_page = self.kwarg_or_none(self.page_parameter)
+		self.paginator = Paginator(list(queryset), self.objects_per_page)
+
+		if self.current_page is None or self.current_page == 0:
+			self.current_page = 1
+		else:
+			self.current_page = int(self.current_page)
+
+		if self.current_page > self.paginator.num_pages:
+			self.current_page = self.paginator.num_pages
+
+		if self.pagination_cumulative:
+			pages = range(1, self.current_page + 1)
+		else:
+			pages = [self.current_page]
+
+		def fold(qset, page):
+			self.current_page_object = self.paginator.page(page)
+			qset += list(self.current_page_object.object_list)
+			return qset
+
+		return reduce(fold, pages, [])
 
 	@classmethod
 	def fieldsets(cls):

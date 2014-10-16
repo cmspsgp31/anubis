@@ -136,7 +136,7 @@ class TokenAggregator(Aggregator):
 			hide_legend = " style=\"display: none;\""
 		else:
 			hide_legend = ""
-		
+
 		contents = """
 			<fieldset>
 			<div class="legend"{hide_legend}>{full_name}</div>

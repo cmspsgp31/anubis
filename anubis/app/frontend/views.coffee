@@ -1,4 +1,10 @@
-define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbone, _, $, swig, Delegates) ->
+define [ "backbone"
+	, "underscore"
+	, "jquery"
+	, "swig"
+	, "anubis/delegates"
+	, "anubis/models"],
+(Backbone, _, $, swig, Delegates, Models) ->
 	exports = {}
 
 	exports.TemplateManager = class TemplateManager
@@ -237,7 +243,25 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 			if (@getData "currentData")?
 				@currentData = @getData "currentData"
 			else
-				@currentData = ""
+				@currentData = ""?
+
+			if (@getData "modelsAt")?
+				@modelsAt = @getData "modelsAt"
+
+			@usesPagination = (@getData "paginate")?
+
+			if @usesPagination
+				if (@getData "currentPage")?
+					@currentPage = parseInt (@getData "currentPage")
+				else
+					@currentPage = 1
+
+				@nextPage = @currentPage + 1
+				@hasNextPage = not ((@getData "lastPage")?)
+
+				@_pageTemplate = parseInt (@getData "pageTemplateIndex")
+				@activateTemplate = @getData "activateTemplate"
+				@objectsPerPage = parseInt (@getData "objectsPerPage")
 
 			@usesDynamicTemplates = (@getData "itemTemplateIndex")?
 
@@ -247,6 +271,8 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 				@_itemTemplate = @getData "itemTemplate"
 
 			@shouldReload = false
+
+			@loading = null
 
 		retrieveUrl: ->
 			swig.render @retrieveTemplate, locals: args: @retrieveData
@@ -258,7 +284,8 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 				@_itemTemplate
 
 		collectionFor: (retrieveUrl) ->
-			@collection = new Backbone.Collection
+			@collection = new Models.ExtendedCollection
+			if @modelsAt? then @collection.modelListProperty = @modelsAt
 			@collection.url = retrieveUrl
 
 		template: -> @baseTemplate
@@ -272,21 +299,54 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 
 			@currentData = retrieveUrl
 
-			if not @shouldReload and not differentData
+			# if not @shouldReload and not differentData
+			# 	return
+			# else if not @shouldReload and differentData and haveCache and
+			# 		inCache
+			# 	@collection = @cache[retrieveUrl]
+			# 	@render()
+			# else
+			# 	@collectionFor retrieveUrl
+
+			# 	if not @shouldReload and differentData and haveCache and
+			# 			not inCache
+			# 		@cache[retrieveUrl] = @collection
+
+			# 	@shouldReload = false
+			# 	@sync()
+
+			if not differentData and not @shouldReload
 				return
-			else if not @shouldReload and differentData and haveCache and
+			else if differentData and not @shouldReload and haveCache and
 					inCache
 				@collection = @cache[retrieveUrl]
 				@render()
+			else if @shouldReload and haveCache and inCache
+				if differentData then @collection = @cache[retrieveUrl]
+				@sync()
 			else
 				@collectionFor retrieveUrl
 
-				if not @shouldReload and differentData and haveCache and
-						not inCache
-					@cache[retrieveUrl] = @collection
+				if haveCache then @cache[retrieveUrl] = @collection
 
-				@shouldReload = false
 				@sync()
+
+		gotoNextPage: ->
+			if @hasNextPage
+				newData = @retrieveData[0..]
+				newData[@_pageTemplate] = @nextPage
+				url = swig.render @activateTemplate, locals: args: newData
+
+				@router.navigate url,
+					trigger: true
+					replace: true
+
+				@loading = new $.Deferred
+			else
+				resolved = new $.Deferred
+				resolved.resolve()
+				resolved
+
 
 		sync: ->
 			@delegate.wait()
@@ -296,7 +356,17 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 				.fail (t) => @constructor.error @router, t
 				.progress (p...) -> console.log p
 
+		updatePaginationInfo: ->
+			@currentPage = @collection.properties.current_page
+			@hasNextPage = not @collection.properties.last_page
+			@nextPage = @currentPage + 1
+
+			@delegate.updateCurrentPage @currentPage
+			@delegate.updateTotalPages @collection.properties.total_pages
+
 		render: ->
+			if @collection.properties? then @updatePaginationInfo()
+
 			delete @subviews
 
 			if @baseTemplate?
@@ -328,12 +398,26 @@ define ["backbone", "underscore", "jquery", "swig", "anubis/delegates"], (Backbo
 
 				defer.resolve()
 
+			defer.then =>
+				if @loading
+					@loading.resolve()
+					@loading = null
+
 			defer
 
 		renderSingleItem: (templateName, index, end_range) ->
 			model = @collection.at index
 			template = @constructor.templates.get templateName
-			swig.render template, locals:
+
+			if @usesPagination
+				page = index / @objectsPerPage
+				if index != 0 and index % @objectsPerPage == 0
+
+					item = "<a name='page-#{page - 1}'></a>"
+				else item = ""
+			else item = ""
+
+			item += swig.render template, locals:
 				obj: model.attributes
 				loop:
 					first: index == 0

@@ -10,6 +10,7 @@ scripts =
 	, "router"
 	, "delegates"
 	, "token_view"
+	, "models"
 	]
 
 
