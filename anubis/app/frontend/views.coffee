@@ -305,16 +305,18 @@ define [ "backbone"
 			differentData = @currentData != retrieveUrl
 			haveCache = @cache?
 			inCache = if haveCache then (retrieveUrl in _.keys @cache) else false
+			shouldReload = @shouldReload
 
 			@currentData = retrieveUrl
+			@shouldReload = false
 
-			if not differentData and not @shouldReload
+			if not differentData and not shouldReload
 				return
-			else if differentData and not @shouldReload and haveCache and
+			else if differentData and not shouldReload and haveCache and
 					inCache
 				@collection = @cache[retrieveUrl]
 				@render()
-			else if @shouldReload and haveCache and inCache
+			else if shouldReload and haveCache and inCache
 				if differentData then @collection = @cache[retrieveUrl]
 				@sync()
 			else
