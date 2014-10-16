@@ -202,10 +202,15 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 
 			@advancing = null
 
-			if @el.is "[data-paginate]"
-				@paginationTrigger = @select "[data-next-page]"
-				($ window).scroll (ev) => @checkPaginate ev
-				($ window).resize (ev) => @checkPaginate ev
+		preparePagination: ->
+			@paginationTrigger = @select "[data-next-page]"
+			@paginationTrigger.on "click", =>
+				if not @advancing?
+					@advancing = @view.gotoNextPage()
+					@advancing.then => @advancing = null
+
+			# ($ window).scroll (ev) => @checkPaginate ev
+			# ($ window).resize (ev) => @checkPaginate ev
 
 		checkPaginate: (ev) ->
 			rect = @paginationTrigger[0].getBoundingClientRect()
@@ -219,6 +224,62 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 
 		updateTotalPages: (totalPages) ->
 			(@select "[data-total-pages-display]").html totalPages
+		
+		updateTotalObjects: (totalObjects) ->
+			if (parseInt totalObjects) != 0
+				(@select "[data-results-display]").show()
+				(@select "[data-empty-display]").hide()
+				(@select "[data-total-objects-display]").html totalObjects
+			else
+				(@select "[data-results-display]").hide()
+				(@select "[data-empty-display]").show()
+		
+		updateShowing: (recordCount) ->
+			(@select "[data-showing]").html recordCount
+		
+		anchorForPage: (page) ->
+			"""
+			<div class="clearfix"></div>
+			<a name='page-#{page}' data-page='#{page}'></a>
+			"""
+
+		linkForPage: (page) ->
+			recordNumber = ((parseInt page) - 1) * @view.objectsPerPage + 1
+			"<li><a href='#' data-goto-page='#{page}'>#{recordNumber} em diante</a><li>"
+
+		linkForNext: ->
+			"<li><a href='#' data-show-all>Carregar todos</a></li>"
+
+		createPageLinks: ->
+			menu = @select "[data-page-list]"
+			($ "*", menu).off()
+
+			contents = (@linkForPage ($ pageElem).data "page" \
+				for pageElem in @select "[data-page]")
+
+			if @view.hasNextPage
+				contents.push "<li class='divider'></li>"
+				contents.push @linkForNext()
+
+			menu.html contents.join ""
+
+			($ "[data-goto-page]", menu).on "click", (ev) =>
+				ev.preventDefault()
+				page = ($ ev.target).data "gotoPage"
+				@moveToPage page
+
+			($ "[data-show-all]", menu).on "click", (ev) =>
+				ev.preventDefault()
+				@view.gotoLastPage()
+
+		moveToPage: (page) ->
+			offset = ($ "[data-page=#{page}]").offset().top
+			offset -= ($ "header").height()
+			promise = new $.Deferred
+			($ "html, body").animate scrollTop: offset,
+				duration: 250
+				done: -> promise.resolve()
+			promise
 
 		found: -> @notFoundEl.hide()
 		notFound: -> @notFoundEl.show()

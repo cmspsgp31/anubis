@@ -18,6 +18,14 @@ def fieldsets(view_name):
 def getitem(obj, key):
 	return obj[key]
 
+@register.filter
+def page_number(counter, objects_per_page):
+	try:
+		return int(counter) // int(objects_per_page) + 1
+	except:
+		return ''
+
+
 def template_pair(field_name):
 	return (field_name, "{{{{ {}|safe }}}}".format(field_name))
 

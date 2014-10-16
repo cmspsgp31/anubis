@@ -118,13 +118,7 @@ define [ "backbone"
 				if el.data "delegate"
 					options.delegateClass = Delegates[el.data "delegate"]
 
-				try
-					views.push new viewClasses[viewName] router, options
-				catch e
-					console.log e
-					console.log exports
-					console.log viewName
-					throw e
+				views.push new viewClasses[viewName] router, options
 
 			return views
 
@@ -250,18 +244,7 @@ define [ "backbone"
 
 			@usesPagination = (@getData "paginate")?
 
-			if @usesPagination
-				if (@getData "currentPage")?
-					@currentPage = parseInt (@getData "currentPage")
-				else
-					@currentPage = 1
-
-				@nextPage = @currentPage + 1
-				@hasNextPage = not ((@getData "lastPage")?)
-
-				@_pageTemplate = parseInt (@getData "pageTemplateIndex")
-				@activateTemplate = @getData "activateTemplate"
-				@objectsPerPage = parseInt (@getData "objectsPerPage")
+			if @usesPagination then @preparePagination()
 
 			@usesDynamicTemplates = (@getData "itemTemplateIndex")?
 
@@ -273,6 +256,32 @@ define [ "backbone"
 			@shouldReload = false
 
 			@loading = null
+
+		preparePagination: ->
+			@delegate.preparePagination()
+			@activateTemplate = @getData "activateTemplate"
+
+			if (@getData "currentPage")?
+				@currentPage = parseInt (@getData "currentPage")
+			else
+				@currentPage = 1
+
+			@nextPage = @currentPage + 1
+			@totalPages = parseInt (@getData "totalPages")
+			@totalObjects = parseInt (@getData "totalObjects")
+			@hasNextPage = not ((@getData "lastPage")?)
+			@objectsPerPage = parseInt (@getData "objectsPerPage")
+
+			@_pageTemplate = parseInt (@getData "pageTemplateIndex")
+
+			pageListParent = (@delegate.select "[data-page-list]").parent()
+			pageListParent.on "show.bs.dropdown", => @delegate.createPageLinks()
+
+			@showOrHideNext()
+
+			if @currentPage != 1 then @delegate.moveToPage @currentPage
+
+			@delegate.updateTotalObjects @totalObjects
 
 		retrieveUrl: ->
 			swig.render @retrieveTemplate, locals: args: @retrieveData
@@ -299,22 +308,6 @@ define [ "backbone"
 
 			@currentData = retrieveUrl
 
-			# if not @shouldReload and not differentData
-			# 	return
-			# else if not @shouldReload and differentData and haveCache and
-			# 		inCache
-			# 	@collection = @cache[retrieveUrl]
-			# 	@render()
-			# else
-			# 	@collectionFor retrieveUrl
-
-			# 	if not @shouldReload and differentData and haveCache and
-			# 			not inCache
-			# 		@cache[retrieveUrl] = @collection
-
-			# 	@shouldReload = false
-			# 	@sync()
-
 			if not differentData and not @shouldReload
 				return
 			else if differentData and not @shouldReload and haveCache and
@@ -333,19 +326,31 @@ define [ "backbone"
 
 		gotoNextPage: ->
 			if @hasNextPage
-				newData = @retrieveData[0..]
-				newData[@_pageTemplate] = @nextPage
-				url = swig.render @activateTemplate, locals: args: newData
-
-				@router.navigate url,
-					trigger: true
-					replace: true
-
-				@loading = new $.Deferred
+				@gotoPage @nextPage
 			else
 				resolved = new $.Deferred
 				resolved.resolve()
 				resolved
+
+		gotoLastPage: ->
+			if @hasNextPage
+				@gotoPage @totalPages
+			else
+				resolved = new $.Deferred
+				resolved.resolve()
+				resolved
+
+
+		gotoPage: (page) ->
+			newData = @retrieveData[0..]
+			newData[@_pageTemplate] = page
+			url = swig.render @activateTemplate, locals: args: newData
+
+			@router.navigate url,
+				trigger: true
+				replace: true
+
+			@loading = new $.Deferred
 
 
 		sync: ->
@@ -359,10 +364,23 @@ define [ "backbone"
 		updatePaginationInfo: ->
 			@currentPage = @collection.properties.current_page
 			@hasNextPage = not @collection.properties.last_page
+			@totalPages = @collection.properties.total_pages
+			@totalObjects = @collection.properties.total_objects
 			@nextPage = @currentPage + 1
+			@showingRecords = @collection.size()
 
+			@delegate.updateTotalObjects @totalObjects
+			@delegate.updateShowing @showingRecords
 			@delegate.updateCurrentPage @currentPage
-			@delegate.updateTotalPages @collection.properties.total_pages
+			@delegate.updateTotalPages @totalPages
+
+			@showOrHideNext()
+
+		showOrHideNext: ->
+			if @hasNextPage
+				@delegate.paginationTrigger.show()
+			else
+				@delegate.paginationTrigger.hide()
 
 		render: ->
 			if @collection.properties? then @updatePaginationInfo()
@@ -400,22 +418,22 @@ define [ "backbone"
 
 			defer.then =>
 				if @loading
-					@loading.resolve()
-					@loading = null
+					(@delegate.moveToPage @currentPage).then =>
+						@loading.resolve()
+						@loading = null
 
 			defer
 
 		renderSingleItem: (templateName, index, end_range) ->
 			model = @collection.at index
 			template = @constructor.templates.get templateName
+			item = ""
 
 			if @usesPagination
-				page = index / @objectsPerPage
-				if index != 0 and index % @objectsPerPage == 0
+				page = index / @objectsPerPage + 1
 
-					item = "<a name='page-#{page - 1}'></a>"
-				else item = ""
-			else item = ""
+				if index % @objectsPerPage == 0
+					item = @delegate.anchorForPage page
 
 			item += swig.render template, locals:
 				obj: model.attributes

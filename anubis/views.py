@@ -229,11 +229,13 @@ class FilterViewMixin:
 
 	def get_serializer_context(self):
 		if self.objects_per_page is not None:
-			return \
+			context = \
 				{ "current_page": self.current_page
 				, "total_pages": self.paginator.num_pages
 				, "last_page": self.paginator.num_pages == self.current_page
+				, "total_objects": self.paginator.count
 				}
+			return context
 
 		return super().get_serializer_context()
 
@@ -247,14 +249,11 @@ class FilterViewMixin:
 		else:
 			queryset = original.none()
 
-		if self.objects_per_page is not None:
-			queryset = self.get_queryset_on_page(queryset)
-
 		return queryset
 
-	def get_queryset_on_page(self, queryset):
+	def _paginate_queryset(self, queryset):
 		self.current_page = self.kwarg_or_none(self.page_parameter)
-		self.paginator = Paginator(list(queryset), self.objects_per_page)
+		self.paginator = Paginator(queryset, self.objects_per_page)
 
 		if self.current_page is None or self.current_page == 0:
 			self.current_page = 1
