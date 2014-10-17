@@ -137,10 +137,18 @@ define [ "backbone"
 			previous = @editor.prev()
 
 			if previous.length > 0 then @removeToken previous
+			else
+				resolved = new $.Deferred
+				resolved.resolve()
+				resolved
 
 		setTokenData: (token, data) ->
 			for [el, datum] in _.zip ($ "input, select, textarea", token), data
 				($ el).val datum
+
+		enable: -> (@select "[data-remove], :input").prop "disabled", false
+
+		disable: -> (@select "[data-remove], :input").prop "disabled", true
 
 
 
@@ -164,10 +172,13 @@ define [ "backbone"
 
 		constructor: ->
 			super
+
 			if (@getData "expressionIndex")?
 				@expressionIndex = parseInt (@getData "expressionIndex")
 			else
 				@expressionIndex = 0
+
+			@backspacing = null
 
 			@listenAll()
 
@@ -204,6 +215,7 @@ define [ "backbone"
 				@tokenCache[expression] = obj["expression"]
 				@delegate.update obj["expression"]
 				@delegate.createEditor()
+				@resolveRouting()
 
 		translationPromise: (expression) ->
 			if expression not in _.keys @tokenCache
@@ -335,8 +347,10 @@ define [ "backbone"
 		handleIgnore: (ev) ->
 
 		handleBackspace: (ev) ->
-			if @delegate.inputVal().length == 0
-				@delegate.removePreviousToken()
+			if not @backspacing?
+				if @delegate.inputVal().length == 0
+					@backspacing = @delegate.removePreviousToken()
+					@backspacing.then => @backspacing = null
 
 		handleExpression: (ev) ->
 			ev.preventDefault()

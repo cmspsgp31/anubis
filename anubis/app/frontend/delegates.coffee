@@ -26,6 +26,10 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 			else
 				@el.removeClass "active"
 
+		enable: -> @el.prop "disabled", false
+
+		disable: -> @el.prop "disabled", true
+
 		show: -> @el.show()
 		hide: -> @el.hide()
 		select: (pattern) ->
@@ -123,7 +127,7 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 
 		bindEvents: ->
 			(@select "[data-close]").on "click", (ev) =>
-				@view.router.navigate @view.router.lastNonModalMatch,
+				what = @view.router.navigate @view.router.lastNonModalMatch,
 					trigger: true
 
 		show: -> @el.modal("show")
@@ -188,6 +192,26 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 			el = @select "[name='#{key}']"
 
 			if not el.length then null else el.val()
+
+		disable: ->
+			controls = @select @filter
+
+			for control in controls
+				control = $ control
+				delegate = Delegate.forElement control
+
+				if delegate? then delegate.disable()
+				else control.prop 'disabled', true
+
+		enable: ->
+			controls = @select @filter
+
+			for control in controls
+				control = $ control
+				delegate = Delegate.forElement control
+
+				if delegate? then delegate.enable()
+				else control.prop 'disabled', false
 
 	class CollectionDelegate extends Delegate
 		constructor: ->

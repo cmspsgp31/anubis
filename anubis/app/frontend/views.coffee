@@ -153,7 +153,10 @@ define [ "backbone"
 
 			@autoRoute()
 
+			@routing = null
 			@router.on "route", (args...) => @routeEvent args
+
+		newRouting: -> @routing = new $.Deferred
 
 		autoRoute: ->
 			if @getData "route"
@@ -175,6 +178,7 @@ define [ "backbone"
 				@isMatch = false
 
 				if not @active then @activate.apply @, @matchArgs
+				else @resolveRouting()
 
 				@lastMatchArgs = @matchArgs
 				@matchArgs = null
@@ -184,10 +188,19 @@ define [ "backbone"
 		routeMatchIfActive: ->
 			@isMatch = @active
 			@matchArgs = []
+			@newRouting()
+			if not @active then @routing.resolve()
+			@routing
 
 		routeMatch: (args...) ->
 			@isMatch = true
 			@matchArgs = args
+			@newRouting()
+
+		resolveRouting: ->
+			if @routing?
+				@routing.resolve @route
+				@routing = null
 
 		deactivate: ->
 			@setActive false
@@ -198,6 +211,7 @@ define [ "backbone"
 			@setActive true
 			@trigger "activated", this
 			@delegate.show()
+			@resolveRouting()
 
 	exports.RecordView = class RecordView extends RouteableView
 		constructor: ->
@@ -216,6 +230,7 @@ define [ "backbone"
 				.done =>
 					@render()
 					RouteableView::activate.apply this, []
+				.always => @resolveRouting()
 				.fail (t) => @constructor.error @router, t
 				.progress (p...) -> console.log p
 
@@ -311,7 +326,7 @@ define [ "backbone"
 			@shouldReload = false
 
 			if not differentData and not shouldReload
-				return
+				@resolveRouting()
 			else if differentData and not shouldReload and haveCache and
 					inCache
 				@collection = @cache[retrieveUrl]
@@ -348,11 +363,17 @@ define [ "backbone"
 			newData[@_pageTemplate] = page
 			url = swig.render @activateTemplate, locals: args: newData
 
-			@router.navigate url,
+			routePromise = @router.navigate url,
 				trigger: true
 				replace: true
 
-			@loading = new $.Deferred
+			pagePromise = new $.Deferred
+
+			routePromise.then =>
+				(@delegate.moveToPage @currentPage).then ->
+					pagePromise.resolve()
+
+			pagePromise
 
 
 		sync: ->
@@ -398,7 +419,6 @@ define [ "backbone"
 					@subviews = @constructor.scanViews @router, @$el
 
 		renderItems: ->
-			defer = new $.Deferred
 			target = @delegate.select "[data-container]"
 			if target.length == 0 then target = @$el
 			target.empty()
@@ -408,23 +428,18 @@ define [ "backbone"
 				contents = (@renderSingleItem @itemTemplate(), i, end_range \
 					for i in [0..end_range])
 
-				defer.then =>
-					target.html contents.join ""
-					@delegate.found()
-
-				defer.resolve()
+				target.html contents.join ""
+				@delegate.found()
 			else
-				defer.then => @delegate.notFound()
+				@delegate.notFound()
 
-				defer.resolve()
+			promise = @resolveRouting()
 
-			defer.then =>
-				if @loading
-					(@delegate.moveToPage @currentPage).then =>
-						@loading.resolve()
-						@loading = null
+			if not promise?
+				promise = new $.Deferred
+				promise.resolve()
 
-			defer
+			promise
 
 		renderSingleItem: (templateName, index, end_range) ->
 			model = @collection.at index
@@ -566,10 +581,20 @@ define [ "backbone"
 				if $.contains form, @el
 					($ "[name=#{name}]", ($ form)).val [value]
 
+			@resolveRouting()
+
 		deactivate: ->
 
 	exports.FormRouterView = class FormRouterView extends View
 		@delegate: Delegates.FormDelegate
+
+
+		constructor: ->
+			super
+
+			@router.on "route", (args...) =>
+				@delegate.disable()
+				@router.routing.then => @delegate.enable()
 
 		updateAll: (data) ->
 			tag = (@delegate.select "[data-update-group]").filter(":visible")

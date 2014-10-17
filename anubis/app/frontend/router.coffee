@@ -6,6 +6,8 @@ define ["backbone", "underscore", "anubis/views"], (Backbone, _, Views) ->
 			super
 			@error = false
 			@route /^(.*)$/, "", @routeEvent
+			@routing = new $.Deferred
+			@routing.resolve()
 
 		_objRoutes:
 			"":
@@ -13,6 +15,20 @@ define ["backbone", "underscore", "anubis/views"], (Backbone, _, Views) ->
 				objects: []
 
 		_modalRoutes: {}
+
+		navigate: (args...) ->
+			if @routing.state() != "pending"
+				@routing = new $.Deferred
+
+				super args...
+
+				@routing
+			else
+				routeAgain = new $.Deferred
+				routeAgain.reject()
+
+				routeAgain
+
 
 		routeEvent: (route, args...) ->
 			if @error
@@ -22,25 +38,30 @@ define ["backbone", "underscore", "anubis/views"], (Backbone, _, Views) ->
 				Views.View.hideError()
 
 			modalMatch = false
+			promises = []
 			
 			for routeName, routeInfo of @_modalRoutes
 				matches = route.match routeInfo.route
 				if matches? and matches.length > 0
 					obj = routeInfo.object
-					obj.routeMatch.apply obj, matches[1..]
+					promises.push obj.routeMatch.apply obj, matches[1..]
 					modalMatch = true
 					break
 
 			for routeName, routeInfo of @_objRoutes
 				if modalMatch
 					for obj in routeInfo.objects
-						obj.routeMatchIfActive()
+						promises.push obj.routeMatchIfActive()
 				else
 					matches = route.match routeInfo.route
 					if matches? and matches.length > 0
 						@lastNonModalMatch = route
 						for obj in routeInfo.objects
-							obj.routeMatch.apply obj, matches[1..]
+							promises.push obj.routeMatch.apply obj, matches[1..]
+
+			if @routing?
+				promises = $.when promises...
+				promises.then => @routing.resolve()
 
 
 		routeFor: (objs) ->
@@ -76,8 +97,7 @@ define ["backbone", "underscore", "anubis/views"], (Backbone, _, Views) ->
 			if @_objRoutes[routeName]?
 				@_objRoutes[routeName].objects = _.reject(
 					@_objRoutes[routeName].objects, (v) -> v == object)
-				
-		
+
 		unroute: (route) ->
 			routeName = @routeName route
 
