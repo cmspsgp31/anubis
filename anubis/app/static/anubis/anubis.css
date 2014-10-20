@@ -124,6 +124,16 @@ ul[data-view=BooleanTokenView] li[data-token="expression"] input {
 	background-color: #a8dde4;
 	color: #137482;
 	border: 1px solid #137482;
+	line-height: 14px;
+}
+
+ul[data-view=BooleanTokenView] li[data-token="expression"] button.ui-datepicker-trigger {
+	vertical-align: middle;
+	height: 24px;
+	margin-left: 2px;
+	padding-top: 2px;
+	border: none;
+	background: inherit;
 }
 
 ul[data-view=BooleanTokenView] li[data-token="open"] {
@@ -205,8 +215,10 @@ ul[data-view=BooleanTokenView] li[data-token="editor"] > fieldset > p {
 ul[data-view=BooleanTokenView] li[data-token="editor"] > fieldset > p > input {
 	background-color: white;
 	color: black;
-	border: none;
-	outline: 0;
+	border: none !important;
+	box-shadow: none !important;
+	transition: none !important;
+	outline: 0 !important;
 	width: 100%;
 }
 

@@ -121,9 +121,10 @@ define [ "backbone"
 			token.show
 				effect: "puff"
 				duration: 150
-				complete: ->
+				complete: =>
 					firstInput = $ "p:first-of-type > :focusable", token
 					if firstInput.size() then firstInput.focus()
+					@view.tokenViewEvents.trigger "didInsertToken"
 
 
 		removeToken: (token) ->
@@ -202,6 +203,8 @@ define [ "backbone"
 				@insertTokenWithData (target.data "tokenName"),
 					[target.data "tokenValue"]
 
+			@tokenViewEvents = _.clone Backbone.Events
+
 		clearAllTokens: (ev) ->
 			@delegate.update ""
 			@delegate.createEditor focus: true
@@ -215,10 +218,12 @@ define [ "backbone"
 				@tokenCache[expression] = obj["expression"]
 				@delegate.update obj["expression"]
 				@delegate.createEditor()
+				@tokenViewEvents.trigger "didTranslate", obj["expression"]
 				@resolveRouting()
 
 		translationPromise: (expression) ->
 			if expression not in _.keys @tokenCache
+				@tokenViewEvents.trigger "willTranslate", expression
 				defer = $.ajax
 					type: "GET"
 					dataType: "json"
