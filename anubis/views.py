@@ -228,16 +228,17 @@ class FilterViewMixin:
 		return super().get(*args, **kwargs)
 
 	def get_serializer_context(self):
+		context = super().get_serializer_context()
+
 		if self.objects_per_page is not None:
-			context = \
+			context.update(dict(extra_data= \
 				{ "current_page": self.current_page
 				, "total_pages": self.paginator.num_pages
 				, "last_page": self.paginator.num_pages == self.current_page
 				, "total_objects": self.paginator.count
-				}
-			return context
+				}))
 
-		return super().get_serializer_context()
+		return context
 
 	def get_queryset(self):
 		# MRO do Python garante que haverá um get_queryset definido aqui se

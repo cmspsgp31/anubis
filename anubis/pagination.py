@@ -23,7 +23,7 @@ class ContextSerialiazerMixin:
 
 	@property
 	def data(self):
-		data = dict(self.context)
+		data = dict(self.context["extra_data"])
 		data.update({self._original_object_name: super().data})
 
 		return data
