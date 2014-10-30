@@ -83,6 +83,7 @@ class AddCustomViewIndex(AddCustomIndex):
 	def __init__(self, model, view_name, index_name, sql):
 		super().__init__(model, index_name, sql)
 		self.table_name = "{}_{}".format(self.table_name, view_name)
+		self.index_name = "{}_{}".format(self.table_name, index_name)
 
 	def describe(self):
 		return "Add index {} to view {}".format(self.index_name,
@@ -238,7 +239,6 @@ class AddFunction(Operation):
 
 	def database_forwards(self, app_label, schema_editor, from_state, to_state):
 		body = self.get_full_body()
-		# print(body)
 		schema_editor.execute(body)
 
 	def database_backwards(self, app_label, schema_editor, from_state,
