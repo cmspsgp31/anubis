@@ -148,7 +148,8 @@ class ElasticModelMixin:
 
 
 class ElasticQuerySet(ProcedureQuerySet):
-	def es_query(self, body, save_score=True, save_highlights=True):
+	def es_query(self, body, timeout="20m", save_score=True,
+			save_highlights=True):
 		es_server = self.model.es_get_server()
 		path = self.model._elastic["path"]
 		body = dict(body)
@@ -164,8 +165,17 @@ class ElasticQuerySet(ProcedureQuerySet):
 			for field in self.model._elastic["highlight"]:
 				highlights.setdefault(field, {})
 
-		print(body)
-		es_queryset = scan(es_server, query=body, **path)
+		kwargs = \
+			{ "query": body
+			, "timeout": timeout
+			, "scroll": timeout
+			}
+
+		kwargs.update(path)
+
+		print(kwargs)
+
+		es_queryset = scan(es_server, **kwargs)
 		data = {d["_id"]: d for d in es_queryset}
 
 		queryset = self.filter(id__in=data.keys())
