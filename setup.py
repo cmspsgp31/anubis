@@ -63,9 +63,11 @@ setup \
 			, 'parseurl/LICENSE'
 			]
 		, 'anubis.app': \
-			[ 'frontend/*'
+			[ 'frontend/*.coffee'
+			, 'frontend/Cakefile'
+			, 'frontend/build/anubis.build.js'
 			, 'static/anubis/anubis.css'
-			, 'templates/*'
+			, 'templates/*.html'
 			]
 		}
 	, cmdclass={'install': install}
