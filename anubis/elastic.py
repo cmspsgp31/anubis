@@ -22,6 +22,7 @@ from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
 from elasticsearch.helpers import scan
 from anubis.query import ProcedureQuerySet
+from anubis.filters import Filter
 from django.conf import settings
 
 class ElasticModelMixin:
@@ -148,7 +149,7 @@ class ElasticModelMixin:
 
 
 class ElasticQuerySet(ProcedureQuerySet):
-	def es_query(self, body, timeout="20m", save_score=True,
+	def es_query(self, body, timeout=None, min_score=None, save_score=True,
 			save_highlights=True):
 		es_server = self.model.es_get_server()
 		path = self.model._elastic["path"]
@@ -165,12 +166,20 @@ class ElasticQuerySet(ProcedureQuerySet):
 			for field in self.model._elastic["highlight"]:
 				highlights.setdefault(field, {})
 
-		kwargs = \
-			{ "query": body
-			, "timeout": timeout
-			, "scroll": timeout
-			}
+		if timeout is not None:
+			timeout = \
+				{ "timeout": timeout
+				, "scroll": timeout
+				}
+		else:
+			timeout = {}
 
+		kwargs = { "query": body }
+
+		if min_score is not None:
+			kwargs["min_score"] = min_score
+
+		kwargs.update(timeout)
 		kwargs.update(path)
 
 		print(kwargs)
@@ -188,3 +197,111 @@ class ElasticQuerySet(ProcedureQuerySet):
 				element._es_highlights = hit["highlight"]
 
 		return queryset
+
+
+class ElasticFilter(Filter):
+	def __init__(self,  es_field_name, **es_kwargs):
+		self.kwargs = es_kwargs
+		self.field_name = es_field_name
+
+		super().__init__(es_field_name)
+
+	def make_query_body(self, args):
+		raise NotImplementedError()
+
+	def make_kwargs(self, args):
+		return {}
+
+	def get_server(self, queryset):
+		return queryset.model.es_get_server()
+
+	def get_path(self, queryset):
+		return queryset.model._elastic["path"]
+
+	def default_kwargs(self):
+		return {}
+
+	def default_body(self):
+		return \
+			{ "highlight": {"fields": {self.field_name: {}}}
+			, "fields": ["_id", "highlight"]
+			}
+
+	def should_import_results(self):
+		return True
+
+	def import_results(self, obj, hit):
+		obj._es_highlights = hit["highlight"]
+
+	def filter_queryset(self, queryset, args):
+		server = self.get_server(queryset)
+		path = self.get_path(queryset)
+		query_body = self.default_body()
+		request_kwargs = self.make_kwargs(args)
+		kwargs = self.default_kwargs()
+
+		query_body.update(self.make_query_body(args))
+
+		kwargs.update(self.kwargs)
+		kwargs.update(request_kwargs)
+		kwargs.update(path)
+
+		kwargs["query"] = query_body
+
+		es_queryset = scan(server, **kwargs)
+		data = {d["_id"]: d for d in es_queryset}
+
+		queryset = queryset.filter(id__in=data.keys())
+
+		if self.should_import_results():
+			for obj in queryset:
+				hit = data[str(obj.id)]
+				self.import_results(obj, hit)
+
+		return queryset
+
+class ElasticMatchPhraseFilter(ElasticFilter):
+	def make_query_body(self, args):
+		arg = " ".join(list(args))
+
+		return {
+			"query": {
+				"match_phrase": {
+					self.field_name: arg
+				}
+			}
+		}
+
+class ElasticFuzzyLikeThisFieldFilter(ElasticFilter):
+	def make_query_body(self, args):
+		like_text = args[0]
+		min_score = float(args[1])
+
+		return {
+			"query": {
+				"flt_field": {
+					self.field_name: {
+						"like_text": like_text,
+						"fuzziness": "AUTO"
+					}
+				}
+			},
+			"min_score": min_score
+		}
+
+class ElasticFuzzyPhraseFilter(ElasticFilter):
+	def make_query_body(self, args):
+		arg = " ".join(list(args))
+
+		return {
+			"query": {
+				"match": {
+					self.field_name: {
+						"query": arg,
+						"fuzziness": "AUTO",
+						# "analyzer": "brazilian",
+						"type": "phrase"
+					}
+				}
+			}
+		}
