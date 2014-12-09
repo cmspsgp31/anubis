@@ -54,13 +54,18 @@ class install(install_):
 setup \
 	( name="anubis"
 	, version="0.1"
-	, packages=["anubis"]
+	, packages=["anubis", "anubis.app", "anubis.app.templatetags"]
 	, install_requires= ["Django", "djangorestframework", "psycopg2"]
 	, package_data= \
 		{ 'anubis':
 			[ 'parseurl/*.hs'
 			, 'parseurl/*.cabal'
 			, 'parseurl/LICENSE'
+			]
+		, 'anubis.app': \
+			[ 'frontend/*'
+			, 'static/anubis/anubis.css'
+			, 'templates/*'
 			]
 		}
 	, cmdclass={'install': install}
