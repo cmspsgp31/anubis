@@ -38,7 +38,7 @@ define [ "backbone"
 				minLength: 0
 				select: (ev, ui) =>
 					if ui.item.value in _.keys BooleanTokenView.tokenExpressions
-						@view.handleDefaultExpression()
+						if ev.which == 1 then @view.handleDefaultExpression()
 
 					@input.val ui.item.value
 					token = @view.handleExpression ev
