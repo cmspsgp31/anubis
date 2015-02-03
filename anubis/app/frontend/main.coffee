@@ -12,6 +12,7 @@ define ["backbone"
 		evaluate: /\[\=(.+?)\]\]/g
 
 	swig.setFilter "getitem", (input, key) -> input[key]
+	swig.setFilter "length", (input) -> input.length
 
 	start = (historyArgs) ->
 		for t in $("link[data-template]")

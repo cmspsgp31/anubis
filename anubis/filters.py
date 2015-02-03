@@ -131,6 +131,30 @@ class ProcedureFilter(Filter):
 
 		return queryset.procedure(self.procedure_name, *args)
 
+class ChoiceProcedureFilter(Filter):
+	def __init__(self, identifier, choices=None):
+		super().__init__(identifier)
+
+		if choices is not None:
+			self.choices(choices)
+
+	def choices(self, choices):
+		self.procedure_choices = choices
+
+		self.field(self.identifier, field_cls=forms.ChoiceField,
+				choices=self.procedure_choices)
+
+		return self
+
+	def filter_queryset(self, queryset, args):
+		assert isinstance(queryset, ProcedureQuerySet)
+
+		procedure_name = args[0]
+
+		assert procedure_name in dict(self.procedure_choices).keys()
+
+		return queryset.procedure(procedure_name, *args[1:])
+
 class RangeProcedureFilter(ProcedureFilter):
 	base_form = RangeForm
 
