@@ -50,7 +50,9 @@ class Filter:
 		bound_form = self.bound_form(args)
 
 		if not bound_form.is_valid():
-			exc = ValueError(bound_form.errors)
+			errors = [field.errors for field in bound_form if field.errors]
+			errors = reduce(lambda e, a: a + e, errors, [])
+			exc = ValueError(errors)
 			exc.name = lambda : "Erro de validação"
 			raise exc
 
