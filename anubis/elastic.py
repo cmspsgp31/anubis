@@ -223,12 +223,12 @@ class ElasticFilter(Filter):
 
 	def default_body(self):
 		return \
-			{ "highlight": {"fields": {self.field_name: {}}}
-			, "fields": ["_id", "highlight"]
+			{ "fields": ["_id"] #, "highlight"]
+			# { "highlight": {"fields": {self.field_name: {}}}
 			}
 
 	def should_import_results(self):
-		return True
+		return False
 
 	def import_results(self, obj, hit):
 		obj._es_highlights = hit["highlight"]
