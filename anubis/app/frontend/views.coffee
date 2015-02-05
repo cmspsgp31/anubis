@@ -529,6 +529,9 @@ define [ "backbone"
 			if not uri?
 				uri = target.attr "href"
 
+			if (target.prop "tagName").toLowerCase() == "a"
+				target.addClass "visited"
+
 			@router.navigate uri, trigger: true
 
 	exports.DynamicRouterView = class DynamicRouterView extends RouterView

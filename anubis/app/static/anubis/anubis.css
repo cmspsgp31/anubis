@@ -176,6 +176,10 @@ ul[data-view=BooleanTokenView] li[data-token="or"] {
 	font-weight: bold;
 }
 
+a[data-router].visited {
+	color: #CA42C3;
+}
+
 ul[data-view=BooleanTokenView] li[data-token] > p {
 	display: inline-block;
 	vertical-align: middle;
