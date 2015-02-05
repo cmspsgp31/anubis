@@ -46,15 +46,21 @@ class ProcedureQuerySet(QuerySet):
 
 		return (source, dest)
 
-	def order_by_procedure(self, procname, *args, field='id', **kwargs):
+	def order_by_procedure(self, procname, *args, field='id', extra_fields=None,
+			**kwargs):
 		aggregate = self.procedure_aggregate(procname, *args, **kwargs)
-		return self.order_by_aggregates(aggregate, field=field)
+		return self.order_by_aggregates(aggregate, field=field,
+				extra_fields=extra_fields)
 
-	def order_by_aggregates(self, *aggregates, field="id"):
+	def order_by_aggregates(self, *aggregates, field="id", extra_fields=None):
 		annotation = OrderedDict([("{}_{}".format(agg.default_alias, i), agg) \
 				for i, agg in enumerate(aggregates)])
 		fields = list(annotation.keys())
-		fields.append(field)
+
+		if extra_fields is not None:
+			fields += extra_fields
+		else:
+			fields.append(field)
 
 		return self.annotate(**annotation).order_by(*fields)
 
@@ -173,8 +179,9 @@ def call_procedure(procname):
 	return wrapper
 
 def call_order_by_procedure(procname):
-	def wrapper(self, *args, field='id'):
-		return self.order_by_procedure(procname, *args, field=field)
+	def wrapper(self, *args, field='id', extra_fields=None):
+		return self.order_by_procedure(procname, *args, field=field,
+				extra_fields=extra_fields)
 
 	wrapper.__name__ = procname
 
