@@ -576,9 +576,13 @@ define [ "backbone"
 			else
 				@fieldIndex = 0
 
+			@addSlash = (@getData "addSlash")?
+
 		activate: (args...) ->
 			name = @$el.attr "name"
 			value = args[@fieldIndex]
+
+			if @addSlash then value = "/" + value
 
 			for form in $ "form"
 				if $.contains form, @el
