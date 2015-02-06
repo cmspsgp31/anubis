@@ -127,6 +127,10 @@ ul[data-view=BooleanTokenView] li[data-token="expression"] input {
 	line-height: 14px;
 }
 
+ul[data-view=BooleanTokenView] li[data-token="expression"] input[type=text] {
+	width: 300px;
+}
+
 ul[data-view=BooleanTokenView] li[data-token="expression"] button.ui-datepicker-trigger {
 	vertical-align: middle;
 	height: 24px;
@@ -223,7 +227,7 @@ ul[data-view=BooleanTokenView] li[data-token="editor"] > fieldset > p > input {
 	box-shadow: none !important;
 	transition: none !important;
 	outline: 0 !important;
-	width: 100%;
+	width: 300px;
 }
 
 ul[data-view=BooleanTokenView] li[data-token] > button {
