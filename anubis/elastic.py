@@ -228,30 +228,40 @@ class ElasticFilter(Filter):
 			}
 
 	def should_import_results(self):
-		return False
+		return True
 
 	def import_results(self, obj, hit):
-		obj._es_highlights = hit["highlight"]
+		# obj._es_highlights = hit["highlight"]
+		pass
 
-	def filter_queryset(self, queryset, args):
-		server = self.get_server(queryset)
+	def _filter_django_queryset(self, queryset, args, es_data):
+		return queryset.filter(id__in=es_data.keys())
+
+	def _build_kwargs(self, queryset, args):
 		path = self.get_path(queryset)
-		query_body = self.default_body()
 		request_kwargs = self.make_kwargs(args)
 		kwargs = self.default_kwargs()
 
-		query_body.update(self.make_query_body(args))
 
 		kwargs.update(self.kwargs)
 		kwargs.update(request_kwargs)
 		kwargs.update(path)
 
+		return kwargs
+
+	def filter_queryset(self, queryset, args):
+		server = self.get_server(queryset)
+
+		query_body = self.default_body()
+		query_body.update(self.make_query_body(args))
+
+		kwargs = self._build_kwargs(queryset, args)
 		kwargs["query"] = query_body
 
 		es_queryset = scan(server, **kwargs)
 		data = {d["_id"]: d for d in es_queryset}
 
-		queryset = queryset.filter(id__in=data.keys())
+		queryset = self._filter_django_queryset(queryset, args, data)
 
 		if self.should_import_results():
 			for obj in queryset:
@@ -301,6 +311,36 @@ class ElasticFuzzyPhraseFilter(ElasticFilter):
 						"fuzziness": "AUTO",
 						# "analyzer": "brazilian",
 						"type": "phrase"
+					}
+				}
+			}
+		}
+
+class ElasticHasFTSFilter(ElasticFilter):
+	def _filter_django_queryset(self, queryset, args, es_data):
+		have_empty_field = set(es_data.keys())
+
+		server = self.get_server(queryset)
+		kwargs = self._build_kwargs(queryset, [])
+		kwargs["query"] = self.default_body()
+
+		have_doc = {int(doc["_id"]) for doc in scan(server, **kwargs)}
+		all_docs = set(queryset.model.objects.values_list("id", flat=True))
+		have_no_doc = all_docs - have_doc
+
+		fts_missing = have_empty_field | have_no_doc
+
+		return queryset.exclude(id__in=list(fts_missing))
+
+	def should_import_results(self):
+		return False
+
+	def make_query_body(self, args):
+		return {
+			"filter": {
+				"not": {
+					"range": {
+						self.field_name: {}
 					}
 				}
 			}

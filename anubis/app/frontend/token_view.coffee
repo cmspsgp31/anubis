@@ -422,12 +422,22 @@ define [ "backbone"
 						args = []
 
 						for elem in ($ "input, textarea, select", token)
-							arg = ($ elem).val().replace(/\$/g, "$$") \
-							.replace(/"/g, "$\"")
-							arg = "\"#{arg}\""
+							if (($ elem).attr "type") == "checkbox"
+								arg = if ($ elem).prop "checked" then \
+									"\"on\"" else "\"off\""
+							else
+								arg = ($ elem).val().replace(/\$/g, "$$") \
+								.replace(/"/g, "$\"")
+								arg = "\"#{arg}\""
+
 							args.push arg
 
-						expression += "#{identifier}," + args.join()
+						expression += "#{identifier},"
+
+						if args.length > 0
+							expression += args.join()
+						else
+							expression += "\"\",\"\""
 
 			obj = {}
 			obj[@getData "name"] = expression
