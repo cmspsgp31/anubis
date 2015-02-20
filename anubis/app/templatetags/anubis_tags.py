@@ -4,6 +4,8 @@ from django import template
 from django.core.urlresolvers import reverse, get_resolver
 from urllib.parse import unquote
 
+import json
+
 register = template.Library()
 
 @register.filter
@@ -13,6 +15,10 @@ def classname(obj):
 @register.filter
 def fieldsets(view_name):
 	return "{}.fieldsets".format(view_name)
+
+@register.filter
+def json_ids(object_list):
+	return json.dumps([obj.id for obj in object_list])
 
 @register.filter
 def getitem(obj, key):

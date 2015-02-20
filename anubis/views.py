@@ -20,7 +20,8 @@
 
 from rest_framework.views import APIView
 from django.template.loaders.app_directories import Loader
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.core.paginator import Paginator
+from django.http.response import HttpResponseForbidden
 from rest_framework.exceptions import NotAcceptable
 from rest_framework.response import Response
 
@@ -73,6 +74,81 @@ class TemplateRetrieverView(APIView):
 				# 	for name, template_body in views.items()})
 
 		return Response(response)
+
+class ActionView(APIView):
+	request_form = None
+	answer_field = None
+	additional_js = []
+	additional_css = []
+	title = ""
+	description = None
+	permissions_required = []
+
+	def perform_action(self, bound_form, args, kwargs):
+		raise NotImplementedError()
+
+	def dispatch(self, request, *args, **kwargs):
+		if self.permissions_required is not None:
+			if not request.user.is_authenticated():
+				response = HttpResponseForbidden()
+			else:
+				if all(map(request.user.has_perm, self.permissions_required)):
+					response = super().dispatch(request, *args, **kwargs)
+				else:
+					response = HttpResponseForbidden()
+		else:
+			response = super().dispatch(request, *args, **kwargs)
+
+		return response
+
+	def post(self, request, *args, **kwargs):
+		data = {}
+
+		if not callable(self.request_form):
+			success, reason = self.perform_action(None, args, kwargs)
+
+			data = \
+				{ "result": "action"
+				, "success": success
+				, "reason": reason
+				}
+		else:
+			form = self.request_form(request.POST)
+
+			if form.is_valid():
+				success, reason = self.perform_action(form, args, kwargs)
+				data = \
+					{ "result": "action"
+					, "success": success
+					, "reason": reason
+					}
+			else:
+				if self.answer_field is not None and \
+						self.answer_field in request.POST.keys() and \
+						request.POST[self.answer_field]:
+					result = "invalid_form"
+				else:
+					result = "requires_data"
+					form = self.request_form(initial=request.POST)
+
+				data = \
+					{ "result": result
+					, "form": form.as_p()
+					, "title": self.title
+					}
+
+				if self.description is not None:
+					data["description"] = self.description
+
+		data.update(
+			{ "js": list(self.additional_js)
+			, "css": list(self.additional_css)
+			})
+
+		return Response(data)
+
+
+
 
 class TranslationView(APIView):
 	allowed_filters = {}
@@ -189,11 +265,18 @@ class FilterViewMixin:
 			context["search_expression"] = \
 				self.boolean_expression.traverse(aggregator)
 
+		context["search_performed"] = self.search_performed
+
 		context["current_page"] = self.current_page
 		context["current_page_object"] = self.current_page_object
 		context["paginator"] = self.paginator
 
 		return context
+
+	@property
+	def search_performed(self):
+		return self.expression_parameter in self.kwargs \
+				and self.kwargs[self.expression_parameter]
 
 	def kwarg_or_none(self, key):
 		if key in self.kwargs.keys() and self.kwargs[key]:
@@ -231,14 +314,24 @@ class FilterViewMixin:
 		context = super().get_serializer_context()
 
 		if self.objects_per_page is not None:
-			context.update(dict(extra_data= \
+			context.setdefault("extra_data", {}).update( \
 				{ "current_page": self.current_page
 				, "total_pages": self.paginator.num_pages
 				, "last_page": self.paginator.num_pages == self.current_page
 				, "total_objects": self.paginator.count
-				}))
+				})
+
+		actions = self.custom_actions()
+
+		if len(actions) > 0:
+			context.setdefault("extra_data", {}).update( \
+				{ "actions": actions
+				})
 
 		return context
+
+	def custom_actions(self):
+		return []
 
 	def get_queryset(self):
 		# MRO do Python garante que haverá um get_queryset definido aqui se

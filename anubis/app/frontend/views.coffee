@@ -240,7 +240,7 @@ define [ "backbone"
 
 		events:
 			"click [data-reload]": "reload"
-			"click [data-sort]": "sort"
+			"click [data-action]": "actionWithResults"
 
 		constructor: ->
 			super
@@ -267,6 +267,9 @@ define [ "backbone"
 				@_itemTemplate = parseInt (@getData "itemTemplateIndex")
 			else
 				@_itemTemplate = @getData "itemTemplate"
+
+			@usesCustomActions = \
+				(@delegate.select "[data-actions-list]").length > 0
 
 			@shouldReload = false
 
@@ -406,7 +409,13 @@ define [ "backbone"
 				@delegate.paginationTrigger.hide()
 
 		render: ->
-			if @collection.properties? then @updatePaginationInfo()
+			if @collection.properties?
+				if @usesPagination then @updatePaginationInfo()
+				if @usesCustomActions
+					if "actions" in _.keys @collection.properties
+						@delegate.setActions @collection.properties.actions
+					else
+						@delegate.setActions []
 
 			delete @subviews
 
@@ -466,50 +475,139 @@ define [ "backbone"
 			@shouldReload = true
 			@activate @retrieveData...
 
-		sort: (ev) ->
+		actionWithResults: (ev) ->
 			ev.preventDefault()
 
 			if not @collection?
-				@shouldReload = true
-				(@activate @currentData).then => @sort
-					target: ev.target,
-					preventDefault: ->
-				return
-
-			target = $ ev.target
-			sortBy = target.data "sort"
-
-			if sortBy[0] == "-"
-				reverse = true
-				sortBy = sortBy[1..]
-				target.attr "data-sort", sortBy
+				(@reload ev).then => @actionWithResults ev
 			else
-				reverse = false
-				target.attr "data-sort", "-#{sortBy}"
+				actionTag = $ ev.target
+				actionUrl = actionTag.data "action"
+				actionTemplate = actionTag.data "response"
 
-			if sortBy[0] == "#"
-				asDate = true
-				sortBy = sortBy[1..]
-			else
-				asDate = false
+				view = new ActionView @router,
+					actionUrl: actionUrl
+					template: actionTemplate
+					collection: @collection
 
-			@collection.comparator = (m1, m2) ->
-				v1 = m1.get "sort_#{sortBy}"
-				v2 = m2.get "sort_#{sortBy}"
+	exports.ActionView = class ActionView extends View
+		@delegate = Delegates.UnroutedModalDelegate
 
-				if asDate
-					v1 = new Date "#{v1}T12:00:00"
-					v2 = new Date "#{v2}T12:00:00"
+		events:
+			"click button[data-submit]": "sendForm"
 
-				# cmp = (v1 - v2) / Math.abs (v1 - v2)
-				# -- would've been so nice if that worked on not-numbers...
-				cmp = if v1 < v2 then -1 else if v1 > v2 then 1 else 0
-				cmp = -1 * cmp if reverse
-				cmp
+		constructor: ->
+			super
 
-			@collection.sort()
+			@actionUrl = @getData "actionUrl"
+			@collection = @getData "collection"
+			@_idList = @getData "idList"
+			@model = {}
+
+			@performAction()
+
+		idList: -> (m.id for m in @collection.models).join ','
+
+		performAction: (data) ->
+			if not data?
+				data = collection: "[#{@idList()}]"
+
+			$.ajax @actionUrl,
+				data: data
+				type: "POST"
+				beforeSend: (xhr) ->
+					token = $('meta[name="csrf-token"]').attr "content"
+					xhr.setRequestHeader "X-CSRFToken", token
+				success: (data) => @dispatch data
+				error: (jqxhr, _, error) =>
+					data = jqxhr.responseJSON
+
+					if not data?
+						@actionResponse \
+							"Erro HTTP #{jqxhr.status}: #{error}"
+					else
+						@actionResponse \
+							"#{data["name"]}: #{data["detail"]}", false
+
+		dispatch: (data) ->
+			switch data["result"]
+				when "action"
+					@actionResponse data["reason"], data["success"]
+				when "invalid_form", "requires_data"
+					@showForm data, data["result"] == "requires_data"
+				else
+					console.log data
+
+		actionResponse: (reason, success) ->
+			_.extend @model,
+				form: null
+				reason: reason
+				success: success
+				processing: false
+
+			@show()
+
+		showForm: (data, failure) ->
+			_.extend @model,
+				title: data["title"]
+				description: data["description"]
+				form: "<form data-action-form>#{data["form"]}</form>"
+				reason: null
+				processing: false
+
+			for cssUrl in data["css"]
+				if ($ "link[href='#{cssUrl}']").length == 0
+					css = $ "<link/>",
+						rel: "stylesheet"
+						type: "text/css"
+						href: cssUrl
+
+					css.appendTo "head"
+
+			for jsUrl in data["js"]
+				if ($ "script[src='#{jsUrl}']").length == 0
+					js = $ "<script></script>",
+						type: "text/javascript"
+						src: jsUrl
+
+					js.appendTo "head"
+
+			@show()
+
+		setupForm: (form) ->
+			form.attr "action", @actionUrl
+			form.attr "method", "POST"
+			form.on "submit", (ev) =>
+				ev.preventDefault()
+				@sendForm ev
+
+		sendForm: (ev) ->
+			_.extend @model, processing: true
+
+			form = @delegate.select "form[data-action-form]"
+			@performAction form.serialize()
 
 			@render()
+
+		destroy: -> if not @model.processing then @delegate.remove()
+
+		template: ->
+			swig.render (@constructor.templates.get @baseTemplate),
+				locals: @model
+
+		show: ->
+			@delegate.insert()
+
+			doShow = =>
+				@render()
+				@delegate.show().then =>
+					form = @delegate.select "form[data-action-form]"
+					@setupForm form
+
+			if @delegate.visible then @delegate.hide().then doShow
+			else doShow()
+
+
 
 	exports.RouterView = class RouterView extends View
 		events:

@@ -22,6 +22,7 @@ from django.db.models.query import QuerySet
 from django.db import connection as base_connection, connections
 from operator import itemgetter
 from collections import OrderedDict
+import json
 
 from anubis.sql_aggregators import ProcedureAggregate
 

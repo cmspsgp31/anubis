@@ -1,4 +1,4 @@
-define ["jquery", "underscore", "ui"], ($, _, ui) ->
+define ["jquery", "underscore", "ui", "swig"], ($, _, ui, swig) ->
 	class Delegate
 		constructor: (@el, @view) ->
 			@el.data "viewObject", @view
@@ -44,6 +44,10 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 					where = $ "main"
 
 				where.append(@el)
+
+		detach: -> @el.detach()
+
+		remove: -> @el.remove()
 
 		pickWith: (ref, pattern, f, g) ->
 			for el in @select pattern
@@ -110,11 +114,12 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 		hide: -> @el.slideUp(200)
 		show: -> @el.slideDown(200)
 
-	class ModalDelegate extends Delegate
+	class UnroutedModalDelegate extends Delegate
 		constructor: ->
 			super
+			(@el.addClass "modal").addClass "fade"
+			@visible = false
 			@shouldHide = false
-			@el.addClass("modal").addClass "fade"
 
 			@el.on "hide.bs.modal", (ev) =>
 				if not @shouldHide
@@ -126,15 +131,39 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 			@el.on "hidden.bs.modal", => @shouldHide = false
 
 		bindEvents: ->
+			(@select "[data-close]").on "click", => @view.destroy()
+
+		remove: -> @hide().then => @el.remove()
+
+		show: ->
+			willShow = new $.Deferred
+
+			@el.one "shown.bs.modal", =>
+				@visible = true
+				willShow.resolve()
+
+			@el.modal "show"
+
+			willShow
+
+		hide: ->
+			@shouldHide = true
+			willHide = new $.Deferred
+
+			@el.one "hidden.bs.modal", =>
+				@visible = false
+				willHide.resolve()
+
+			@el.modal "hide"
+
+			willHide
+
+	class ModalDelegate extends UnroutedModalDelegate
+		bindEvents: ->
 			(@select "[data-close]").on "click", (ev) =>
 				what = @view.router.navigate @view.router.lastNonModalMatch,
 					trigger: true
 
-		show: -> @el.modal("show")
-
-		hide: ->
-			@shouldHide = true
-			@el.modal("hide")
 
 	class FormDelegate extends Delegate
 		filter: ":input:visible, [data-form-control]:visible, :visible > input[type=hidden]"
@@ -308,10 +337,41 @@ define ["jquery", "underscore", "ui"], ($, _, ui) ->
 		found: -> @notFoundEl.hide()
 		notFound: -> @notFoundEl.show()
 
+		setActions: (actions) ->
+			actionsList = @select "[data-actions-list]"
+			actionsToggle = @select "[data-actions-toggle]"
+
+			console.log actionsToggle[0]
+			if actions.length > 0
+				actionsToggle.show()
+			else
+				actionsToggle.hide()
+
+			actionsList.each (i, list) =>
+				list = $ list
+				list.empty()
+				html = ""
+				templateName = list.data "actionsList"
+				template = @view.constructor.templates.get templateName
+
+				for action in actions
+					if "style" not in _.keys action
+						action["style"] = "default"
+					html += swig.render template, locals: action
+
+				list.html html
+
+
+
+
+
+
+
 
 
 	Delegate: Delegate
 	SearchTypeDelegate: SearchTypeDelegate
+	UnroutedModalDelegate: UnroutedModalDelegate
 	ModalDelegate: ModalDelegate
 	FormDelegate: FormDelegate
 	ActiveOnShowDelegate: ActiveOnShowDelegate
