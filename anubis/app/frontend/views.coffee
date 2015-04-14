@@ -633,7 +633,6 @@ define [ "backbone"
 			@router.navigate uri, trigger: true
 
 		markAsVisited: ->
-			console.log (@delegate.select "a[data-mark-as-visited]")
 			(@delegate.select "a[data-mark-as-visited]").addClass "visited"
 
 	exports.DynamicRouterView = class DynamicRouterView extends RouterView

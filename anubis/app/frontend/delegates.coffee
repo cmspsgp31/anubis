@@ -341,7 +341,6 @@ define ["jquery", "underscore", "ui", "swig"], ($, _, ui, swig) ->
 			actionsList = @select "[data-actions-list]"
 			actionsToggle = @select "[data-actions-toggle]"
 
-			console.log actionsToggle[0]
 			if actions.length > 0
 				actionsToggle.show()
 			else
