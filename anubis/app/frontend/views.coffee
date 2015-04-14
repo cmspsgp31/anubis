@@ -612,6 +612,7 @@ define [ "backbone"
 	exports.RouterView = class RouterView extends View
 		events:
 			"click [data-router]": "route"
+			"click [data-should-mark-as-visited]": "markAsVisited"
 
 		constructor: ->
 			super
@@ -627,10 +628,13 @@ define [ "backbone"
 			if not uri?
 				uri = target.attr "href"
 
-			if (target.prop "tagName").toLowerCase() == "a"
-				target.addClass "visited"
+			@markAsVisited()
 
 			@router.navigate uri, trigger: true
+
+		markAsVisited: ->
+			console.log (@delegate.select "a[data-mark-as-visited]")
+			(@delegate.select "a[data-mark-as-visited]").addClass "visited"
 
 	exports.DynamicRouterView = class DynamicRouterView extends RouterView
 		@dispatch: _.clone(Backbone.Events)

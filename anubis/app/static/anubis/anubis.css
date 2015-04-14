@@ -180,7 +180,7 @@ ul[data-view=BooleanTokenView] li[data-token="or"] {
 	font-weight: bold;
 }
 
-a[data-router].visited {
+a[data-mark-as-visited].visited {
 	color: #CA42C3;
 }
 
