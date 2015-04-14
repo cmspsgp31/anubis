@@ -16,11 +16,22 @@ define ["backbone", "underscore", "anubis/views"], (Backbone, _, Views) ->
 
 		_modalRoutes: {}
 
-		navigate: (args...) ->
+		navigate: (url, options={}) ->
+			options =
+				trigger: options.trigger ? false
+				replace: options.replace ? false
+
 			if @routing.state() != "pending"
+				{trigger, replace} = options
 				@routing = new $.Deferred
 
-				super args...
+				super "/",
+					trigger: false
+					replace: replace
+
+				super url,
+					trigger: trigger
+					replace: true
 
 				@routing
 			else
@@ -39,7 +50,7 @@ define ["backbone", "underscore", "anubis/views"], (Backbone, _, Views) ->
 
 			modalMatch = false
 			promises = []
-			
+
 			for routeName, routeInfo of @_modalRoutes
 				matches = route.match routeInfo.route
 				if matches? and matches.length > 0

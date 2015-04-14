@@ -222,8 +222,9 @@ define [ "backbone"
 				@resolveRouting()
 
 		translationPromise: (expression) ->
+			@tokenViewEvents.trigger "willTranslate", expression
+
 			if expression not in _.keys @tokenCache
-				@tokenViewEvents.trigger "willTranslate", expression
 				defer = $.ajax
 					type: "GET"
 					dataType: "json"
