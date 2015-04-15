@@ -194,11 +194,7 @@ define [ "backbone"
 			($ "[data-token-insert=#{id}]").on "click", (ev) =>
 				target = $ ev.target
 
-				tokens = @tokens()
-				if (tokens.length > 1)
-					lastToken = $ @delegate.editor.prev()
-					if (lastToken.data "token") in ["expression", "close"]
-						@insertToken "and"
+				@insertConnectorBefore()
 
 				@insertTokenWithData (target.data "tokenName"),
 					[target.data "tokenValue"]
@@ -366,6 +362,8 @@ define [ "backbone"
 			filters = @filters()
 
 			if name in _.keys filters
+				@insertConnectorBefore()
+
 				@insertToken "expression", name, filters[name]
 			else if name in @constructor.tokenTypes
 				@insertToken name
@@ -387,6 +385,14 @@ define [ "backbone"
 		handleOpen: (ev) -> @handleNonExpressionToken ev, "open"
 
 		handleClose: (ev) -> @handleNonExpressionToken ev, "close"
+
+		insertConnectorBefore: ->
+			tokens = @tokens()
+			if (tokens.length > 1)
+				lastToken = $ @delegate.editor.prev()
+				if (lastToken.data "token") in ["expression", "close"]
+					@insertToken "and"
+
 
 		insertToken: (tokenType, tokenName, filter) ->
 			token = @delegate.makeToken tokenType, tokenName, filter
