@@ -241,6 +241,7 @@ define [ "backbone"
 		events:
 			"click [data-reload]": "reload"
 			"click [data-action]": "actionWithResults"
+			"click [data-sort]": "naiveSort"
 
 		constructor: ->
 			super
@@ -474,6 +475,12 @@ define [ "backbone"
 			ev.preventDefault()
 			@shouldReload = true
 			@activate @retrieveData...
+
+		naiveSort: (ev) ->
+			target = $ ev.target
+			@collection.comparator = target.data "sort"
+			@collection.sort()
+			@render()
 
 		actionWithResults: (ev) ->
 			ev.preventDefault()
