@@ -478,9 +478,16 @@ define [ "backbone"
 
 		naiveSort: (ev) ->
 			target = $ ev.target
-			@collection.comparator = target.data "sort"
-			@collection.sort()
-			@render()
+
+			performSort = =>
+				@collection.comparator = target.data "sort"
+				@collection.sort()
+				@render()
+
+			if not @collection?
+				(@reload ev).then => performSort()
+			else
+				performSort()
 
 		actionWithResults: (ev) ->
 			ev.preventDefault()
