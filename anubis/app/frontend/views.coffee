@@ -240,6 +240,7 @@ define [ "backbone"
 
 		events:
 			"click [data-reload]": "reload"
+			"click [data-pull-and-reload]": "pullAndReload"
 			"click [data-action]": "actionWithResults"
 			"click [data-sort]": "naiveSort"
 
@@ -476,6 +477,19 @@ define [ "backbone"
 			@shouldReload = true
 			@activate @retrieveData...
 
+		pullAndReload: (ev) ->
+			ev.preventDefault()
+			target = $ ev.target
+			url = target.data "pullAndReload"
+
+			setToken = (xhr) ->
+				token = ($ 'meta[name="csrf-token"]').attr "content"
+				xhr.setRequestHeader 'X-CSRFToken', token
+
+			$.ajax url, beforeSend: setToken, method: "POST"
+				.success => @reload ev
+				.fail (t) => @constructor.error @router, t
+
 		naiveSort: (ev) ->
 			target = $ ev.target
 
@@ -485,7 +499,7 @@ define [ "backbone"
 				@render()
 
 			if not @collection?
-				(@reload ev).then => performSort()
+				(@reload ev).then -> performSort()
 			else
 				performSort()
 

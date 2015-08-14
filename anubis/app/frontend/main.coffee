@@ -13,6 +13,7 @@ define ["backbone"
 
 	swig.setFilter "getitem", (input, key) -> input[key]
 	swig.setFilter "length", (input) -> input.length
+	swig.setFilter "divisibleby", (input, num) -> ((input % num) == 0)
 
 	start = (historyArgs) ->
 		for t in $("link[data-template]")

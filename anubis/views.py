@@ -31,6 +31,8 @@ from anubis.filters import Filter, ConversionFilter
 
 from functools import reduce
 
+import re
+
 class TemplateRetrieverView(APIView):
 	allowed_views = {}
 	allowed_templates = []
@@ -38,7 +40,14 @@ class TemplateRetrieverView(APIView):
 
 	@staticmethod
 	def reformat_template(original):
-		return original.replace("forloop", "loop").replace("elif", "elseif")
+		reformatted = original.replace("forloop", "loop") \
+				.replace("elif", "elseif") \
+				.replace("loop.counter", "loop.index") \
+				.replace("loop.revcounter", "loop.revindex")
+
+		reformatted = re.sub(r'\|([a-zA-Z]+)\:(\S+)', r'|\1(\2)', reformatted)
+
+		return reformatted
 
 	def get(self, _, templates):
 		templates = templates.split(",")
