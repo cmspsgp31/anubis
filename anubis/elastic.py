@@ -274,50 +274,39 @@ class ElasticFilter(Filter):
 		return queryset
 
 class ElasticMatchPhraseFilter(ElasticFilter):
-	def make_query_body(self, args):
-		arg = " ".join(list(args))
+	def __init__(self, es_field_name, prefix=False, fuzziness="0",
+			has_score=False, **es_kwargs):
 
-		return {
-			"query": {
-				"match_phrase": {
-					self.field_name: arg
-				}
+		super().__init__(es_field_name, **es_kwargs)
+
+		prefix = prefix or not fuzziness == "0"
+
+		self.field_base = \
+			{ "fuzziness": fuzziness
+			, "type": "phrase_prefix" if prefix else "phrase"
 			}
-		}
 
-class ElasticFuzzyLikeThisFieldFilter(ElasticFilter):
+		if prefix:
+			self.field_base["max_expansions"] = 100
+
+		self.has_score = has_score
+
 	def make_query_body(self, args):
-		like_text = args[0]
-		min_score = float(args[1])
+		from pprint import pprint
 
-		return {
-			"query": {
-				"flt_field": {
-					self.field_name: {
-						"like_text": like_text,
-						"fuzziness": "AUTO"
-					}
-				}
-			},
-			"min_score": min_score
-		}
+		text = args[0]
 
-class ElasticFuzzyPhraseFilter(ElasticFilter):
-	def make_query_body(self, args):
-		arg = " ".join(list(args))
+		body = { "query": { "match": { self.field_name: self.field_base } } }
 
-		return {
-			"query": {
-				"match": {
-					self.field_name: {
-						"query": arg,
-						"fuzziness": "AUTO",
-						# "analyzer": "brazilian",
-						"type": "phrase"
-					}
-				}
-			}
-		}
+		if self.has_score:
+			body["min_score"] = float(args[1])
+
+		body["query"]["match"][self.field_name]["query"] = text
+
+		pprint(body)
+
+		return body
+
 
 class ElasticHasFTSFilter(ElasticFilter):
 	def _filter_django_queryset(self, queryset, args, es_data):
