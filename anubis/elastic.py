@@ -141,7 +141,10 @@ class ElasticModelMixin:
 		es_args = dict(self._elastic["path"])
 		es_args["id"] = _id
 
-		self.es_server.delete(**es_args)
+		try:
+			self.es_server.delete(**es_args)
+		except NotFoundError:
+			pass
 
 		return retval
 
