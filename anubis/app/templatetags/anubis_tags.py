@@ -74,7 +74,8 @@ def search(context, search_id, search_route, translate_route, index_route,
 		action=unquote(action), search_id=search_id, search_url=search_url,
 		translate_url=translate_url, index_url=index_url,
 		default_unit=default_unit, extra_fields=extra_fields,
-		expression_index=expression_index)
+		expression_index=expression_index,
+		this_base=context.get('this_base', ''))
 
 @register.inclusion_tag("available_filters.html", takes_context=True)
 def download_templates(context, url_='templates', *templates):
