@@ -394,3 +394,6 @@ class NoCacheMixin:
 		response['Expires'] = "0"
 
 		return response
+
+class AppViewMixin:
+	pass
