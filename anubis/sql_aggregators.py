@@ -18,55 +18,57 @@
 # Você deve ter recebido uma cópia da Licença Pública Geral GNU junto com
 # este programa. Se não, consulte <http://www.gnu.org/licenses/>.
 
-from django.db.models.sql.aggregates import Aggregate as SqlAggregate
 from django.db.models.aggregates import Aggregate
+from django.db.models.sql.aggregates import Aggregate as SqlAggregate
+
 
 class ProcedureSqlAggregate(SqlAggregate):
-	sql_template = """
-		(select {function}_res.rank
-		from {function}({args}) as {function}_res
-		where {field} = {function}_res.id)
-	""".strip()
+    sql_template = """
+        (select {function}_res.rank
+        from {function}({args}) as {function}_res
+        where {field} = {function}_res.id)
+    """.strip()
 
-	def __init__(self, col, source=None, is_summary=False, **extra):
-		self.sql_function = extra.pop("function")
-		self.args = extra.pop("args")
+    def __init__(self, col, source=None, is_summary=False, **extra):
+        self.sql_function = extra.pop("function")
+        self.args = extra.pop("args")
 
-		super().__init__(col, source, is_summary, **extra)
+        super().__init__(col, source, is_summary, **extra)
 
-	def as_sql(self, qn, connection):
-		if isinstance(self.col, (list, tuple)):
-			field_name = '.'.join(qn(c) for c in self.col)
-		else:
-			field_name = qn(self.col)
+    def as_sql(self, qn, connection):
+        if isinstance(self.col, (list, tuple)):
+            field_name = '.'.join(qn(c) for c in self.col)
+        else:
+            field_name = qn(self.col)
 
-		args = list(self.args)
+        args = list(self.args)
 
-		arg_marks = ", ".join(["%s"] * len(args))
+        arg_marks = ", ".join(["%s"] * len(args))
 
-		params = args
+        params = args
 
-		return self.sql_template.format(function=self.sql_function,
-			args=arg_marks, field=field_name), params
+        return self.sql_template.format(function=self.sql_function,
+                                        args=arg_marks, field=field_name), params
+
 
 class ProcedureAggregate(Aggregate):
-	def __init__(self, function, *args, lookup="id", **kwargs):
-		kwargs.update({ 'function': function, 'args': args })
-		super().__init__(lookup, **kwargs)
-		self.name = function
+    def __init__(self, function, *args, lookup="id", **kwargs):
+        kwargs.update({'function': function, 'args': args})
+        super().__init__(lookup, **kwargs)
+        self.name = function
 
-	@property
-	def default_alias(self):
-		return "{}_{}".format(self.lookup, self.name.lower())
+    @property
+    def default_alias(self):
+        return "{}_{}".format(self.lookup, self.name.lower())
 
-	def add_to_query(self, query, alias, col, source, is_summary):
-		aggregate = ProcedureSqlAggregate(col, source=source,
-			is_summary=is_summary, **self.extra)
+    def add_to_query(self, query, alias, col, source, is_summary):
+        aggregate = ProcedureSqlAggregate(col, source=source,
+                                          is_summary=is_summary, **self.extra)
 
-		query.aggregates[alias] = aggregate
+        query.aggregates[alias] = aggregate
 
 
 def test():
-	from bases_cmsp.eventos.models import Evento
+    from bases_cmsp.eventos.models import Evento
 
-	print(str(Evento.objects.order_by_procedure("agg_test", "id", "dia").distinct().query))
+    print(str(Evento.objects.order_by_procedure("agg_test", "id", "dia").distinct().query))
