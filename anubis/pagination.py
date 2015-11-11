@@ -18,19 +18,19 @@
 # Você deve ter recebido uma cópia da Licença Pública Geral GNU junto com
 # este programa. Se não, consulte <http://www.gnu.org/licenses/>.
 
+
 class ContextSerializerMixin:
-	_original_object_name = "data"
+    _original_object_name = "data"
 
-	@property
-	def data(self):
-		extra_data = self.context.get("extra_data", None)
-		original_data = super().data
+    @property
+    def data(self):
+        extra_data = self.context.get("extra_data", None)
+        original_data = super().data
 
-		if extra_data is not None:
-			data = dict(extra_data)
-			data.update({self._original_object_name: original_data})
-		else:
-			data = original_data
+        if extra_data is not None:
+            data = dict(extra_data)
+            data.update({self._original_object_name: original_data})
+        else:
+            data = original_data
 
-		return data
-
+        return data
