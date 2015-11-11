@@ -18,12 +18,12 @@
 # Você deve ter recebido uma cópia da Licença Pública Geral GNU junto com
 # este programa. Se não, consulte <http://www.gnu.org/licenses/>.
 
+from anubis.filters import Filter
+from anubis.query import ProcedureQuerySet
+from django.conf import settings
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
 from elasticsearch.helpers import scan
-from anubis.query import ProcedureQuerySet
-from anubis.filters import Filter
-from django.conf import settings
 
 
 class ElasticModelMixin:
@@ -129,7 +129,7 @@ class ElasticModelMixin:
                 {"body": {field: self.es_get_field(field)
                           for field in self.es_fields},
                  "id": self.id
-                })
+                 })
 
             self.es_server.index(**es_args)
 
@@ -151,7 +151,6 @@ class ElasticModelMixin:
 
 
 class ElasticQuerySet(ProcedureQuerySet):
-
     def es_query(self, body, timeout=None, min_score=None, save_score=True,
                  save_highlights=True):
         es_server = self.model.es_get_server()
@@ -172,7 +171,7 @@ class ElasticQuerySet(ProcedureQuerySet):
         if timeout is not None:
             timeout = {"timeout": timeout,
                        "scroll": timeout
-                      }
+                       }
         else:
             timeout = {}
 
@@ -202,7 +201,6 @@ class ElasticQuerySet(ProcedureQuerySet):
 
 
 class ElasticFilter(Filter):
-
     def __init__(self, es_field_name, **es_kwargs):
         self.kwargs = es_kwargs
         self.field_name = es_field_name
@@ -270,7 +268,6 @@ class ElasticFilter(Filter):
 
 
 class ElasticMatchPhraseFilter(ElasticFilter):
-
     def __init__(self, es_field_name, prefix=False, fuzziness="0",
                  has_score=False, **es_kwargs):
 
@@ -304,7 +301,6 @@ class ElasticMatchPhraseFilter(ElasticFilter):
 
 
 class ElasticHasFTSFilter(ElasticFilter):
-
     def _filter_django_queryset(self, queryset, args, es_data):
         have_empty_field = set(es_data.keys())
 
