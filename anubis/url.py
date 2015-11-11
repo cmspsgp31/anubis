@@ -23,176 +23,177 @@ import pkg_resources
 import json
 from threading import Lock
 
+
 class Boolean:
-	class Type:
-		fields = ()
 
-		@staticmethod
-		def set_contents(expr, dictionary):
-			expr.contents = dictionary
+    class Type:
+        fields = ()
 
-	class Expr(Type):
-		fields = ("field", "args")
+        @staticmethod
+        def set_contents(expr, dictionary):
+            expr.contents = dictionary
 
-		@staticmethod
-		def repr(expr):
-			return "{}: {}".format(repr(expr["field"]), expr["args"])
+    class Expr(Type):
+        fields = ("field", "args")
 
-		@staticmethod
-		def set_contents(expr, dictionary):
-			expr.contents = dictionary["contents"]
+        @staticmethod
+        def repr(expr):
+            return "{}: {}".format(repr(expr["field"]), expr["args"])
 
-		@staticmethod
-		def traverse(expr, func):
-			return func(base_expression=expr)
+        @staticmethod
+        def set_contents(expr, dictionary):
+            expr.contents = dictionary["contents"]
 
-	class Not(Type):
-		fields = ("expr",)
+        @staticmethod
+        def traverse(expr, func):
+            return func(base_expression=expr)
 
-		@staticmethod
-		def repr(expr):
-			return "NOT ({})".format(str(expr["expr"]))
+    class Not(Type):
+        fields = ("expr",)
 
-		@staticmethod
-		def set_contents(expr, dictionary):
-			expr.contents = dict(expr=dictionary["contents"])
+        @staticmethod
+        def repr(expr):
+            return "NOT ({})".format(str(expr["expr"]))
 
-		@staticmethod
-		def traverse(expr, func):
-			return func(not_expression=expr["expr"].traverse(func),
-				inside_type=expr["expr"].type_.__class__)
+        @staticmethod
+        def set_contents(expr, dictionary):
+            expr.contents = dict(expr=dictionary["contents"])
 
-	class And(Type):
-		fields = ("left", "right")
+        @staticmethod
+        def traverse(expr, func):
+            return func(not_expression=expr["expr"].traverse(func),
+                        inside_type=expr["expr"].type_.__class__)
 
-		@staticmethod
-		def repr(expr):
-			return "({}) AND ({})".format(str(expr["left"]), str(expr["right"]))
+    class And(Type):
+        fields = ("left", "right")
 
-		@staticmethod
-		def traverse(expr, func):
-			return func(and_expression=(expr["left"].traverse(func),
-				expr["right"].traverse(func)),
-				left_type=expr["left"].type_.__class__,
-				right_type=expr["right"].type_.__class__)
+        @staticmethod
+        def repr(expr):
+            return "({}) AND ({})".format(
+                str(expr["left"]), str(expr["right"]))
 
-	class Or(Type):
-		fields = ("left", "right")
+        @staticmethod
+        def traverse(expr, func):
+            return func(and_expression=(expr["left"].traverse(func),
+                                        expr["right"].traverse(func)),
+                        left_type=expr["left"].type_.__class__,
+                        right_type=expr["right"].type_.__class__)
 
-		@staticmethod
-		def repr(expr):
-			return "({}) OR ({})".format(str(expr["left"]), str(expr["right"]))
+    class Or(Type):
+        fields = ("left", "right")
 
-		@staticmethod
-		def traverse(expr, func):
-			return func(or_expression=(expr["left"].traverse(func),
-				expr["right"].traverse(func)),
-				left_type=expr["left"].type_.__class__,
-				right_type=expr["right"].type_.__class__)
+        @staticmethod
+        def repr(expr):
+            return "({}) OR ({})".format(str(expr["left"]), str(expr["right"]))
 
-	types = \
-		{ "BooleanExpr": Expr()
-		, "Not": Not()
-		, "And": And()
-		, "Or": Or()
-		}
+        @staticmethod
+        def traverse(expr, func):
+            return func(or_expression=(expr["left"].traverse(func),
+                                       expr["right"].traverse(func)),
+                        left_type=expr["left"].type_.__class__,
+                        right_type=expr["right"].type_.__class__)
 
-	precedence = \
-		[ Expr
-		, Not
-		, And
-		, Or
-		]
+    types = {"BooleanExpr": Expr(),
+             "Not": Not(),
+             "And": And(),
+             "Or": Or()
+            }
 
-	def __init__(self, contents, type_):
-		assert isinstance(type_, self.Type)
+    precedence = [Expr, Not, And, Or]
 
-		self.type_ = type_
-		self.type_.set_contents(self, contents)
+    def __init__(self, contents, type_):
+        assert isinstance(type_, self.Type)
 
-	@classmethod
-	def build(cls, dictionary):
-		if "tag" in dictionary.keys():
-			if dictionary["tag"] in cls.types.keys():
-				return Boolean(dictionary, cls.types[dictionary["tag"]])
-			else:
-				raise ValueError(dictionary["contents"])
+        self.type_ = type_
+        self.type_.set_contents(self, contents)
 
-		return dictionary
+    @classmethod
+    def build(cls, dictionary):
+        if "tag" in dictionary.keys():
+            if dictionary["tag"] in cls.types.keys():
+                return Boolean(dictionary, cls.types[dictionary["tag"]])
+            else:
+                raise ValueError(dictionary["contents"])
 
-	def keys(self):
-		return self.type_.fields
+        return dictionary
 
-	def traverse(self, func):
-		return self.type_.traverse(self, func)
+    def keys(self):
+        return self.type_.fields
 
-	def __getitem__(self, key):
-		return self.contents[key]
+    def traverse(self, func):
+        return self.type_.traverse(self, func)
 
-	def __str__(self):
-		return self.type_.repr(self)
+    def __getitem__(self, key):
+        return self.contents[key]
 
-	def __repr__(self):
-		return str(self)
+    def __eq__(self, other):
+        return self.contents == other.contents
+
+    def __str__(self):
+        return self.type_.repr(self)
+
+    def __repr__(self):
+        return str(self)
+
 
 class BooleanBuilder:
-	parser_lib_name = "libParseUrl.so"
+    parser_lib_name = "libParseUrl.so"
 
-	def __init__(self, url):
-		self.url = url
+    def __init__(self, url):
+        self.url = url
 
-	def build(self):
-		url_bytestr = self.url.encode("utf-8")
+    def build(self):
+        url_bytestr = self.url.encode("utf-8")
 
-		with HaskellLibrary(self.parser_lib_path) as parser_lib:
-			parser_lib.parseUrl.argtypes = [ctypes.c_char_p]
-			parser_lib.parseUrl.restype = ctypes.c_char_p
-			json_bytestr = parser_lib.parseUrl(url_bytestr)
+        with HaskellLibrary(self.parser_lib_path) as parser_lib:
+            parser_lib.parseUrl.argtypes = [ctypes.c_char_p]
+            parser_lib.parseUrl.restype = ctypes.c_char_p
+            json_bytestr = parser_lib.parseUrl(url_bytestr)
 
-		json_str = json_bytestr.decode("utf-8")
-		json_obj = json.loads(json_str, object_hook=Boolean.build)
+        json_str = json_bytestr.decode("utf-8")
+        json_obj = json.loads(json_str, object_hook=Boolean.build)
 
-		return json_obj
+        return json_obj
 
-	@property
-	def parser_lib_path(self):
-		return pkg_resources.resource_filename("anubis", self.parser_lib_name)
+    @property
+    def parser_lib_path(self):
+        return pkg_resources.resource_filename("anubis", self.parser_lib_name)
+
 
 class HaskellLibrary:
-	libdl = "libdl.so"
-	_locks = {}
-	_master_lock = Lock()
+    libdl = "libdl.so"
+    _locks = {}
+    _master_lock = Lock()
 
-	def __init__(self, lib_path):
-		self.lib_path = lib_path
-		self.library = None
+    def __init__(self, lib_path):
+        self.lib_path = lib_path
+        self.library = None
 
-		with self._master_lock:
-			if self.lib_path not in self._locks.keys():
-				self._locks[self.lib_path] = Lock()
+        with self._master_lock:
+            if self.lib_path not in self._locks.keys():
+                self._locks[self.lib_path] = Lock()
 
-			self.lock = self._locks[self.lib_path]
+            self.lock = self._locks[self.lib_path]
 
-	def __enter__(self):
-		self.lock.acquire()
-		self.library = ctypes.cdll.LoadLibrary(self.lib_path)
+    def __enter__(self):
+        self.lock.acquire()
+        self.library = ctypes.cdll.LoadLibrary(self.lib_path)
 
-		self.library.hs_init(0, 0)
+        self.library.hs_init(0, 0)
 
-		return self.library
+        return self.library
 
-	def __exit__(self, type_, value, traceback):
-		self.library.hs_exit()
-		self._dlclose()
+    def __exit__(self, type_, value, traceback):
+        self.library.hs_exit()
+        self._dlclose()
 
-		del self.library
-		self.library = None
+        del self.library
+        self.library = None
 
-		self.lock.release()
+        self.lock.release()
 
-	def _dlclose(self):
-		libdl = ctypes.cdll.LoadLibrary(self.libdl)
-		libdl.dlclose.argtypes = [ctypes.c_void_p]
-		libdl.dlclose.restype = ctypes.c_int
-		libdl.dlclose(self.library._handle)
-
+    def _dlclose(self):
+        libdl = ctypes.cdll.LoadLibrary(self.libdl)
+        libdl.dlclose.argtypes = [ctypes.c_void_p]
+        libdl.dlclose.restype = ctypes.c_int
+        libdl.dlclose(self.library._handle)

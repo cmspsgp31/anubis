@@ -18,6 +18,11 @@
 # Você deve ter recebido uma cópia da Licença Pública Geral GNU junto com
 # este programa. Se não, consulte <http://www.gnu.org/licenses/>.
 
+"""
+This module contains views, mixins and helpers to define views that use
+Anubis's facilities to perform searches.
+"""
+
 from rest_framework.views import APIView
 from django.template.loaders.app_directories import Loader
 from django.core.paginator import Paginator
@@ -33,367 +38,368 @@ from functools import reduce
 
 import re
 
+
 class TemplateRetrieverView(APIView):
-	allowed_views = {}
-	allowed_templates = []
-	allowed_methods = {}
+    allowed_views = {}
+    allowed_templates = []
+    allowed_methods = {}
 
-	@staticmethod
-	def reformat_template(original):
-		reformatted = original.replace("forloop", "loop") \
-				.replace("elif", "elseif") \
-				.replace("loop.counter", "loop.index") \
-				.replace("loop.revcounter", "loop.revindex")
+    @staticmethod
+    def reformat_template(original):
+        reformatted = original.replace("forloop", "loop") \
+            .replace("elif", "elseif") \
+            .replace("loop.counter", "loop.index") \
+            .replace("loop.revcounter", "loop.revindex")
 
-		reformatted = re.sub(r'\|([a-zA-Z]+)\:(\S+)', r'|\1(\2)', reformatted)
+        reformatted = re.sub(r'\|([a-zA-Z]+)\:(\S+)', r'|\1(\2)', reformatted)
 
-		return reformatted
+        return reformatted
 
-	def get(self, _, templates):
-		templates = templates.split(",")
-		response = {}
+    def get(self, _, templates):
+        templates = templates.split(",")
+        response = {}
 
-		for template in templates:
-			try:
-				view_name, view_method = template.split(".")
-			except ValueError:
-				if not template in self.allowed_templates:
-					raise NotAcceptable("Template: {}".format(template))
+        for template in templates:
+            try:
+                view_name, view_method = template.split(".")
+            except ValueError:
+                if template not in self.allowed_templates:
+                    raise NotAcceptable("Template: {}".format(template))
 
-				loader = Loader()
-				name = "{}.html".format(template)
-				template_body = loader.load_template_source(name)[0]
+                loader = Loader()
+                name = "{}.html".format(template)
+                template_body = loader.load_template_source(name)[0]
 
-				response[template] = self.reformat_template(template_body)
-			else:
-				if view_name not in self.allowed_views.keys():
-					raise NotAcceptable("View: {}".format(view_name))
+                response[template] = self.reformat_template(template_body)
+            else:
+                if view_name not in self.allowed_views.keys():
+                    raise NotAcceptable("View: {}".format(view_name))
 
-				view = self.allowed_views[view_name]
+                view = self.allowed_views[view_name]
 
-				if view_name in self.allowed_methods.keys() and \
-						view_method not in self.allowed_methods[view_name]:
-					raise NotAcceptable("Method: {}.{}".format(view_name,
-						view_method))
+                if view_name in self.allowed_methods.keys() and \
+                        view_method not in self.allowed_methods[view_name]:
+                    raise NotAcceptable("Method: {}.{}".format(view_name,
+                                                               view_method))
 
-				views = getattr(view, view_method)()
+                views = getattr(view, view_method)()
 
-				response[view_name] = views
-				# response.update({"{}.{}".format(view_name, name): template_body\
-				# 	for name, template_body in views.items()})
+                response[view_name] = views
+                # response.update({"{}.{}".format(view_name, name): \
+                #                  template_body
+                #                  for name, template_body in views.items()})
 
-		return Response(response)
+        return Response(response)
+
 
 class ActionView(APIView):
-	request_form = None
-	answer_field = None
-	additional_js = []
-	additional_css = []
-	title = ""
-	description = None
-	permissions_required = []
+    request_form = None
+    answer_field = None
+    additional_js = []
+    additional_css = []
+    title = ""
+    description = None
+    permissions_required = []
 
-	def perform_action(self, bound_form, args, kwargs):
-		raise NotImplementedError()
+    def perform_action(self, bound_form, args, kwargs):
+        raise NotImplementedError()
 
-	def dispatch(self, request, *args, **kwargs):
-		if self.permissions_required is not None:
-			if not request.user.is_authenticated():
-				response = HttpResponseForbidden()
-			else:
-				if all(map(request.user.has_perm, self.permissions_required)):
-					response = super().dispatch(request, *args, **kwargs)
-				else:
-					response = HttpResponseForbidden()
-		else:
-			response = super().dispatch(request, *args, **kwargs)
+    def dispatch(self, request, *args, **kwargs):
+        if self.permissions_required is not None:
+            if not request.user.is_authenticated():
+                response = HttpResponseForbidden()
+            else:
+                if all(map(request.user.has_perm, self.permissions_required)):
+                    response = super().dispatch(request, *args, **kwargs)
+                else:
+                    response = HttpResponseForbidden()
+        else:
+            response = super().dispatch(request, *args, **kwargs)
 
-		return response
+        return response
 
-	def post(self, request, *args, **kwargs):
-		data = {}
+    def post(self, request, *args, **kwargs):
+        data = {}
 
-		if not callable(self.request_form):
-			success, reason = self.perform_action(None, args, kwargs)
+        if not callable(self.request_form):
+            success, reason = self.perform_action(None, args, kwargs)
 
-			data = \
-				{ "result": "action"
-				, "success": success
-				, "reason": reason
-				}
-		else:
-			form = self.request_form(request.POST)
+            data = \
+                {"result": "action", "success": success, "reason": reason
+                }
+        else:
+            form = self.request_form(request.POST)
 
-			if form.is_valid():
-				success, reason = self.perform_action(form, args, kwargs)
-				data = \
-					{ "result": "action"
-					, "success": success
-					, "reason": reason
-					}
-			else:
-				if self.answer_field is not None and \
-						self.answer_field in request.POST.keys() and \
-						request.POST[self.answer_field]:
-					result = "invalid_form"
-				else:
-					result = "requires_data"
-					form = self.request_form(initial=request.POST)
+            if form.is_valid():
+                success, reason = self.perform_action(form, args, kwargs)
+                data = \
+                    {"result": "action", "success": success, "reason": reason
+                    }
+            else:
+                if self.answer_field is not None and \
+                        self.answer_field in request.POST.keys() and \
+                        request.POST[self.answer_field]:
+                    result = "invalid_form"
+                else:
+                    result = "requires_data"
+                    form = self.request_form(initial=request.POST)
 
-				data = \
-					{ "result": result
-					, "form": form.as_p()
-					, "title": self.title
-					}
+                data = \
+                    {"result": result, "form": form.as_p(), "title": self.title
+                    }
 
-				if self.description is not None:
-					data["description"] = self.description
+                if self.description is not None:
+                    data["description"] = self.description
 
-		data.update(
-			{ "js": list(self.additional_js)
-			, "css": list(self.additional_css)
-			})
+        data.update(
+            {"js": list(self.additional_js), "css": list(self.additional_css)
+            })
 
-		return Response(data)
-
-
+        return Response(data)
 
 
 class TranslationView(APIView):
-	allowed_filters = {}
+    allowed_filters = {}
 
-	def get(self, _, query):
-		query = query.strip().rstrip("/")
-		expression = BooleanBuilder(query).build()
+    def get(self, _, query):
+        query = query.strip().rstrip("/")
+        expression = BooleanBuilder(query).build()
 
-		aggregator = TokenAggregator(self.allowed_filters)
-		tokenized = expression.traverse(aggregator)
+        aggregator = TokenAggregator(self.allowed_filters)
+        tokenized = expression.traverse(aggregator)
 
-		return Response(dict(expression=tokenized))
+        return Response(dict(expression=tokenized))
+
 
 class MultiModelMeta(type):
-	@property
-	def allowed_filters(cls):
-		return cls._fieldset_filters
 
-	def __new__(mcs, cls_name, bases, dct):
-		model_filters = {}
-		fieldset_filters = {}
+    @property
+    def allowed_filters(cls):
+        return cls._fieldset_filters
 
-		if "_allowed_filters" in dct.keys():
-			filters_source = dct["_allowed_filters"]
-			common_filters = {}
+    def __new__(mcs, cls_name, bases, dct):
+        model_filters = {}
+        fieldset_filters = {}
 
-			for name, obj in filters_source.items():
-				if isinstance(obj, Filter):
-					common_filters[name] = obj
-					base_filter = obj
-				else:
-					base_filter = obj[0][1]
-					for model_name, filter_ in obj:
-						if isinstance(filter_, type) and \
-								issubclass(filter_, ConversionFilter):
-							filter_ = filter_(base_filter)
+        if "_allowed_filters" in dct.keys():
+            filters_source = dct["_allowed_filters"]
+            common_filters = {}
 
-						model_filters.setdefault(model_name, {})[name] = filter_
+            for name, obj in filters_source.items():
+                if isinstance(obj, Filter):
+                    common_filters[name] = obj
+                    base_filter = obj
+                else:
+                    base_filter = obj[0][1]
+                    for model_name, filter_ in obj:
+                        if isinstance(filter_, type) and \
+                                issubclass(filter_, ConversionFilter):
+                            filter_ = filter_(base_filter)
 
-				fieldset_filters[name] = base_filter
+                        model_filters.setdefault(model_name, {})[
+                            name] = filter_
 
-			for model_name in model_filters.keys():
-				model_filters[model_name].update(common_filters)
-		else:
-			for base_cls in bases:
-				if hasattr(base_cls, "_model_filters"):
-					model_filters = base_cls._model_filters
+                fieldset_filters[name] = base_filter
 
-				if hasattr(base_cls, "_fieldset_filters"):
-					fieldset_filters = base_cls._fieldset_filters
+            for model_name in model_filters.keys():
+                model_filters[model_name].update(common_filters)
+        else:
+            for base_cls in bases:
+                if hasattr(base_cls, "_model_filters"):
+                    model_filters = base_cls._model_filters
 
-		dct["_model_filters"] = model_filters
-		dct["_fieldset_filters"] = fieldset_filters
+                if hasattr(base_cls, "_fieldset_filters"):
+                    fieldset_filters = base_cls._fieldset_filters
 
-		return super().__new__(mcs, cls_name, bases, dct)
+        dct["_model_filters"] = model_filters
+        dct["_fieldset_filters"] = fieldset_filters
+
+        return super().__new__(mcs, cls_name, bases, dct)
 
 
 class MultiModelMixin(metaclass=MultiModelMeta):
-	model_parameter = None
-	model_lookup = {}
+    model_parameter = None
+    model_lookup = {}
 
-	def __init__(self, *args, **kwargs):
-		super().__init__(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-		self._model = None
+        self._model = None
 
-	@property
-	def allowed_filters(self):
-		try:
-			return self._model_filters[self.kwargs[self.model_parameter]]
-		except KeyError:
-			return self.__class__.allowed_filters
+    @property
+    def allowed_filters(self):
+        try:
+            return self._model_filters[self.kwargs[self.model_parameter]]
+        except KeyError:
+            return self.__class__.allowed_filters
 
-	@property
-	def model(self):
-		if self._model is None:
-			model_key = self.kwargs[self.model_parameter]
-			self._model = self.model_lookup[model_key]
+    @property
+    def model(self):
+        if self._model is None:
+            model_key = self.kwargs[self.model_parameter]
+            self._model = self.model_lookup[model_key]
 
-		return self._model
+        return self._model
 
-	@model.setter
-	def model(self, value):
-		self._model = value
+    @model.setter
+    def model(self, value):
+        self._model = value
+
 
 class FilterViewMixin:
-	expression_parameter = "search"
-	allowed_filters = {}
-	page_parameter = "page"
-	objects_per_page = None
-	pagination_cumulative = False
+    expression_parameter = "search"
+    allowed_filters = {}
+    page_parameter = "page"
+    objects_per_page = None
+    pagination_cumulative = False
 
-	def __init__(self, *args, **kwargs):
-		super().__init__(*args, **kwargs)
-		self.boolean_expression = None
-		self.current_page = None
-		self.current_page_object = None
-		self.paginator = None
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.boolean_expression = None
+        self.current_page = None
+        self.current_page_object = None
+        self.paginator = None
 
-	def _get_queryset_filter(self, queryset):
-		aggregator = QuerySetAggregator(queryset, self.allowed_filters)
+    def _get_queryset_filter(self, queryset):
+        aggregator = QuerySetAggregator(queryset, self.allowed_filters)
 
-		return self.boolean_expression.traverse(aggregator)
+        return self.boolean_expression.traverse(aggregator)
 
-	def get_context_data(self, **kwargs):
-		context = super().get_context_data(**kwargs)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
-		context["filters"] = self.allowed_filters
-		context["filter_keys"] = ",".join(self.allowed_filters.keys())
-		context["search_text"] = self.kwarg_or_empty(self.expression_parameter)
+        context["filters"] = self.allowed_filters
+        context["filter_keys"] = ",".join(self.allowed_filters.keys())
+        context["search_text"] = self.kwarg_or_empty(self.expression_parameter)
 
-		if self.boolean_expression is not None:
-			aggregator = TokenAggregator(self.allowed_filters)
-			context["search_expression"] = \
-				self.boolean_expression.traverse(aggregator)
+        if self.boolean_expression is not None:
+            aggregator = TokenAggregator(self.allowed_filters)
+            context["search_expression"] = \
+                self.boolean_expression.traverse(aggregator)
 
-		context["search_performed"] = self.search_performed
+        context["search_performed"] = self.search_performed
 
-		context["current_page"] = self.current_page
-		context["current_page_object"] = self.current_page_object
-		context["paginator"] = self.paginator
+        context["current_page"] = self.current_page
+        context["current_page_object"] = self.current_page_object
+        context["paginator"] = self.paginator
 
-		return context
+        return context
 
-	@property
-	def search_performed(self):
-		return self.expression_parameter in self.kwargs \
-				and self.kwargs[self.expression_parameter]
+    @property
+    def search_performed(self):
+        return self.expression_parameter in self.kwargs \
+            and self.kwargs[self.expression_parameter]
 
-	def kwarg_or_none(self, key):
-		if key in self.kwargs.keys() and self.kwargs[key]:
-			return self.kwargs[key]
-		else:
-			return None
+    def kwarg_or_none(self, key):
+        if key in self.kwargs.keys() and self.kwargs[key]:
+            return self.kwargs[key]
+        else:
+            return None
 
-	def kwarg_or_empty(self, key):
-		if key in self.kwargs.keys() and self.kwargs[key]:
-			return self.kwargs[key]
-		else:
-			return ""
+    def kwarg_or_empty(self, key):
+        if key in self.kwargs.keys() and self.kwargs[key]:
+            return self.kwargs[key]
+        else:
+            return ""
 
-	@property
-	def kwarg_val(self):
-		return self.kwarg_or_none(self.expression_parameter)
+    @property
+    def kwarg_val(self):
+        return self.kwarg_or_none(self.expression_parameter)
 
-	def get(self, *args, **kwargs):
-		kwarg = self.kwarg_val
+    def get(self, *args, **kwargs):
+        kwarg = self.kwarg_val
 
-		if kwarg is not None:
-			kwarg = kwarg.strip().rstrip("/")
+        if kwarg is not None:
+            kwarg = kwarg.strip().rstrip("/")
 
-			try:
-				self.boolean_expression = BooleanBuilder(kwarg).build()
-			except ValueError:
-				error = ValueError("Confira sua expressão e verifique se não \
-					esqueceu algum conector, por exemplo.")
-				error.name = lambda : "Erro de Sintaxe"
-				raise error
+            try:
+                self.boolean_expression = BooleanBuilder(kwarg).build()
+            except ValueError:
+                error = ValueError(("Confira sua expressão e verifique se não"
+                                    "esqueceu algum conector, por exemplo."))
+                error.name = lambda: "Erro de Sintaxe"
+                raise error
 
-		return super().get(*args, **kwargs)
+        return super().get(*args, **kwargs)
 
-	def get_serializer_context(self):
-		context = super().get_serializer_context()
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
 
-		if self.objects_per_page is not None:
-			context.setdefault("extra_data", {}).update( \
-				{ "current_page": self.current_page
-				, "total_pages": self.paginator.num_pages
-				, "last_page": self.paginator.num_pages == self.current_page
-				, "total_objects": self.paginator.count
-				})
+        if self.objects_per_page is not None:
+            context.setdefault("extra_data", {}) \
+                .update({"current_page": self.current_page,
+                         "total_pages": self.paginator.num_pages,
+                         "last_page": self.paginator.num_pages == \
+                            self.current_page,
+                         "total_objects": self.paginator.count})
 
-		actions = self.custom_actions()
+        actions = self.custom_actions()
 
-		if len(actions) > 0:
-			context.setdefault("extra_data", {}).update( \
-				{ "actions": actions
-				})
+        if len(actions) > 0:
+            context.setdefault("extra_data", {}).update(
+                {"actions": actions
+                })
 
-		return context
+        return context
 
-	def custom_actions(self):
-		return []
+    def custom_actions(self):
+        return []
 
-	def get_queryset(self):
-		# MRO do Python garante que haverá um get_queryset definido aqui se
-		# FilterViewMixin for declarado como class pai antes da classe de View.
-		original = super().get_queryset()
+    def get_queryset(self):
+        # MRO do Python garante que haverá um get_queryset definido aqui se
+        # FilterViewMixin for declarado como class pai antes da classe de View.
+        original = super().get_queryset()
 
-		if self.boolean_expression is not None:
-			queryset = self._get_queryset_filter(original)
-		else:
-			queryset = original.none()
+        if self.boolean_expression is not None:
+            queryset = self._get_queryset_filter(original)
+        else:
+            queryset = original.none()
 
-		return queryset
+        return queryset
 
-	def _paginate_queryset(self, queryset):
-		self.current_page = self.kwarg_or_none(self.page_parameter)
-		self.paginator = Paginator(queryset, self.objects_per_page)
+    def _paginate_queryset(self, queryset):
+        self.current_page = self.kwarg_or_none(self.page_parameter)
+        self.paginator = Paginator(queryset, self.objects_per_page)
 
-		if self.current_page is None or self.current_page == 0:
-			self.current_page = 1
-		else:
-			self.current_page = int(self.current_page)
+        if self.current_page is None or self.current_page == 0:
+            self.current_page = 1
+        else:
+            self.current_page = int(self.current_page)
 
-		if self.current_page > self.paginator.num_pages:
-			self.current_page = self.paginator.num_pages
+        if self.current_page > self.paginator.num_pages:
+            self.current_page = self.paginator.num_pages
 
-		if self.pagination_cumulative:
-			pages = range(1, self.current_page + 1)
-		else:
-			pages = [self.current_page]
+        if self.pagination_cumulative:
+            pages = range(1, self.current_page + 1)
+        else:
+            pages = [self.current_page]
 
-		def fold(qset, page):
-			self.current_page_object = self.paginator.page(page)
-			qset += list(self.current_page_object.object_list)
-			return qset
+        def fold(qset, page):
+            self.current_page_object = self.paginator.page(page)
+            qset += list(self.current_page_object.object_list)
+            return qset
 
-		return reduce(fold, pages, [])
+        return reduce(fold, pages, [])
 
-	@classmethod
-	def fieldsets(cls):
-		return {filter_name: { "description": filter_.description,
-			"template": filter_.form.as_p(),
-			"arg_count": len(filter_.field_keys) } \
-				for filter_name, filter_ in cls.allowed_filters.items()}
+    @classmethod
+    def fieldsets(cls):
+        return {filter_name: {"description": filter_.description,
+                              "template": filter_.form.as_p(),
+                              "arg_count": len(filter_.field_keys)}
+                for filter_name, filter_ in cls.allowed_filters.items()}
+
 
 class NoCacheMixin:
-	def get(self, *args, **kwargs):
-		response = super().get(*args, **kwargs)
 
-		response['Cache-Control'] = "no-cache, no-store, must-revalidate"
-		response['Pragma'] = "no-cache"
-		response['Expires'] = "0"
+    def get(self, *args, **kwargs):
+        response = super().get(*args, **kwargs)
 
-		return response
+        response['Cache-Control'] = "no-cache, no-store, must-revalidate"
+        response['Pragma'] = "no-cache"
+        response['Expires'] = "0"
+
+        return response
+
 
 class AppViewMixin:
-	pass
+    pass

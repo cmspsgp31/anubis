@@ -25,315 +25,311 @@ from anubis.query import ProcedureQuerySet
 from anubis.filters import Filter
 from django.conf import settings
 
+
 class ElasticModelMixin:
-	""" O propósito dessa classe é fornecer um backend reserva para um modelo
-	já implementado em outro backend. Por exemplo, quando os metadados de um
-	modelo estão em SQL, e os dados de pesquisa em texto completo no Elastic.
-	Essa classe fornece funções utilitárias para simplificar a transposição de
-	dados de um modelo para o outro. Ela NÃO tem o propósito de ser usada como
-	um modelo "nativo" de ElasticSearch para Django.
+    """ O propósito dessa classe é fornecer um backend reserva para um modelo
+    já implementado em outro backend. Por exemplo, quando os metadados de um
+    modelo estão em SQL, e os dados de pesquisa em texto completo no Elastic.
+    Essa classe fornece funções utilitárias para simplificar a transposição de
+    dados de um modelo para o outro. Ela NÃO tem o propósito de ser usada como
+    um modelo "nativo" de ElasticSearch para Django.
 
-	Exemplo:
+    Exemplo:
 
-	class MyModel(ElasticModelMixin, django.db.models.Model):
-		_elastic = {
-			"connection": "myconn", # id da conexão em settings.ELASTICSEARCH
-			"path": {"index": "people", "doc_type": "person"},
-				# índice e doc_type no ElasticSearch
-			"fields": ("nome", "idade") # campos do documento
-			"highlight": ("nome") # campos a serem destacados no resultado
-		}
+    class MyModel(ElasticModelMixin, django.db.models.Model):
+        _elastic = {
+            "connection": "myconn", # id da conexão em settings.ELASTICSEARCH
+            "path": {"index": "people", "doc_type": "person"},
+                    # índice e doc_type no ElasticSearch
+            "fields": ("nome", "idade") # campos do documento
+            "highlight": ("nome") # campos a serem destacados no resultado
+        }
 
-		primeiro_nome = django.db.models.CharField()
-		sobrenome = django.db.models.CharField()
-		idade = django.db.models.IntegerField()
-			# nome do campo no modelo do Django coincide com nome do campo
-			# do documento, então será usado preencher esse dado
+        primeiro_nome = django.db.models.CharField()
+        sobrenome = django.db.models.CharField()
+        idade = django.db.models.IntegerField()
+            # nome do campo no modelo do Django coincide com nome do campo
+            # do documento, então será usado preencher esse dado
 
-		def es_get_field_nome(self):
-			# usa essa função para prover o dado para o ElasticSearch
-			return self.primeiro_nome + " " + self.sobrenome
-	"""
+        def es_get_field_nome(self):
+            # usa essa função para prover o dado para o ElasticSearch
+            return self.primeiro_nome + " " + self.sobrenome
+    """
 
-	def __init__(self, *args, **kwargs):
-		super().__init__(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-		self._es_server = None
-		self._es_score = None
-		self._es_highlights = None
+        self._es_server = None
+        self._es_score = None
+        self._es_highlights = None
 
-	@classmethod
-	def es_get_server(cls):
-		connection_id = cls._elastic["connection"]
-		connection_string = settings.ELASTICSEARCH[connection_id]
-		return Elasticsearch(connection_string)
+    @classmethod
+    def es_get_server(cls):
+        connection_id = cls._elastic["connection"]
+        connection_string = settings.ELASTICSEARCH[connection_id]
+        return Elasticsearch(connection_string)
 
-	@property
-	def es_server(self):
-		if self._es_server is None:
-			connection_id = self._elastic["connection"]
-			connection_string = settings.ELASTICSEARCH[connection_id]
-			self._es_server = Elasticsearch(connection_string)
+    @property
+    def es_server(self):
+        if self._es_server is None:
+            connection_id = self._elastic["connection"]
+            connection_string = settings.ELASTICSEARCH[connection_id]
+            self._es_server = Elasticsearch(connection_string)
 
-		return self._es_server
+        return self._es_server
 
-	@property
-	def es_fields(self):
-		return tuple(self._elastic["fields"])
+    @property
+    def es_fields(self):
+        return tuple(self._elastic["fields"])
 
-	def es_get_field(self, field):
-		if not field in self.es_fields:
-			raise KeyError("Undeclared ElasticSearch field - {}.".format(field))
+    def es_get_field(self, field):
+        if field not in self.es_fields:
+            raise KeyError("Undeclared ElasticSearch field - {}." \
+                           .format(field))
 
-		field_getter_name = "es_get_field_{}".format(field)
-		value = None
+        field_getter_name = "es_get_field_{}".format(field)
+        value = None
 
-		if hasattr(self, field_getter_name):
-			getter = getattr(self, field_getter_name)
+        if hasattr(self, field_getter_name):
+            getter = getattr(self, field_getter_name)
 
-			if callable(getter):
-				value = getter()
-			else:
-				value = getter
+            if callable(getter):
+                value = getter()
+            else:
+                value = getter
 
-		elif field in self._meta.get_all_field_names():
-			value = getattr(self, field)
+        elif field in self._meta.get_all_field_names():
+            value = getattr(self, field)
 
-		else:
-			msg = "No source found for field {f} - tried {c}.{m}, {c}.{m}() and \
-					self._meta.get_all_field_names().".format(f=field,
-						c=self.__class__.__name__, m=field_getter_name)
+        else:
+            msg = ("No source found for field {f} - tried {c}.{m},"
+                   " {c}.{m}() and self._meta.get_all_field_names().") \
+                  .format(f=field, c=self.__class__.__name__,
+                          m=field_getter_name)
 
-			raise KeyError(msg)
+            raise KeyError(msg)
 
-		return value
+        return value
 
-	def es_retrieve_field(self, field):
-		if not field in self.es_fields:
-			raise KeyError("Undeclared ElasticSearch field - {}.".format(field))
+    def es_retrieve_field(self, field):
+        if field not in self.es_fields:
+            raise KeyError("Undeclared ElasticSearch field - {}." \
+                           .format(field))
 
-		doc = self.es_server.get(id=self.id, **self._elastic["path"])
+        doc = self.es_server.get(id=self.id, **self._elastic["path"])
 
-		return doc["_source"][field]
+        return doc["_source"][field]
 
+    def save(self, save_es=False, *args, **kwargs):
+        retval = super().save(*args, **kwargs)
 
+        if save_es:
+            es_args = dict(self._elastic["path"])
+            es_args.update(
+                {"body": {field: self.es_get_field(field)
+                          for field in self.es_fields},
+                 "id": self.id
+                })
 
+            self.es_server.index(**es_args)
 
-	def save(self, save_es=False, *args, **kwargs):
-		retval = super().save(*args, **kwargs)
+        return retval
 
-		if save_es:
-			es_args = dict(self._elastic["path"])
-			es_args.update( \
-				{ "body" : {field: self.es_get_field(field) \
-					for field in self.es_fields}
-				, "id": self.id
-				})
+    def delete(self, *args, **kwargs):
+        _id = self.id
+        retval = super().delete(*args, **kwargs)
 
-			self.es_server.index(**es_args)
+        es_args = dict(self._elastic["path"])
+        es_args["id"] = _id
 
-		return retval
+        try:
+            self.es_server.delete(**es_args)
+        except NotFoundError:
+            pass
 
-	def delete(self, *args, **kwargs):
-		_id = self.id
-		retval = super().delete(*args, **kwargs)
-
-		es_args = dict(self._elastic["path"])
-		es_args["id"] = _id
-
-		try:
-			self.es_server.delete(**es_args)
-		except NotFoundError:
-			pass
-
-		return retval
-
-
+        return retval
 
 
 class ElasticQuerySet(ProcedureQuerySet):
-	def es_query(self, body, timeout=None, min_score=None, save_score=True,
-			save_highlights=True):
-		es_server = self.model.es_get_server()
-		path = self.model._elastic["path"]
-		body = dict(body)
-		should_highlight = "highlight" in self.model._elastic.keys()
 
-		body.setdefault("fields", []).append("_id")
+    def es_query(self, body, timeout=None, min_score=None, save_score=True,
+                 save_highlights=True):
+        es_server = self.model.es_get_server()
+        path = self.model._elastic["path"]
+        body = dict(body)
+        should_highlight = "highlight" in self.model._elastic.keys()
 
-		if should_highlight:
-			body["fields"].append("highlight")
-			highlights = body.setdefault("highlight", {}) \
-				.setdefault("fields", {})
+        body.setdefault("fields", []).append("_id")
 
-			for field in self.model._elastic["highlight"]:
-				highlights.setdefault(field, {})
+        if should_highlight:
+            body["fields"].append("highlight")
+            highlights = body.setdefault("highlight", {}) \
+                .setdefault("fields", {})
 
-		if timeout is not None:
-			timeout = \
-				{ "timeout": timeout
-				, "scroll": timeout
-				}
-		else:
-			timeout = {}
+            for field in self.model._elastic["highlight"]:
+                highlights.setdefault(field, {})
 
-		kwargs = { "query": body }
+        if timeout is not None:
+            timeout = {"timeout": timeout,
+                       "scroll": timeout
+                      }
+        else:
+            timeout = {}
 
-		if min_score is not None:
-			kwargs["min_score"] = min_score
+        kwargs = {"query": body}
 
-		kwargs.update(timeout)
-		kwargs.update(path)
+        if min_score is not None:
+            kwargs["min_score"] = min_score
 
-		print(kwargs)
+        kwargs.update(timeout)
+        kwargs.update(path)
 
-		es_queryset = scan(es_server, **kwargs)
-		data = {d["_id"]: d for d in es_queryset}
+        print(kwargs)
 
-		queryset = self.filter(id__in=data.keys())
+        es_queryset = scan(es_server, **kwargs)
+        data = {d["_id"]: d for d in es_queryset}
 
-		if save_score or save_highlights:
-			for element in queryset:
-				hit = data[str(element.id)]
-				print(hit)
-				element._es_score = hit["_score"]
-				element._es_highlights = hit["highlight"]
+        queryset = self.filter(id__in=data.keys())
 
-		return queryset
+        if save_score or save_highlights:
+            for element in queryset:
+                hit = data[str(element.id)]
+                print(hit)
+                element._es_score = hit["_score"]
+                element._es_highlights = hit["highlight"]
+
+        return queryset
 
 
 class ElasticFilter(Filter):
-	def __init__(self,  es_field_name, **es_kwargs):
-		self.kwargs = es_kwargs
-		self.field_name = es_field_name
 
-		super().__init__(es_field_name)
+    def __init__(self, es_field_name, **es_kwargs):
+        self.kwargs = es_kwargs
+        self.field_name = es_field_name
 
-	def make_query_body(self, args):
-		raise NotImplementedError()
+        super().__init__(es_field_name)
 
-	def make_kwargs(self, args):
-		return {}
+    def make_query_body(self, args):
+        raise NotImplementedError()
 
-	def get_server(self, queryset):
-		return queryset.model.es_get_server()
+    def make_kwargs(self, args):
+        return {}
 
-	def get_path(self, queryset):
-		return queryset.model._elastic["path"]
+    def get_server(self, queryset):
+        return queryset.model.es_get_server()
 
-	def default_kwargs(self):
-		return {}
+    def get_path(self, queryset):
+        return queryset.model._elastic["path"]
 
-	def default_body(self):
-		return \
-			{ "fields": ["_id"] #, "highlight"]
-			# { "highlight": {"fields": {self.field_name: {}}}
-			}
+    def default_kwargs(self):
+        return {}
 
-	def should_import_results(self):
-		return True
+    def default_body(self):
+        return {"fields": ["_id"]}
 
-	def import_results(self, obj, hit):
-		# obj._es_highlights = hit["highlight"]
-		pass
+    def should_import_results(self):
+        return True
 
-	def _filter_django_queryset(self, queryset, args, es_data):
-		return queryset.filter(id__in=es_data.keys())
+    def import_results(self, obj, hit):
+        pass
 
-	def _build_kwargs(self, queryset, args):
-		path = self.get_path(queryset)
-		request_kwargs = self.make_kwargs(args)
-		kwargs = self.default_kwargs()
+    def _filter_django_queryset(self, queryset, args, es_data):
+        return queryset.filter(id__in=es_data.keys())
 
+    def _build_kwargs(self, queryset, args):
+        path = self.get_path(queryset)
+        request_kwargs = self.make_kwargs(args)
+        kwargs = self.default_kwargs()
 
-		kwargs.update(self.kwargs)
-		kwargs.update(request_kwargs)
-		kwargs.update(path)
+        kwargs.update(self.kwargs)
+        kwargs.update(request_kwargs)
+        kwargs.update(path)
 
-		return kwargs
+        return kwargs
 
-	def filter_queryset(self, queryset, args):
-		server = self.get_server(queryset)
+    def filter_queryset(self, queryset, args):
+        server = self.get_server(queryset)
 
-		query_body = self.default_body()
-		query_body.update(self.make_query_body(args))
+        query_body = self.default_body()
+        query_body.update(self.make_query_body(args))
 
-		kwargs = self._build_kwargs(queryset, args)
-		kwargs["query"] = query_body
+        kwargs = self._build_kwargs(queryset, args)
+        kwargs["query"] = query_body
 
-		es_queryset = scan(server, **kwargs)
-		data = {d["_id"]: d for d in es_queryset}
+        es_queryset = scan(server, **kwargs)
+        data = {d["_id"]: d for d in es_queryset}
 
-		queryset = self._filter_django_queryset(queryset, args, data)
+        queryset = self._filter_django_queryset(queryset, args, data)
 
-		if self.should_import_results():
-			for obj in queryset:
-				hit = data[str(obj.id)]
-				self.import_results(obj, hit)
+        if self.should_import_results():
+            for obj in queryset:
+                hit = data[str(obj.id)]
+                self.import_results(obj, hit)
 
-		return queryset
+        return queryset
+
 
 class ElasticMatchPhraseFilter(ElasticFilter):
-	def __init__(self, es_field_name, prefix=False, fuzziness="0",
-			has_score=False, **es_kwargs):
 
-		super().__init__(es_field_name, **es_kwargs)
+    def __init__(self, es_field_name, prefix=False, fuzziness="0",
+                 has_score=False, **es_kwargs):
 
-		prefix = prefix or not fuzziness == "0"
+        super().__init__(es_field_name, **es_kwargs)
 
-		self.field_base = \
-			{ "fuzziness": fuzziness
-			, "type": "phrase_prefix" if prefix else "phrase"
-			}
+        prefix = prefix or not fuzziness == "0"
 
-		if prefix:
-			self.field_base["max_expansions"] = 100
+        self.field_base = {"fuzziness": fuzziness,
+                           "type": "phrase_prefix" if prefix else "phrase"}
 
-		self.has_score = has_score
+        if prefix:
+            self.field_base["max_expansions"] = 100
 
-	def make_query_body(self, args):
-		from pprint import pprint
+        self.has_score = has_score
 
-		text = args[0]
+    def make_query_body(self, args):
+        from pprint import pprint
 
-		body = { "query": { "match": { self.field_name: self.field_base } } }
+        text = args[0]
 
-		if self.has_score:
-			body["min_score"] = float(args[1])
+        body = {"query": {"match": {self.field_name: self.field_base}}}
 
-		body["query"]["match"][self.field_name]["query"] = text
+        if self.has_score:
+            body["min_score"] = float(args[1])
 
-		pprint(body)
+        body["query"]["match"][self.field_name]["query"] = text
 
-		return body
+        pprint(body)
+
+        return body
 
 
 class ElasticHasFTSFilter(ElasticFilter):
-	def _filter_django_queryset(self, queryset, args, es_data):
-		have_empty_field = set(es_data.keys())
 
-		server = self.get_server(queryset)
-		kwargs = self._build_kwargs(queryset, [])
-		kwargs["query"] = self.default_body()
+    def _filter_django_queryset(self, queryset, args, es_data):
+        have_empty_field = set(es_data.keys())
 
-		have_doc = {int(doc["_id"]) for doc in scan(server, **kwargs)}
-		all_docs = set(queryset.model.objects.values_list("id", flat=True))
-		have_no_doc = all_docs - have_doc
+        server = self.get_server(queryset)
+        kwargs = self._build_kwargs(queryset, [])
+        kwargs["query"] = self.default_body()
 
-		fts_missing = have_empty_field | have_no_doc
+        have_doc = {int(doc["_id"]) for doc in scan(server, **kwargs)}
+        all_docs = set(queryset.model.objects.values_list("id", flat=True))
+        have_no_doc = all_docs - have_doc
 
-		return queryset.exclude(id__in=list(fts_missing))
+        fts_missing = have_empty_field | have_no_doc
 
-	def should_import_results(self):
-		return False
+        return queryset.exclude(id__in=list(fts_missing))
 
-	def make_query_body(self, args):
-		return {
-			"filter": {
-				"not": {
-					"range": {
-						self.field_name: {}
-					}
-				}
-			}
-		}
+    def should_import_results(self):
+        return False
+
+    def make_query_body(self, args):
+        return {
+            "filter": {
+                "not": {
+                    "range": {
+                        self.field_name: {}
+                    }
+                }
+            }
+        }
