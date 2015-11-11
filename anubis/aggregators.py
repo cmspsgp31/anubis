@@ -20,176 +20,178 @@
 
 from anubis.url import Boolean
 
+
 class Aggregator:
-	def __init__(self):
-		pass
+    def __init__(self):
+        pass
 
-	@staticmethod
-	def need_parenthesis(outside, inside):
-		outside_precedence = Boolean.precedence.index(outside)
-		inside_precedence = Boolean.precedence.index(inside)
+    @staticmethod
+    def need_parenthesis(outside, inside):
+        outside_precedence = Boolean.precedence.index(outside)
+        inside_precedence = Boolean.precedence.index(inside)
 
-		return outside_precedence < inside_precedence
+        return outside_precedence < inside_precedence
 
-	def __call__(self, base_expression=None, not_expression=None,
-			and_expression=None, or_expression=None, inside_type=None,
-			left_type=None, right_type=None):
+    def __call__(self, base_expression=None, not_expression=None,
+                 and_expression=None, or_expression=None, inside_type=None,
+                 left_type=None, right_type=None):
 
-		if base_expression is not None:
-			return self.handle_base_expression(base_expression)
-		elif not_expression is not None:
-			need_parens = self.need_parenthesis(Boolean.Not, inside_type)
-			return self.handle_not_expression(not_expression, need_parens)
-		elif and_expression is not None:
-			left_expr, right_expr = and_expression
-			left_parens = self.need_parenthesis(Boolean.And, left_type)
-			right_parens = self.need_parenthesis(Boolean.And, right_type)
-			return self.handle_and_expression(left_expr, right_expr,
-				left_parens, right_parens)
-		elif or_expression is not None:
-			left_expr, right_expr = or_expression
-			left_parens = self.need_parenthesis(Boolean.Or, left_type)
-			right_parens = self.need_parenthesis(Boolean.Or, right_type)
-			return self.handle_or_expression(left_expr, right_expr,
-				left_parens, right_parens)
-		else:
-			return self.handle_impossible_case()
+        if base_expression is not None:
+            return self.handle_base_expression(base_expression)
+        elif not_expression is not None:
+            need_parens = self.need_parenthesis(Boolean.Not, inside_type)
+            return self.handle_not_expression(not_expression, need_parens)
+        elif and_expression is not None:
+            left_expr, right_expr = and_expression
+            left_parens = self.need_parenthesis(Boolean.And, left_type)
+            right_parens = self.need_parenthesis(Boolean.And, right_type)
+            return self.handle_and_expression(left_expr, right_expr,
+                                              left_parens, right_parens)
+        elif or_expression is not None:
+            left_expr, right_expr = or_expression
+            left_parens = self.need_parenthesis(Boolean.Or, left_type)
+            right_parens = self.need_parenthesis(Boolean.Or, right_type)
+            return self.handle_or_expression(left_expr, right_expr,
+                                             left_parens, right_parens)
+        else:
+            return self.handle_impossible_case()
 
-	def handle_base_expression(self, base_expression):
-		raise NotImplementedError()
+    def handle_base_expression(self, base_expression):
+        raise NotImplementedError()
 
-	def handle_not_expression(self, not_expression, need_parens):
-		raise NotImplementedError()
+    def handle_not_expression(self, not_expression, need_parens):
+        raise NotImplementedError()
 
-	def handle_and_expression(self, left_expression, right_expression,
-			left_parens, right_parens):
-		raise NotImplementedError()
+    def handle_and_expression(self, left_expression, right_expression,
+                              left_parens, right_parens):
+        raise NotImplementedError()
 
-	def handle_or_expression(self, left_expression, right_expression,
-			left_parens, right_parens):
-		raise NotImplementedError()
+    def handle_or_expression(self, left_expression, right_expression,
+                             left_parens, right_parens):
+        raise NotImplementedError()
 
-	def handle_impossible_case(self):
-		raise RuntimeError()
+    def handle_impossible_case(self):
+        raise RuntimeError()
+
 
 class QuerySetAggregator(Aggregator):
-	def __init__(self, base_queryset, allowed_filters):
-		super().__init__()
-		self.base_queryset = base_queryset
-		self.allowed_filters = allowed_filters
+    def __init__(self, base_queryset, allowed_filters):
+        super().__init__()
+        self.base_queryset = base_queryset
+        self.allowed_filters = allowed_filters
 
-	def handle_base_expression(self, base_expression):
-		filter_ = self.allowed_filters[base_expression["field"]]
-		args = base_expression["args"]
-		args = filter_.validate(args)
-		return filter_.filter_queryset(self.base_queryset, args)
+    def handle_base_expression(self, base_expression):
+        filter_ = self.allowed_filters[base_expression["field"]]
+        args = base_expression["args"]
+        args = filter_.validate(args)
+        return filter_.filter_queryset(self.base_queryset, args)
 
-	def handle_not_expression(self, not_expression, _):
-		return self.base_queryset.exclude(id__in=not_expression.values("id"))
+    def handle_not_expression(self, not_expression, _):
+        return self.base_queryset.exclude(id__in=not_expression.values("id"))
 
-	def handle_and_expression(self, left_expression, right_expression, _, __):
-		return left_expression & right_expression
+    def handle_and_expression(self, left_expression, right_expression, _, __):
+        return left_expression & right_expression
 
-	def handle_or_expression(self, left_expression, right_expression, _, __):
-		return left_expression | right_expression
+    def handle_or_expression(self, left_expression, right_expression, _, __):
+        return left_expression | right_expression
 
-	def handle_impossible_case(self):
-		return self.base_queryset
+    def handle_impossible_case(self):
+        return self.base_queryset
+
 
 class TokenAggregator(Aggregator):
-	def __init__(self, allowed_filters):
-		super().__init__()
-		self.allowed_filters = allowed_filters
+    def __init__(self, allowed_filters):
+        super().__init__()
+        self.allowed_filters = allowed_filters
 
-	@classmethod
-	def open_close_parens(cls, needed):
-		parens_open = ""
-		parens_close = ""
+    @classmethod
+    def open_close_parens(cls, needed):
+        parens_open = ""
+        parens_close = ""
 
-		if needed:
-			parens_open = cls.make_token("open")
-			parens_close = cls.make_token("close")
+        if needed:
+            parens_open = cls.make_token("open")
+            parens_close = cls.make_token("close")
 
-		return (parens_open, parens_close)
+        return parens_open, parens_close
 
-	@staticmethod
-	def make_token(name, contents="", attributes={}):
-		attrs = ""
+    @staticmethod
+    def make_token(name, contents="", attributes={}):
+        attrs = ""
 
-		if len(attributes) > 0:
-			attrs = " ".join(["{}=\"{}\"".format(k, v) \
-					for k, v in attributes.items()])
-			attrs = " {}".format(attrs)
+        if len(attributes) > 0:
+            attrs = " ".join(["{}=\"{}\"".format(k, v)
+                              for k, v in attributes.items()])
+            attrs = " {}".format(attrs)
 
-		return """<li data-token="{name}"{attrs}>
-			<p>{contents}</p>
-			<button type="button" class="close" tabindex="-1" data-remove>&times;</button>
-			</li>""" \
-			.format(name=name, contents=contents, attrs=attrs)
+        return """<li data-token="{name}"{attrs}>
+            <p>{contents}</p>
+            <button type="button" class="close" tabindex="-1" data-remove>&times;</button>
+            </li>""" \
+            .format(name=name, contents=contents, attrs=attrs)
 
-	def handle_base_expression(self, base_expression):
-		filter_ = self.allowed_filters[base_expression["field"]]
-		args = base_expression["args"]
-		form = filter_.bound_form(args)
+    def handle_base_expression(self, base_expression):
+        filter_ = self.allowed_filters[base_expression["field"]]
+        args = base_expression["args"]
+        form = filter_.bound_form(args)
 
-		if len(args) == 1:
-			hide_legend = " style=\"display: none;\""
-		else:
-			hide_legend = ""
+        if len(args) == 1:
+            hide_legend = " style=\"display: none;\""
+        else:
+            hide_legend = ""
 
-		contents = """
-			<fieldset>
-			<div class="legend"{hide_legend}>{full_name}</div>
-			{rendered_form}
-			</fieldset>
-		""".format(hide_legend=hide_legend, rendered_form=form.as_p(),
-				full_name=filter_.description)
+        contents = """
+            <fieldset>
+            <div class="legend"{hide_legend}>{full_name}</div>
+            {rendered_form}
+            </fieldset>
+        """.format(hide_legend=hide_legend, rendered_form=form.as_p(),
+                   full_name=filter_.description)
 
-		return self.make_token("expression", contents,
-			{"data-name": filter_.identifier})
+        return self.make_token("expression", contents,
+                               {"data-name": filter_.identifier})
 
-	def handle_not_expression(self, not_expression, need_parens):
-		parens_open, parens_close = self.open_close_parens(need_parens)
+    def handle_not_expression(self, not_expression, need_parens):
+        parens_open, parens_close = self.open_close_parens(need_parens)
 
-		return """
-		{negate_token}
-		{parens_open}
-		{expression}
-		{parens_close}
-		""".format(expression=not_expression, parens_open=parens_open,
-			parens_close=parens_close, negate_token=self.make_token("negate"))
+        return """
+        {negate_token}
+        {parens_open}
+        {expression}
+        {parens_close}
+        """.format(expression=not_expression, parens_open=parens_open,
+                   parens_close=parens_close, negate_token=self.make_token("negate"))
 
-	def handle_and_expression(self, left_expression, right_expression,
-			left_parens, right_parens):
-		left_open, left_close = self.open_close_parens(left_parens)
-		right_open, right_close = self.open_close_parens(right_parens)
+    def handle_and_expression(self, left_expression, right_expression,
+                              left_parens, right_parens):
+        left_open, left_close = self.open_close_parens(left_parens)
+        right_open, right_close = self.open_close_parens(right_parens)
 
-		return """
-		{left_open}
-		{left}
-		{left_close}
-		{and_token}
-		{right_open}
-		{right}
-		{right_close}
-		""".format(left=left_expression, right=right_expression,
-			left_open=left_open, left_close=left_close, right_open=right_open,
-			right_close=right_close, and_token=self.make_token("and"))
+        return """
+        {left_open}
+        {left}
+        {left_close}
+        {and_token}
+        {right_open}
+        {right}
+        {right_close}
+        """.format(left=left_expression, right=right_expression,
+                   left_open=left_open, left_close=left_close, right_open=right_open,
+                   right_close=right_close, and_token=self.make_token("and"))
 
-	def handle_or_expression(self, left_expression, right_expression,
-			left_parens, right_parens):
-		left_open, left_close = self.open_close_parens(left_parens)
-		right_open, right_close = self.open_close_parens(right_parens)
+    def handle_or_expression(self, left_expression, right_expression,
+                             left_parens, right_parens):
+        left_open, left_close = self.open_close_parens(left_parens)
+        right_open, right_close = self.open_close_parens(right_parens)
 
-		return """
-		{left_open}
-		{left}
-		{left_close}
-		{or_token}
-		{right_open}
-		{right}
-		{right_close}
-		""".format(left=left_expression, right=right_expression,
-			left_open=left_open, left_close=left_close, right_open=right_open,
-			right_close=right_close, or_token=self.make_token("or"))
-
+        return """
+        {left_open}
+        {left}
+        {left_close}
+        {or_token}
+        {right_open}
+        {right}
+        {right_close}
+        """.format(left=left_expression, right=right_expression,
+                   left_open=left_open, left_close=left_close, right_open=right_open,
+                   right_close=right_close, or_token=self.make_token("or"))
