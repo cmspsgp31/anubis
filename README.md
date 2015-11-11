@@ -1,3 +1,5 @@
+[![Code Climate](https://codeclimate.com/github/cmspsgp31/anubis/badges/gpa.svg)](https://codeclimate.com/github/cmspsgp31/anubis)
+
 # Anubis
 
 ## Extensão para Django especializada em pesquisa em banco de dados.
