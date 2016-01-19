@@ -4,15 +4,17 @@ import {Paper, RaisedButton} from 'material-ui';
 import Actions from './actions';
 import {Link, RouteHandler} from 'react-router';
 
+let getStateProps = state => ({
+	counter: state.get('counter'),
+	routing: state.get('routing')
+});
 
-@connect(
-	state => ({ counter: state.get('counter'), router: state.get('router') }),
-	dispatch => {
-		return {
-			onIncrement: () => dispatch(Actions.increment(1)),
-			onDecrement: () => dispatch(Actions.decrement(1)),
-		};
-})
+let getDispatchProps = dispatch => ({
+	onIncrement: () => dispatch(Actions.increment(1)),
+	onDecrement: () => dispatch(Actions.decrement(1))
+});
+
+@connect(getStateProps, getDispatchProps)
 export default class App extends React.Component {
 	static propTypes = {
 		counter: React.PropTypes.number.isRequired,
@@ -43,15 +45,14 @@ export default class App extends React.Component {
 					</Paper>
 				</div>
 
-				<div style={{
-					display: "table",
-					borderSpacing: "5px"
-					}}>
+				<div style={{ display: "table", borderSpacing: "5px" }}>
 
 					<div style={{display: "tableRow"}}>
 						{buttons.map(data => {
 							return (
-								<Link key={data.route} to={data.route} style={{display: "tableCell", padding: "5px"}}>
+								<Link key={data.route} to={data.route} 
+									style={{display: "tableCell",
+										padding: "5px"}}>
 									<RaisedButton
 										primary={true}
 										label={data.title} />

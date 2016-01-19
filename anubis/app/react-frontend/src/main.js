@@ -3,15 +3,13 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import I from 'immutable';
 import {Provider} from 'react-redux';
-import {createStore, applyMiddleware} from 'redux';
-import {ReduxRouter} from 'redux-router';
-import {Route} from 'react-router';
+import {Router, Route, browserHistory} from 'react-router';
 import {List, ListItem} from 'material-ui';
 
-import injectTapEventPlugin from "npm:react-tap-event-plugin@0.2.1";
+import injectTapEventPlugin from "react-tap-event-plugin";
 
 import App from './app';
-import Reducer from './reducers/reducer.js';
+import {appReducers} from './reducers/reducer.js';
 import configureStore from './configureStore';
 
 class Test1 extends React.Component {
@@ -59,17 +57,21 @@ class Test2 extends React.Component {
 }
 
 
-injectTapEventPlugin();
 
-ReactDOM.render(
-	<Provider store={configureStore(Reducer, __AnubisState)}>
-		<ReduxRouter>
-			<Route path="/demo.html" component={App}>
-				<Route path="test1" component={Test1}></Route>
-				<Route path="test2/*" component={Test2}></Route>
-			</Route>
-		</ReduxRouter>
-	</Provider>
-, document.querySelector("#app"));
+// window.addEventListener("DOMContentLoaded", () => {
+	injectTapEventPlugin();
+
+	ReactDOM.render(
+		<Provider store={configureStore(appReducers, __AnubisState)}>
+			<Router history={browserHistory}>
+				<Route path="/demo.html" component={App}>
+					<Route path="test1" component={Test1}></Route>
+					<Route path="test2/*" component={Test2}></Route>
+				</Route>
+			</Router>
+		</Provider>
+	, document.querySelector("#app"));
+// }, false);
+
 
 

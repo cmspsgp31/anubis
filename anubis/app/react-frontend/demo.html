@@ -8,10 +8,46 @@
 		<script src="config.js" type="text/javascript" charset="utf-8"></script>
 		<script type="text/javascript" charset="utf-8">
 			var __AnubisState = {
-				counter: 0
+				tokenEditor: {
+					editorText: "",
+					editorPosition: -1,
+					tokenList: [],
+					expression: "",
+					parseTree: null,
+					model: ""
+				},
+				searchResults: {
+					expression: "",
+					visible: false,
+					actions: {
+						"action": {
+							allowed: false,
+							url: ""
+						}
+					},
+					model: "",
+					sort: {
+						by: null,
+						ascending: true
+					},
+					results: [],
+					page: 0,
+					selection: []
+				},
+				models: {
+					"model1": {
+
+					}
+				}
 			};
 			System.import('src/main');
 		</script>
+		<!--script type="text/javascript" charset="utf-8">
+			var __AnubisState = {
+				counter: 0
+			};
+		</script>
+		<script src="anubis.js" type="text/javascript"></script-->
 	</head>
 	<body>
 		<div id="app">

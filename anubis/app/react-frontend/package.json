@@ -4,30 +4,30 @@
   "description": "Frontend for the Anubis library based on ReactJS.",
   "main": "src/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "node_modules/.bin/jspm install && node_modules/.bin/jspm bundle-sfx src/main build/anubis.js"
   },
   "author": "Ugo Pozo",
   "license": "GPL-3.0",
   "dependencies": {
-    "jspm": "^0.16.13"
-  },
-  "devDependencies": {
-    "jspm-server": "^0.1.8"
+    "jspm": "^0.16.23",
+    "jspm-server": "^1.0.1"
   },
   "jspm": {
     "dependencies": {
-      "immutable": "npm:immutable@^3.7.5",
-      "material-ui": "npm:material-ui@^0.13.0",
-      "react": "npm:react@^0.14.0",
-      "react-dom": "npm:react-dom@^0.14.0",
+      "babel-polyfill": "npm:babel-polyfill@^6.3.14",
+      "immutable": "npm:immutable@^3.7.6",
+      "material-ui": "npm:material-ui@^0.14.2",
+      "react": "npm:react@^0.14.6",
+      "react-dom": "npm:react-dom@^0.14.6",
       "react-motion": "npm:react-motion@^0.3.1",
-      "react-redux": "npm:react-redux@^4.0.0",
-      "react-router": "npm:react-router@^1.0.0-rc3",
+      "react-redux": "npm:react-redux@^4.0.6",
+      "react-router": "npm:react-router@^2.0.0-rc5",
+      "react-tap-event-plugin": "npm:react-tap-event-plugin@^0.2.1",
       "reduce-reducers": "npm:reduce-reducers@^0.1.1",
-      "redux": "npm:redux@^3.0.4",
-      "redux-actions": "npm:redux-actions@^0.8.0",
-      "redux-promise": "npm:redux-promise@^0.5.0",
-      "redux-router": "npm:redux-router@^1.0.0-beta3"
+      "redux": "npm:redux@^3.0.5",
+      "redux-actions": "npm:redux-actions@^0.9.0",
+      "redux-simple-router": "npm:redux-simple-router@^2.0.3"
     },
     "devDependencies": {
       "babel": "npm:babel-core@^5.8.24",
