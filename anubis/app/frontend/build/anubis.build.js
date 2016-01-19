@@ -1,7 +1,7 @@
 (
 	{ baseUrl: "."
 	, name: "anubis/main"
-	, out: "../../static/anubis/anubis.js"
+	, out: "anubis.js"
 	, paths:
 		{ "jquery": "../lib/jquery.min"
 		, "ui": "../lib/jquery-ui.min"

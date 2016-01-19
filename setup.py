@@ -19,14 +19,15 @@
 # este programa. Se não, consulte <http://www.gnu.org/licenses/>.
 
 
-from setuptools import setup
-from setuptools.command.install import install
-
 import subprocess
 import os
 import shutil
 import sys
 import json
+
+from setuptools import setup
+from setuptools.command.install import install
+from setuptools.command.develop import develop
 
 
 def shell(*args, **kwargs):
@@ -53,8 +54,31 @@ def shell_output(*args, **kwargs):
     else:
         return out
 
+def find_ghc_runtime():
+    bin_info = shell_output("ghc --info")
 
-class InstallAnubis(install):
+    info = json.loads(bin_info
+                      .strip()
+                      .decode("utf-8")
+                      .replace("(", "[")
+                      .replace(")", "]"))
+
+    ghc_libraries = dict(info)["LibDir"].strip("\n")
+
+    version = shell_output("ghc --version") \
+              .decode("utf-8") \
+              .split(" ")[-1] \
+              .strip("\n")
+
+    file_name = "libHSrts-ghc{}.so".format(version)
+
+    return os.path.join(ghc_libraries, "rts", file_name)
+
+class CompileHaskellMixin:
+    def initialize_options(self):
+        self.force_parselib = False
+
+        super().initialize_options()
 
     def compile_url_parser(self, package_dir):
         working = os.path.join(package_dir, "parseurl")
@@ -71,34 +95,14 @@ class InstallAnubis(install):
                            "libParseUrl.so")
         dst = os.path.join(package_dir, "libParseUrl.so")
 
-        print(src, dst)
         shutil.copy(src, dst)
 
-    def find_hs_rts(self):
-        bin_info = shell_output("ghc --info")
-
-        info = json.loads(bin_info
-                          .strip()
-                          .decode("utf-8")
-                          .replace("(", "[")
-                          .replace(")", "]"))
-
-        ghc_libraries = dict(info)["LibDir"].strip("\n")
-
-        version = shell_output("ghc --version") \
-                  .decode("utf-8") \
-                  .split(" ")[-1] \
-                  .strip("\n")
-
-        file_name = "libHSrts-ghc{}.so".format(version)
-
-        return os.path.join(ghc_libraries, "rts", file_name)
 
     def make_cabal_file(self, package_dir):
         working = os.path.join(package_dir, "parseurl")
         template_path = os.path.join(working, "parseurl.cabal.template")
         cabal_path = os.path.join(working, "parseurl.cabal")
-        library_path = self.find_hs_rts()
+        library_path = find_ghc_runtime()
 
         with open(template_path, "r") as template_fd:
             template_body = template_fd.read()
@@ -107,23 +111,122 @@ class InstallAnubis(install):
             contents = template_body.format(library_path=library_path)
             cabal_fd.write(contents)
 
-    def compile_frontend(self, package_dir):
-        working = os.path.join(package_dir, "app", "frontend")
-
-        shell("cake debug", cwd=working)
 
     def run(self):
         super().run()
 
-        package_dir = os.path.join(self.install_lib, "anubis")
+        target_path = self.install_lib if self.install_lib is not None \
+            else os.path.abspath(self.setup_path)
 
-        self.compile_url_parser(package_dir)
-        self.compile_frontend(package_dir)
+        package_dir = os.path.join(target_path, "anubis")
+        final_product = os.path.join(package_dir, "libParseUrl.so")
+
+        should_compile = not os.path.isfile(final_product) or \
+            self.force_parselib
+
+        if should_compile:
+            self.compile_url_parser(package_dir)
+
+class CompileFrontendMixin:
+    command = "cake build"
+
+    @classmethod
+    def debug(cls):
+        cls.command = "cake debug"
+        return cls
+
+    def initialize_options(self):
+        self.force_frontend = False
+
+        super().initialize_options()
+
+    def compile_frontend(self, package_dir):
+        working = os.path.join(package_dir, "app", "frontend")
+
+        shell(self.command, cwd=working)
+
+        src = os.path.join(working, "build", "anubis.js")
+        dst = os.path.join(package_dir, "app", "static", "anubis",
+                           "anubis.js")
+
+        shutil.copy(src, dst)
+
+    def run(self):
+        super().run()
+
+        target_path = self.install_lib if self.install_lib is not None \
+            else os.path.abspath(self.setup_path)
+
+        package_dir = os.path.join(target_path, "anubis")
+        final_product = os.path.join(package_dir, "app", "static", "anubis",
+                                     "anubis.js")
+
+        should_compile = not os.path.isfile(final_product) or \
+            self.force_frontend
+
+        if should_compile:
+            self.compile_frontend(package_dir)
+
+class CompileReactFrontendMixin:
+    def initialize_options(self):
+        self.force_react_frontend = False
+
+        super().initialize_options()
+
+    def compile_react_frontend(self, package_dir):
+        working = os.path.join(package_dir, "app", "react-frontend")
+        build = os.path.join(working, "build")
+
+        shell("npm install", cwd=working)
+
+        src = os.path.join(working, "build", "anubis.js")
+        dst = os.path.join(package_dir, "app", "static", "anubis",
+                           "anubis.js")
+
+        shutil.copy(src, dst)
+
+    def run(self):
+        super().run()
+
+        target_path = self.install_lib if self.install_lib is not None \
+            else os.path.abspath(self.setup_path)
+
+        package_dir = os.path.join(target_path, "anubis")
+        final_product = os.path.join(package_dir, "app", "static", "anubis",
+                                     "anubis.js")
+
+        should_compile = not os.path.isfile(final_product) or \
+            self.force_react_frontend
+
+        if should_compile:
+            self.compile_react_frontend(package_dir)
+
+
+class InstallAnubis(CompileFrontendMixin, CompileHaskellMixin, install):
+    pass
+
+class DevelopAnubis(CompileReactFrontendMixin,
+                    CompileFrontendMixin.debug(),
+                    CompileHaskellMixin,
+                    develop):
+    user_options = develop.user_options + [
+        ("force-frontend", None, "Forces rebuilding the frontend application."),
+        ("force-react-frontend", None, ("Forces rebuilding the frontend "
+                                        "application, using the React "
+                                        "library.")),
+        ("force-parselib", None, "Forces rebuilding the parser library."),
+    ]
+
+    boolean_options = develop.boolean_options + ['force-frontend',
+                                                 'force-parselib',
+                                                 'force-react-frontend']
+
+
 
 
 setup(
     name="anubis",
-    version="0.1",
+    version="0.2-alpha",
     packages=[
         "anubis",
         "anubis.app",
@@ -144,4 +247,6 @@ setup(
             'static/anubis/anubis.css',
             'templates/*.html']},
     cmdclass={
-        'install': InstallAnubis})
+        'install': InstallAnubis,
+        'develop': DevelopAnubis
+    })
