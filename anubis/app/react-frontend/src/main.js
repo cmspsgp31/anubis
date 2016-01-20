@@ -58,20 +58,23 @@ class Test2 extends React.Component {
 
 
 
-// window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", () => {
 	injectTapEventPlugin();
+	let state = window.__AnubisState;
+	let store = configureStore(appReducers, state);
+	let baseURL = `/${state.baseURL}/`;
 
 	ReactDOM.render(
-		<Provider store={configureStore(appReducers, __AnubisState)}>
+		<Provider store={store}>
 			<Router history={browserHistory}>
-				<Route path="/demo.html" component={App}>
+				<Route path={baseURL} component={App}>
 					<Route path="test1" component={Test1}></Route>
 					<Route path="test2/*" component={Test2}></Route>
 				</Route>
 			</Router>
 		</Provider>
 	, document.querySelector("#app"));
-// }, false);
+}, false);
 
 
 

@@ -23,8 +23,12 @@ This module contains views, mixins and helpers to define views that use
 Anubis's facilities to perform searches.
 """
 
+import re
+import json
+
+from functools import reduce
+
 from rest_framework.views import APIView
-from django.template.loaders.app_directories import Loader
 from django.core.paginator import Paginator
 from django.http.response import HttpResponseForbidden
 from rest_framework.exceptions import NotAcceptable
@@ -34,9 +38,6 @@ from anubis.url import BooleanBuilder
 from anubis.aggregators import QuerySetAggregator, TokenAggregator
 from anubis.filters import Filter, ConversionFilter
 
-from functools import reduce
-
-import re
 
 
 class TemplateRetrieverView(APIView):
@@ -65,6 +66,8 @@ class TemplateRetrieverView(APIView):
             except ValueError:
                 if template not in self.allowed_templates:
                     raise NotAcceptable("Template: {}".format(template))
+
+                from django.template.loaders.app_directories import Loader
 
                 loader = Loader()
                 name = "{}.html".format(template)
@@ -402,4 +405,66 @@ class NoCacheMixin:
 
 
 class AppViewMixin:
-    pass
+    """A mixin for creating views containing the Anubis search interface.
+
+    This is the mixin you should inherit from when you want to create a view
+    that displays the Anubis search interface. It does not create any views
+    regarding the JSON API needed to make the interface actually work and
+    perform searches.
+
+    Attributes:
+        anubis_state: A structure of nested `dict`s, `list`s, `str`s and
+            `int`s that can be converted to JSON. This will be passed to the
+            JavaScript interface as the global variable __AnubisState.
+
+    """
+
+    base_url = ""
+    """Base URL for the application displaying the search interface.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+        self.anubis_state = \
+            {"tokenEditor": {
+                "editorText": "",
+                "editorPosition": -1,
+                "tokenList": [],
+                "expression": "",
+                "parseTree": None,
+                "model": None
+            },
+             "searchResults": {
+                 "expression": "",
+                 "visible": False,
+                 "actions": {
+                     "action_01": {
+                         "allowed": False,
+                         "url": ""
+                     }
+                 },
+                 "model": None,
+                 "sort": {
+                     "by": None,
+                     "ascending": True
+                 },
+                 "results": [],
+                 "page": 0,
+                 "selection": []
+             },
+             "models": {
+                 "model_01": {}
+             },
+             "counter": 0,
+             "baseURL": self.base_url
+            }
+
+    def get_context_data(self, **kwargs):
+        """Provides the necessary context for the search interface to run.
+        """
+
+        context = super().get_context_data(**kwargs)
+        context["anubis_state"] = json.dumps(self.anubis_state)
+
+        return context
