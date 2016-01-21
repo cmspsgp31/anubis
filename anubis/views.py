@@ -24,13 +24,15 @@ Anubis's facilities to perform searches.
 """
 
 import re
-import json
 
 from functools import reduce
 
 from rest_framework.views import APIView
+from rest_framework.serializers import ModelSerializer
+from rest_framework.renderers import JSONRenderer
 from django.core.paginator import Paginator
 from django.http.response import HttpResponseForbidden
+from django.contrib.auth.models import User
 from rest_framework.exceptions import NotAcceptable
 from rest_framework.response import Response
 
@@ -423,8 +425,25 @@ class AppViewMixin:
     """Base URL for the application displaying the search interface.
     """
 
-    def __init__(self):
-        super().__init__()
+    user_model = User
+    """Model representing the current user.
+    """
+
+    class UserSerializer(ModelSerializer):
+        """Basic serializer for the user model.
+        """
+        class Meta:
+            model = User
+            fields = ('username', 'first_name', 'last_name', 'email')
+
+
+    user_serializer = UserSerializer
+    """Serializer for the user model.
+    """
+
+    def populate_state(self):
+        user_data = self.user_serializer(self.request.user).data \
+            if self.request.user is not None else None
 
         self.anubis_state = \
             {"tokenEditor": {
@@ -456,15 +475,21 @@ class AppViewMixin:
              "models": {
                  "model_01": {}
              },
+             "baseURL": self.base_url,
              "counter": 0,
-             "baseURL": self.base_url
+             "applicationData": {
+                 "title": "Anubis Search Interface",
+             },
+             "user": user_data
             }
 
     def get_context_data(self, **kwargs):
         """Provides the necessary context for the search interface to run.
         """
 
+        self.populate_state()
+
         context = super().get_context_data(**kwargs)
-        context["anubis_state"] = json.dumps(self.anubis_state)
+        context["anubis_state"] = JSONRenderer().render(self.anubis_state)
 
         return context

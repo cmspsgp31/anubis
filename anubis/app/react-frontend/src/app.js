@@ -2,11 +2,13 @@ import React from 'react';
 import {connect} from 'react-redux';
 import {Paper, RaisedButton} from 'material-ui';
 import Actions from './actions';
+import Header from './components/header';
 import {Link, RouteHandler} from 'react-router';
 
 let getStateProps = state => ({
 	counter: state.get('counter'),
-	routing: state.get('routing')
+	routing: state.get('routing'),
+	baseURL: state.get('baseURL')
 });
 
 let getDispatchProps = dispatch => ({
@@ -25,18 +27,19 @@ export default class App extends React.Component {
 	render() {
 		let buttons = [
 			{ title: "Home"
-			, route: "/demo.html"
+			, route: this.props.baseURL
 			},
 			{ title: "Test 1"
-			, route: "/demo.html/test1"
+			, route: `${this.props.baseURL}test1`
 			},
 			{ title: "Test 2"
-			, route: `/demo.html/test2/intervalo,"1997","1998"/(tipo_sessao,"1"\+tipo_sessao,"2")/p4`
+			, route: `${this.props.baseURL}test2/intervalo,"1997","1998"/(tipo_sessao,"1"\+tipo_sessao,"2")/p4`
 			}
 		];
 
 		return (
 			<div>
+				<Header />
 				<div>
 					<Paper zIndex={1}>
 						<p></p>
