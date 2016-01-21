@@ -147,7 +147,7 @@ class CompileFrontendMixin:
 
         src = os.path.join(working, "build", "anubis.js")
         dst = os.path.join(package_dir, "app", "static", "anubis",
-                           "anubis.js")
+                           "anubis-legacy.js")
 
         shutil.copy(src, dst)
 
@@ -159,7 +159,7 @@ class CompileFrontendMixin:
 
         package_dir = os.path.join(target_path, "anubis")
         final_product = os.path.join(package_dir, "app", "static", "anubis",
-                                     "anubis.js")
+                                     "anubis-legacy.js")
 
         should_compile = not os.path.isfile(final_product) or \
             self.force_frontend
