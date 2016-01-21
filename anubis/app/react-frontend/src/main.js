@@ -33,7 +33,7 @@ class Test2 extends React.Component {
 	}
 
 	parseSplat(splat) {
-		let groups = splat.match(/(.*)\/p(\d+)$/);
+		let groups = splat.match(/(.*)\/(\d+)$/);
 		if (groups != null) {
 			let [_, search, page] = groups;
 
@@ -56,6 +56,13 @@ class Test2 extends React.Component {
 	}
 }
 
+class Test3 extends React.Component {
+	render() {
+		return <div></div>;
+	}
+}
+
+
 
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -68,7 +75,7 @@ window.addEventListener("DOMContentLoaded", () => {
 			<Router history={browserHistory}>
 				<Route path={state.baseURL} component={App}>
 					<Route path="test1" component={Test1}></Route>
-					<Route path="test2/*" component={Test2}></Route>
+					<Route path="*" component={Test2}></Route>
 				</Route>
 			</Router>
 		</Provider>

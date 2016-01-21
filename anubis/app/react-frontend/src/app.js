@@ -30,10 +30,10 @@ export default class App extends React.Component {
 			, route: this.props.baseURL
 			},
 			{ title: "Test 1"
-			, route: `${this.props.baseURL}test1`
+			, route: `${this.props.baseURL}/test1`
 			},
 			{ title: "Test 2"
-			, route: `${this.props.baseURL}test2/intervalo,"1997","1998"/(tipo_sessao,"1"\+tipo_sessao,"2")/p4`
+			, route: `${this.props.baseURL}/test2/intervalo,"1997","1998"/(tipo_sessao,"1"\+tipo_sessao,"2")/p4`
 			}
 		];
 

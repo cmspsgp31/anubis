@@ -28,13 +28,17 @@ import re
 from functools import reduce
 
 from rest_framework.views import APIView
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, Serializer
 from rest_framework.renderers import JSONRenderer
-from django.core.paginator import Paginator
-from django.http.response import HttpResponseForbidden
-from django.contrib.auth.models import User
 from rest_framework.exceptions import NotAcceptable
 from rest_framework.response import Response
+
+from django.core.paginator import Paginator
+from django.core.exceptions import ImproperlyConfigured
+from django.http.response import HttpResponseForbidden
+from django.contrib.auth.models import User
+from django.db.models import Model
+from django.utils.translation import ugettext as _
 
 from anubis.url import BooleanBuilder
 from anubis.aggregators import QuerySetAggregator, TokenAggregator
@@ -406,90 +410,366 @@ class NoCacheMixin:
         return response
 
 
-class AppViewMixin:
-    """A mixin for creating views containing the Anubis search interface.
+class StateViewMixin:
+    """A mixin that performs a search and adds the result to the view context.
 
-    This is the mixin you should inherit from when you want to create a view
-    that displays the Anubis search interface. It does not create any views
-    regarding the JSON API needed to make the interface actually work and
-    perform searches.
+    This mixin reads from a supposedly pre-filled :attr:`kwargs` attribute,
+    performs a search on the database based on the supplied configuration and
+    search parameters provided, and attaches the result to the view context.
+    It's designed to be used as a mixin for either the Django's generic
+    :class:`ListView` or Django Rest Framework's generic :class:`ListAPIView`
+    - hence why it's a mixin and not a child class. Both of these classes will
+    fill the kwargs argument accordingly.
+
+    Specifically, :class:`StateViewMixin` should be explicitly used only with a
+    :class:`ListAPIView`. If you're build a HTML view, this class's child
+    :class:`AppViewMixin` will contain information that can prove to be
+    more useful.
+
+    :ivar is_paginated: Tells whether the search is to be paginated.
+    :vartype is_paginated: bool
+
+    :ivar is_multi_modeled: Tells whether the search acts in multiple models.
+    :vartype bool:
+
+    :ivar boolean_expression: Represents the requested search, if there is one.
+    :vartype Optional[rest_framework.serializers.ModelSerializer]:
 
     Attributes:
-        anubis_state: A structure of nested `dict`s, `list`s, `str`s and
-            `int`s that can be converted to JSON. This will be passed to the
-            JavaScript interface as the global variable __AnubisState.
-
+        base_url (str): Base URL for the application. Should either start with
+            a slash or with a protocol reference (i.e., "http://..."). It should
+            **not** end with a slash, though, and to reference the root URL you
+            should leave this attribute **empty**.
+        model: This attribute can either be a :class:`dict` for multi-model
+            searches or a direct reference to the Django model in single-model
+            searches. In a single-model setting, you can access the model class
+            from either `self.models['_default']` or `self.model`. In a
+            multi-model setting, `self.model` will point to the model of the
+            current search after `self.kwargs` is processed.
+        model_parameter (str): The parameter *name* (from Django URL matching)
+            which contains the key of the model in the :class:`dict` on the
+            :attr:`model` attribute. Ignored in single-model searches.
+        expression_parameter (str): The parameter *name* (from Django URL
+            matching) which contains the boolean expression with which to build
+            a :class:`QuerySet` to search the database.
+        filters (Dict[str, anubis.filters.Filter]): Allowed filters to perform
+            searches. In a multi-model environment, there should be another
+            level of nesting, and the top-level keys refers to the model keys.
+        objects_per_page (Optional[int]): The number of objects per page of
+            search. If it's set to :const:`None`, turns pagination off.
+        page_parameter (str): The parameter *name* (from Django URL matching)
+            which contains the number of the page to retrieve. If
+            :attr:`objects_per_page` is set to :const:`None`, this attribute is
+            ignored.
+        user_serializer (Optional[rest_framework.serializers.Serializer]):
+            Serializer for the user model. Set this to :const:`None` if you
+            want to disable user related functionality.
     """
 
     base_url = ""
-    """Base URL for the application displaying the search interface.
-    """
+    model = None
+    model_parameter = "model"
+    expression_parameter = "search"
+    filters = {}
+    objects_per_page = None
+    page_parameter = "page"
 
-    user_model = User
-    """Model representing the current user.
-    """
-
-    class UserSerializer(ModelSerializer):
-        """Basic serializer for the user model.
-        """
+    class _UserSerializer(ModelSerializer):
         class Meta:
             model = User
             fields = ('username', 'first_name', 'last_name', 'email')
 
+    user_serializer = _UserSerializer
 
-    user_serializer = UserSerializer
-    """Serializer for the user model.
-    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    def populate_state(self):
-        user_data = self.user_serializer(self.request.user).data \
-            if self.request.user is not None else None
+        self.is_paginated = self.objects_per_page is not None
+        self.is_multi_modeled = not isinstance(self.model, type)
+        self.boolean_expression = None
 
-        self.anubis_state = \
-            {"tokenEditor": {
-                "editorText": "",
+        if self.is_multi_modeled:
+            self._model_lookup = self.model
+            self.model = None
+
+    def get(self, *args, **kwargs):
+        self._prepare_attributes()
+
+        return super().get(*args, **kwargs)
+
+    def _paginate_queryset(self, queryset):
+        """A simplified paginator. It doesn't have to be as generic as Django's
+        and DRS's are.
+
+        Args:
+            queryset (django.db.model.QuerySet): The queryset to paginate.
+
+        Returns:
+            Optional[(django.core.paginator.Page)]: The current page or
+                :const:`None` if pagination is disabled.
+
+        Raises:
+            ValueError: If you can't bother configure your URL pattern to only
+                accept \\d+ in your "page" argument, you deserve an error.
+        """
+        paginator = Paginator(queryset, self.objects_per_page)
+        page = int(self.kwargs[self.page_parameter])
+
+        return paginator.page(page)
+
+
+    def list(self, request, *args, **kwargs):
+        """Overrides DRF's implementation of listing. It's awful.
+
+        DRF's implementation of listing is utterly inextensible. Both in 2.x
+        and 3.x trunks (which we plan to support) it generates a serializer
+        within the :method:`list` method and promptly throws it away, leaving
+        us with only an useless :class:`Response` object, originated from the
+        serializer's :attr:`data` attribute. We get no metadata from the
+        serializer unless we do it ourselves, and that's what we're doing here.
+
+        Args:
+            request (django.http.request.HttpRequest): A request object, passed
+                from Django.
+            *args: Ordered arguments from the URL parsing algorithm.
+            **kwargs: Named arguments from the URL parsing algorithm.
+
+        Returns:
+            rest_framework.response.Response: A JSON response including the
+                whole of Anubis' state.
+        """
+
+        self.object_list  = self.filter_queryset(self.get_queryset())
+
+        context = self.get_context_data() # Changes self.object_list
+        state = context["anubis_state"]
+
+        serializer = self.get_serializer(self.object_list, many=True)
+
+        state["searchResults"]["results"] = serializer.data
+
+        return Response(context["anubis_state"])
+
+    def get_queryset(self):
+        original = super().get_queryset()
+
+        if self.boolean_expression is not None:
+            queryset = self.get_queryset_filter(original)
+        else:
+            queryset = original.none()
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        anubis_state = self.get_full_state()
+
+        try:
+            context = super().get_context_data(**kwargs)
+        except AttributeError:
+            context = {}
+
+        context["anubis_state"] = anubis_state
+
+        return context
+
+    def _prepare_attributes(self):
+        self.model = self.get_model()
+        self.boolean_expression = self.get_boolean_expression()
+
+    def get_model(self):
+        if not self.is_multi_modeled:
+            self._model_key = "_default"
+            self._model_lookup = {"_default": self.model}
+
+            return self.model
+
+        self._model_key = self.kwargs[self.model_parameter]
+
+        return self._model_lookup[self._model_key]
+
+    def get_boolean_expression(self):
+        expression = self.kwargs.get(self.expression_parameter, None)
+
+        if expression is None or expression == "":
+            return None
+
+        expression = expression.strip().rstrip("/")
+
+        try:
+            boolean = BooleanBuilder(expression).build()
+        except ValueError:
+            error = ValueError(_(("Check your expression for a missing"
+                                 "connector, for instance.")))
+            error.name = lambda: _("Syntax Error")
+            raise error
+
+        return boolean
+
+    def get_filters(self):
+        if not self.is_multi_modeled:
+            return self.filters
+
+        def check_conversion(filter_name, filter_):
+            if not isinstance(filter_, type) or \
+                    not issubclass(filter_, ConversionFilter):
+                return filter_
+
+            base_filter = None
+
+            for model_name in [key for key in self._model_lookup.keys() \
+                               if key != self._model_key]:
+                candidate = self.filters[model_name][filter_name]
+
+                if not isinstance(candidate, type) or \
+                        not issubclass(candidate, ConversionFilter):
+                    base_filter = candidate
+                    break
+
+            if base_filter is None:
+                raise ImproperlyConfigured(('No base filter for filter "{}'
+                                            '" applying to model "{}".').
+                                           format(filter_name,
+                                                  self._model_key))
+
+            return filter_(base_filter)
+
+        filters = self.filters[self._model_key]
+
+        return {filter_name: check_conversion(filter_name, filter_) \
+                for filter_name, filter_ in filters.items()}
+
+    def get_queryset_filter(self, queryset):
+        """Gets a queryset and use the current :attr:`boolean_expression` to
+        filter it.
+
+        Args:
+            queryset (django.db.models.QuerySet): A queryset to be filtered
+            by the current :attr:`boolean_expression`.
+
+        Returns:
+            django.db.models.QuerySet: The filtered queryset.
+        """
+        aggregator = QuerySetAggregator(queryset, self.get_filters())
+
+        return self.boolean_expression.traverse(aggregator)
+
+    def get_full_state(self):
+        pagination = self.get_pagination()
+
+        anubis_state = {
+            "searchResults": self.get_search_results(),
+            "actions": self.get_actions(),
+            "sorting": self.get_sorting(),
+            "models": self.get_models_meta(),
+            "user": self.get_user_data(),
+            "pagination": pagination
+        }
+
+        return anubis_state
+
+
+    def get_search_results(self):
+        expression = self.boolean_expression
+        visible = self.boolean_expression is not None
+
+        return {
+            "expression": expression,
+            "visible": visible,
+            "model": self._model_key,
+            "results": self.object_list,
+            "selection": []
+        }
+
+    def get_pagination(self):
+        if not self.is_paginated:
+            return None
+
+        page = self._paginate_queryset(self.object_list)
+        current_page = self.kwargs[self.page_parameter]
+
+        self.object_list = page.object_list
+
+        return {
+            "current_page": current_page,
+            "total_pages": page.paginator.num_pages,
+            "is_paginated": page.has_other_pages(),
+            "next_page_number": page.next_page_number() \
+                if page.has_next() else None,
+            "previous_page_number": page.previous_page_number() \
+                if page.has_previous() else None,
+        }
+
+    def get_actions(self):
+        return {}
+
+    def get_sorting(self):
+        return {
+            "by": None,
+            "ascending": True
+        }
+
+    def get_models_meta(self):
+        return {key: {"names": (model._meta.verbose_name.title(),
+                                model._meta.verbose_name_plural.title()),
+                      }
+                for key, model in self._model_lookup.items()}
+
+    def get_user_data(self):
+        if self.user_serializer is None:
+            return None
+
+        return self.user_serializer(self.request.user).data \
+            if self.request.user.is_authenticated() else None
+
+    def get_final_response(self, original):
+        return self.get_context_data()
+
+
+
+
+
+
+
+class AppViewMixin(StateViewMixin):
+    def get_full_state(self):
+        base_state = dict(super().get_full_state())
+
+        base_state.update({
+            "baseURL": self.base_url,
+            "tokenEditor": self.get_token_state(),
+            "counter": 0,
+            "applicationData": self.get_application_data()
+       })
+
+        return base_state
+
+    def get_serializer_class(self):
+        return Serializer
+
+    def get_serializer(self, *args, **kwargs):
+        kwargs["context"] = {"request": self.request}
+        return self.get_serializer_class()(*args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = dict(super().get_context_data(**kwargs))
+        state = context["anubis_state"]
+
+        serializer = self.get_serializer(self.object_list, many=True)
+
+        state["searchResults"]["results"] = serializer.data
+
+        context["anubis_state"] = JSONRenderer().render(state)
+
+        return context
+
+    def get_token_state(self):
+        return {"editorText": "",
                 "editorPosition": -1,
                 "tokenList": [],
                 "expression": "",
                 "parseTree": None,
                 "model": None
-            },
-             "searchResults": {
-                 "expression": "",
-                 "visible": False,
-                 "actions": {
-                     "action_01": {
-                         "allowed": False,
-                         "url": ""
-                     }
-                 },
-                 "model": None,
-                 "sort": {
-                     "by": None,
-                     "ascending": True
-                 },
-                 "results": [],
-                 "page": 0,
-                 "selection": []
-             },
-             "models": {
-                 "model_01": {}
-             },
-             "baseURL": self.base_url,
-             "counter": 0,
-             "applicationData": {
-                 "title": "Anubis Search Interface",
-             },
-             "user": user_data
-            }
+               }
 
-    def get_context_data(self, **kwargs):
-        """Provides the necessary context for the search interface to run.
-        """
-
-        self.populate_state()
-
-        context = super().get_context_data(**kwargs)
-        context["anubis_state"] = JSONRenderer().render(self.anubis_state)
-
-        return context
+    def get_application_data(self):
+        return { "title": "Anubis Search Interface" }

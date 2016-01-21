@@ -21,10 +21,11 @@
 import operator
 from functools import reduce
 
-from anubis.forms import FilterForm, RangeForm
-from anubis.query import ProcedureQuerySet
 from django import forms
 from django.db.models.query import Q
+
+from anubis.forms import FilterForm, RangeForm
+from anubis.query import ProcedureQuerySet
 
 
 class Filter:

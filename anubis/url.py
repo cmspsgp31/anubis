@@ -118,13 +118,21 @@ class Boolean:
         return dictionary
 
     def keys(self):
-        return self.type_.fields
+        return list(self.type_.fields) + ["type"]
 
     def traverse(self, func):
         return self.type_.traverse(self, func)
 
     def __getitem__(self, key):
+        if key == "type":
+            return self.type_.__class__.__name__
+
         return self.contents[key]
+
+    # def __iter__(self):
+    #     # For dict() conversion
+    #     for key in self.keys() + ["tag"]:
+    #         yield (key, self.contents[key])
 
     def __eq__(self, other):
         return self.contents == other.contents
