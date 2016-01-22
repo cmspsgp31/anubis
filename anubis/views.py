@@ -37,7 +37,6 @@ from django.core.paginator import Paginator
 from django.core.exceptions import ImproperlyConfigured
 from django.http.response import HttpResponseForbidden
 from django.contrib.auth.models import User
-from django.db.models import Model
 from django.utils.translation import ugettext as _
 
 from anubis.url import BooleanBuilder
@@ -446,6 +445,12 @@ class StateViewMixin:
             from either `self.models['_default']` or `self.model`. In a
             multi-model setting, `self.model` will point to the model of the
             current search after `self.kwargs` is processed.
+        default_model (Optional[str]): In non-search requests in multi-modeled
+            views there is no pre-selected model, which causes Django's
+            :method:`ListView.get_queryset` to go haywire. Use this property to
+            define a default model for searching, which also will be
+            pre-selected in the search interface. The value of this property is
+            the key of the default model inside the :attr:`model` dictionary.
         model_parameter (str): The parameter *name* (from Django URL matching)
             which contains the key of the model in the :class:`dict` on the
             :attr:`model` attribute. Ignored in single-model searches.
@@ -464,15 +469,21 @@ class StateViewMixin:
         user_serializer (Optional[rest_framework.serializers.Serializer]):
             Serializer for the user model. Set this to :const:`None` if you
             want to disable user related functionality.
+        details_parameter (str): The parameter *name* (from Django URL matching)
+            which contains the ID of the record being displayed. The Anubis'
+            search interface will display this as a modal dialog above the
+            search results (if there are any).
     """
 
     base_url = ""
     model = None
+    default_model = None
     model_parameter = "model"
     expression_parameter = "search"
     filters = {}
     objects_per_page = None
     page_parameter = "page"
+    details_parameter = "details"
 
     class _UserSerializer(ModelSerializer):
         class Meta:
@@ -481,11 +492,41 @@ class StateViewMixin:
 
     user_serializer = _UserSerializer
 
+    @classmethod
+    def _is_multi_modeled(cls):
+        return not isinstance(cls.model, type)
+
+    @classmethod
+    def _is_paginated(cls):
+        return cls.objects_per_page is not None
+
+    # @classmethod
+    # def url(cls, api=False, app_prefix=None, api_prefix="api"):
+    #     if app_prefix is None:
+    #         app_prefix = "{}_".format(app_prefix)
+
+    #     if self._is_multi_modeled():
+    #         models = "|".join(cls.model.keys())
+    #         model_part = r"(?P<{}>{})/".format(cls.model_parameter, models)
+    #     else:
+    #         model_part = ""
+
+    #     query_part = r"(?P<{}>.*)".format(cls.expression_parameter)
+
+    #     page_part = r"(?P<{}>\d+)".format(cls.page_parameter)
+
+    #     regex = "{}{}/{}".format(model_part, query_part, page_part)
+
+    #     name = "{}{}_search".format(app_prefix, "api" if api else "html")
+
+
+
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.is_paginated = self.objects_per_page is not None
-        self.is_multi_modeled = not isinstance(self.model, type)
+        self.is_paginated = self._is_paginated()
+        self.is_multi_modeled = self._is_multi_modeled()
         self.boolean_expression = None
 
         if self.is_multi_modeled:
@@ -499,21 +540,20 @@ class StateViewMixin:
 
     def _paginate_queryset(self, queryset):
         """A simplified paginator. It doesn't have to be as generic as Django's
-        and DRS's are.
+        and DRF's are.
 
         Args:
             queryset (django.db.model.QuerySet): The queryset to paginate.
 
         Returns:
-            Optional[(django.core.paginator.Page)]: The current page or
-                :const:`None` if pagination is disabled.
+            django.core.paginator.Page: The current page object.
 
         Raises:
             ValueError: If you can't bother configure your URL pattern to only
                 accept \\d+ in your "page" argument, you deserve an error.
         """
         paginator = Paginator(queryset, self.objects_per_page)
-        page = int(self.kwargs[self.page_parameter])
+        page = int(self.kwargs.get(self.page_parameter, 1))
 
         return paginator.page(page)
 
@@ -583,7 +623,8 @@ class StateViewMixin:
 
             return self.model
 
-        self._model_key = self.kwargs[self.model_parameter]
+        self._model_key = self.kwargs.get(self.model_parameter,
+                                          self.default_model)
 
         return self._model_lookup[self._model_key]
 
@@ -681,7 +722,7 @@ class StateViewMixin:
         }
 
     def get_pagination(self):
-        if not self.is_paginated:
+        if not self.is_paginated or self.boolean_expression is None:
             return None
 
         page = self._paginate_queryset(self.object_list)
