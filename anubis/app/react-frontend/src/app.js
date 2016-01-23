@@ -6,77 +6,28 @@ import Header from './components/header';
 import {Link, RouteHandler} from 'react-router';
 
 let getStateProps = state => ({
-	counter: state.get('counter'),
 	routing: state.get('routing'),
-	baseURL: state.get('baseURL')
+	baseURL: state.getIn(['applicationData', 'baseURL']),
+	detailsHtml: state.getIn(['applicationData', 'detailsHtml'])
 });
 
-let getDispatchProps = dispatch => ({
-	onIncrement: () => dispatch(Actions.increment(1)),
-	onDecrement: () => dispatch(Actions.decrement(1))
-});
-
-@connect(getStateProps, getDispatchProps)
+@connect(getStateProps)
 export default class App extends React.Component {
-	static propTypes = {
-		counter: React.PropTypes.number.isRequired,
-		onIncrement: React.PropTypes.func.isRequired,
-		onDecrement: React.PropTypes.func.isRequired,
+	detailsHtml(model, id) {
+		return eval("`" + this.props.detailsHtml + "`");
 	}
 
 	render() {
-		let buttons = [
-			{ title: "Home"
-			, route: this.props.baseURL
-			},
-			{ title: "Test 1"
-			, route: `${this.props.baseURL}/test1`
-			},
-			{ title: "Test 2"
-			, route: `${this.props.baseURL}/test2/intervalo,"1997","1998"/(tipo_sessao,"1"\+tipo_sessao,"2")/p4`
-			}
-		];
-
 		return (
 			<div>
 				<Header />
-				<div>
-					<Paper zIndex={1}>
-						<p></p>
-						<p>{this.props.counter}</p>
-						<p>{this.props.location.pathname}</p>
-					</Paper>
-				</div>
-
-				<div style={{ display: "table", borderSpacing: "5px" }}>
-
-					<div style={{display: "tableRow"}}>
-						{buttons.map(data => {
-							return (
-								<Link key={data.route} to={data.route} 
-									style={{display: "tableCell",
-										padding: "5px"}}>
-									<RaisedButton
-										primary={true}
-										label={data.title} />
-								</Link>
-							);
-						})}
-					</div>
-				</div>
 
 				<div>
-					<RaisedButton
-						label="Increment"
-						primary={true}
-						onTouchTap={this.props.onIncrement}
-					/>
-
-					<RaisedButton
-						label="Decrement"
-						primary={true}
-						onTouchTap={this.props.onDecrement}
-					/>
+					<Link to={this.detailsHtml("sessoes", 15748)}>
+						<RaisedButton
+							label="Sessão 15748"
+							primary={true} />
+					</Link>
 				</div>
 
 				<div>{this.props.children}</div>

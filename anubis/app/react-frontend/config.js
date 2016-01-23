@@ -30,6 +30,7 @@ System.config({
     "reduce-reducers": "npm:reduce-reducers@0.1.1",
     "redux": "npm:redux@3.0.5",
     "redux-actions": "npm:redux-actions@0.9.0",
+    "redux-promise": "npm:redux-promise@0.5.1",
     "redux-simple-router": "npm:redux-simple-router@2.0.3",
     "github:jspm/nodelibs-assert@0.1.0": {
       "assert": "npm:assert@1.3.0"
@@ -324,6 +325,9 @@ System.config({
     "npm:redux-actions@0.9.0": {
       "flux-standard-action": "npm:flux-standard-action@0.6.0",
       "reduce-reducers": "npm:reduce-reducers@0.1.1"
+    },
+    "npm:redux-promise@0.5.1": {
+      "flux-standard-action": "npm:flux-standard-action@0.6.0"
     },
     "npm:redux@3.0.5": {
       "process": "github:jspm/nodelibs-process@0.1.2"

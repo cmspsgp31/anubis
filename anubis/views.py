@@ -27,21 +27,22 @@ import re
 
 from functools import reduce
 
-from rest_framework.views import APIView
-from rest_framework.serializers import ModelSerializer, Serializer
-from rest_framework.renderers import JSONRenderer
 from rest_framework.exceptions import NotAcceptable
+from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
+from rest_framework.serializers import ModelSerializer, Serializer
+from rest_framework.views import APIView
 
+from django.conf.urls import url
+from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.core.exceptions import ImproperlyConfigured
 from django.http.response import HttpResponseForbidden
-from django.contrib.auth.models import User
 from django.utils.translation import ugettext as _
 
-from anubis.url import BooleanBuilder
 from anubis.aggregators import QuerySetAggregator, TokenAggregator
 from anubis.filters import Filter, ConversionFilter
+from anubis.url import BooleanBuilder
 
 
 
@@ -445,6 +446,12 @@ class StateViewMixin:
             from either `self.models['_default']` or `self.model`. In a
             multi-model setting, `self.model` will point to the model of the
             current search after `self.kwargs` is processed.
+        serializers: This attribute can either be a :class:`dict` for
+            multi-model searches or a 2-tuple of serializers, where the
+            first serializer applies to searches and the second to details. In
+            a multi-modeled enviroment, keys are to be the same as those in the
+            :attr:`model` attribute, and values are the aforementioned 2-tuple
+            of serializers.
         default_model (Optional[str]): In non-search requests in multi-modeled
             views there is no pre-selected model, which causes Django's
             :method:`ListView.get_queryset` to go haywire. Use this property to
@@ -473,10 +480,13 @@ class StateViewMixin:
             which contains the ID of the record being displayed. The Anubis'
             search interface will display this as a modal dialog above the
             search results (if there are any).
+        details_slug (str): A slug to put on URLs when retrieving details.
+        search_slug (str): A slug to put on URLs when performing searches.
     """
 
     base_url = ""
     model = None
+    serializers = None
     default_model = None
     model_parameter = "model"
     expression_parameter = "search"
@@ -484,6 +494,9 @@ class StateViewMixin:
     objects_per_page = None
     page_parameter = "page"
     details_parameter = "details"
+    details_slug = "details"
+    search_slug = "search"
+    api_prefix = "api"
 
     class _UserSerializer(ModelSerializer):
         class Meta:
@@ -500,27 +513,65 @@ class StateViewMixin:
     def _is_paginated(cls):
         return cls.objects_per_page is not None
 
-    # @classmethod
-    # def url(cls, api=False, app_prefix=None, api_prefix="api"):
-    #     if app_prefix is None:
-    #         app_prefix = "{}_".format(app_prefix)
+    @classmethod
+    def _url_part_details_id(cls):
+        return r'(?P<{}>[^/,"]+)'.format(cls.details_parameter)
 
-    #     if self._is_multi_modeled():
-    #         models = "|".join(cls.model.keys())
-    #         model_part = r"(?P<{}>{})/".format(cls.model_parameter, models)
-    #     else:
-    #         model_part = ""
+    @classmethod
+    def _url_part_model(cls):
+        if cls._is_multi_modeled():
+            models = "|".join(cls.model.keys())
+            return r"(?P<{}>{})/".format(cls.model_parameter, models)
+        else:
+            return ""
 
-    #     query_part = r"(?P<{}>.*)".format(cls.expression_parameter)
+    @classmethod
+    def _url_part_page(cls):
+        if cls._is_paginated():
+            return r"(?P<{}>\d+)/".format(cls.page_parameter)
+        else:
+            return ""
 
-    #     page_part = r"(?P<{}>\d+)".format(cls.page_parameter)
+    @classmethod
+    def _url_part_expr(cls):
+        return r"(?P<{}>.*)".format(cls.expression_parameter)
 
-    #     regex = "{}{}/{}".format(model_part, query_part, page_part)
+    @classmethod
+    def url_search(cls, app_prefix=None,  **kwargs):
+        if app_prefix is not None:
+            app_prefix = "{}_".format(app_prefix)
+        else:
+            app_prefix = ""
 
-    #     name = "{}{}_search".format(app_prefix, "api" if api else "html")
+        name = "{}api_search".format(app_prefix)
 
+        search_url = "^{api_prefix}/{search_slug}/{m}{p}{expr}$".format(**{
+            "api_prefix": cls.api_prefix,
+            "search_slug": cls.search_slug,
+            "m": cls._url_part_model(),
+            "p": cls._url_part_page(),
+            "expr": cls._url_part_expr()
+        })
 
+        return url(search_url, cls.as_view(**kwargs), name=name)
 
+    @classmethod
+    def url_details(cls, app_prefix=None, **kwargs):
+        if app_prefix is not None:
+            app_prefix = "{}_".format(app_prefix)
+        else:
+            app_prefix = ""
+
+        name = "{}api_details".format(app_prefix)
+
+        details_url = "^{api_prefix}/{details_slug}/{m}{id}$".format(**{
+            "api_prefix": cls.api_prefix,
+            "details_slug": cls.details_slug,
+            "m": cls._url_part_model(),
+            "id": cls._url_part_details_id()
+        })
+
+        return url(details_url, cls.as_view(**kwargs), name=name)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -532,6 +583,9 @@ class StateViewMixin:
         if self.is_multi_modeled:
             self._model_lookup = self.model
             self.model = None
+
+            self._serializer_lookup = self.serializers
+            self.serializers = None
 
     def get(self, *args, **kwargs):
         self._prepare_attributes()
@@ -612,8 +666,19 @@ class StateViewMixin:
 
         return context
 
+    def get_serializer_class(self):
+        search_serializer, _ = self.serializers
+
+        return search_serializer
+
+    def get_details_serializer_class(self):
+        _, details_serializer = self.serializers
+
+        return details_serializer
+
     def _prepare_attributes(self):
         self.model = self.get_model()
+        self.serializers = self.get_serializers()
         self.boolean_expression = self.get_boolean_expression()
 
     def get_model(self):
@@ -627,6 +692,14 @@ class StateViewMixin:
                                           self.default_model)
 
         return self._model_lookup[self._model_key]
+
+    def get_serializers(self):
+        if not self.is_multi_modeled:
+            self._serializer_lookup = {"_default": self.serializers}
+
+            return self.serializers
+
+        return self._serializer_lookup[self._model_key]
 
     def get_boolean_expression(self):
         expression = self.kwargs.get(self.expression_parameter, None)
@@ -699,15 +772,34 @@ class StateViewMixin:
 
         anubis_state = {
             "searchResults": self.get_search_results(),
-            "actions": self.get_actions(),
+            "pagination": pagination,
+            "details": self.get_details(),
             "sorting": self.get_sorting(),
-            "models": self.get_models_meta(),
-            "user": self.get_user_data(),
-            "pagination": pagination
+            "actions": self.get_actions(),
         }
 
         return anubis_state
 
+    def get_details(self):
+        details_id = self.kwargs.get(self.details_parameter, None)
+
+        if details_id is not None:
+            try:
+                details_obj = self.model.objects.get(pk=details_id)
+            except self.model.DoesNotExist:
+                details_obj = None
+            else:
+                context = { "request": self.request }
+
+                serializer = self \
+                    .get_details_serializer_class()(details_obj,
+                                                    context=context)
+
+                details_obj = serializer.data
+
+            return { "object": details_obj, "model": self._model_key }
+        else:
+            return None
 
     def get_search_results(self):
         expression = self.boolean_expression
@@ -749,19 +841,6 @@ class StateViewMixin:
             "ascending": True
         }
 
-    def get_models_meta(self):
-        return {key: {"names": (model._meta.verbose_name.title(),
-                                model._meta.verbose_name_plural.title()),
-                      }
-                for key, model in self._model_lookup.items()}
-
-    def get_user_data(self):
-        if self.user_serializer is None:
-            return None
-
-        return self.user_serializer(self.request.user).data \
-            if self.request.user.is_authenticated() else None
-
     def get_final_response(self, original):
         return self.get_context_data()
 
@@ -772,20 +851,74 @@ class StateViewMixin:
 
 
 class AppViewMixin(StateViewMixin):
+    @classmethod
+    def url_search(cls, app_prefix=None, **kwargs):
+        if app_prefix is not None:
+            app_prefix = "{}_".format(app_prefix)
+        else:
+            app_prefix = ""
+
+        name = "{}html_search".format(app_prefix)
+
+        search_url = "^{search_slug}/{m}{p}{expr}$".format(**{
+            "search_slug": cls.search_slug,
+            "m": cls._url_part_model(),
+            "p": cls._url_part_page(),
+            "expr": cls._url_part_expr()
+        })
+
+        return url(search_url, cls.as_view(**kwargs), name=name)
+
+    @classmethod
+    def url_details(cls, app_prefix=None, **kwargs):
+        if app_prefix is not None:
+            app_prefix = "{}_".format(app_prefix)
+        else:
+            app_prefix = ""
+
+        name = "{}html_details".format(app_prefix)
+
+        details_url = "^{details_slug}/{m}{id}$".format(**{
+            "details_slug": cls.details_slug,
+            "m": cls._url_part_model(),
+            "id": cls._url_part_details_id()
+        })
+
+        return url(details_url, cls.as_view(**kwargs), name=name)
+
+    @classmethod
+    def url_search_and_details(cls, app_prefix=None, **kwargs):
+        if app_prefix is not None:
+            app_prefix = "{}_".format(app_prefix)
+        else:
+            app_prefix = ""
+
+        name = "{}html_search_and_details".format(app_prefix)
+
+        s_and_d_url = ("^{details_slug}/{m}{id}/"
+                       "{search_slug}/{p}{expr}$").format(**{
+                           "details_slug": cls.details_slug,
+                           "m": cls._url_part_model(),
+                           "id": cls._url_part_details_id(),
+                           "search_slug": cls.search_slug,
+                           "p": cls._url_part_page(),
+                           "expr": cls._url_part_expr(),
+                       })
+
+        return url(s_and_d_url, cls.as_view(**kwargs), name=name)
+
     def get_full_state(self):
         base_state = dict(super().get_full_state())
 
         base_state.update({
-            "baseURL": self.base_url,
             "tokenEditor": self.get_token_state(),
             "counter": 0,
-            "applicationData": self.get_application_data()
+            "applicationData": self.get_application_data(),
+            "models": self.get_models_meta(),
+            "user": self.get_user_data(),
        })
 
         return base_state
-
-    def get_serializer_class(self):
-        return Serializer
 
     def get_serializer(self, *args, **kwargs):
         kwargs["context"] = {"request": self.request}
@@ -803,14 +936,73 @@ class AppViewMixin(StateViewMixin):
 
         return context
 
+    def get_models_meta(self):
+        return {key: {"names": (model._meta.verbose_name.title(),
+                                model._meta.verbose_name_plural.title()),
+                      }
+                for key, model in self._model_lookup.items()}
+
+    def get_user_data(self):
+        if self.user_serializer is None:
+            return None
+
+        return self.user_serializer(self.request.user).data \
+            if self.request.user.is_authenticated() else None
+
     def get_token_state(self):
-        return {"editorText": "",
-                "editorPosition": -1,
-                "tokenList": [],
-                "expression": "",
-                "parseTree": None,
-                "model": None
-               }
+        return {
+            "editorText": "",
+            "editorPosition": -1,
+            "tokenList": [],
+            "expression": "",
+            "parseTree": None,
+            "model": None
+        }
 
     def get_application_data(self):
-        return { "title": "Anubis Search Interface" }
+        react_search_route = "{}/{}{}{}".format(
+            self.search_slug,
+            ":model/" if self.is_multi_modeled else "",
+            ":page/" if self.is_paginated else "",
+            "*"
+        )
+
+        react_details_route = "{}/{}{}".format(
+            self.details_slug,
+            ":model/" if self.is_multi_modeled else "",
+            ":id"
+        )
+
+        react_details_html = "{}/{}/{}{}".format(
+            self.base_url,
+            self.details_slug,
+            "${model}/" if self.is_multi_modeled else "",
+            "${id}"
+        )
+
+        react_details_api = "{}/{}/{}/{}{}".format(
+            self.base_url,
+            self.api_prefix,
+            self.details_slug,
+            "${model}/" if self.is_multi_modeled else "",
+            "${id}"
+        )
+
+        react_search_and_details_route = "{}/{}{}/{}/{}{}".format(
+            self.details_slug,
+            ":model/" if self.is_multi_modeled else "",
+            ":id",
+            self.search_slug,
+            ":page/" if self.is_paginated else "",
+            "*"
+        )
+
+        return {
+            "title": "Anubis Search Interface",
+            "baseURL": self.base_url,
+            "searchRoute": react_search_route,
+            "detailsRoute": react_details_route,
+            "detailsApi": react_details_api,
+            "detailsHtml": react_details_html,
+            "searchAndDetailsRoute": react_search_and_details_route,
+        }

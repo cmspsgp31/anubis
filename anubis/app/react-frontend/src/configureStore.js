@@ -3,6 +3,7 @@ import I from 'immutable';
 import {browserHistory} from 'react-router';
 import {syncHistory, routeReducer} from 'redux-simple-router';
 import {createStore, applyMiddleware, compose} from 'redux';
+import promiseMiddleware from 'redux-promise';
 import {combineReducers} from './reducers/reducer.js';
 
 
@@ -15,7 +16,18 @@ export default function (reducers, initialState) {
 	};
 
 	let reducer = combineReducers(reducers.concat(customRouteReducer));
-	let creator = applyMiddleware(reduxRouterMiddleware)(createStore);
+	let creator = applyMiddleware(
+		reduxRouterMiddleware,
+		promiseMiddleware
+	)(createStore);
 
-	return creator(reducer, immState);
+	let store = creator(reducer, immState);
+
+	store.listenForReplays = () => {
+		let selectState = state => state.get('routing');
+
+		reduxRouterMiddleware.listenForReplays(store, selectState);
+	}
+
+	return store;
 }

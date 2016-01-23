@@ -1,8 +1,10 @@
-import * as Counter from './counter.js';
 import reduceReducers from 'reduce-reducers';
 import {handleActions} from 'redux-actions';
 
-export let appReducers = [ Counter ];
+import {Details} from './api_reducers';
+import {CacheDetails} from './cache_reducers';
+
+export let appReducers = [Details, CacheDetails];
 
 export function combineReducers(reducerMapList) {
 	let reducers = reducerMapList.map(({ReducerMap, ...data}) => {

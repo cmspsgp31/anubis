@@ -3,6 +3,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import I from 'immutable';
 import {Provider} from 'react-redux';
+import {connect} from 'react-redux';
 import {Router, Route, browserHistory} from 'react-router';
 import {List, ListItem} from 'material-ui';
 
@@ -12,70 +13,97 @@ import App from './app';
 import {appReducers} from './reducers/reducer.js';
 import configureStore from './configureStore';
 
-class Test1 extends React.Component {
-	render() {
-		return (
-			<div>Test 1</div>
-		);
-	}
-}
+import RecordList from './components/record_list.js';
+import RecordZoom from './components/record_zoom.js';
 
-class Test2 extends React.Component {
+let getStateProps = s => ({
+	routing: s.get('routing'),
+	baseURL: s.get('baseURL'),
+	isSearch: s.getIn(['searchResults', 'visible']) ? "yes" : "no",
+	isDetails: !!s.get('details') ? "yes" : "no",
+	results: JSON.stringify(s.getIn(['searchResults', 'results'])),
+	details: JSON.stringify(s.getIn(['details', 'object'], null))
+})
+
+@connect(getStateProps)
+class RouterTest extends React.Component {
 	constructor(props) {
 		super(props);
-
-		this.state = I.fromJS({params: {}});
 	}
 
-	componentWillMount() {
-		console.log(this.props.params.splat);
-		this.parseSplat(this.props.params.splat);
+	get location() {
+		return this.parseSplat(this.props.location.pathname);
 	}
 
 	parseSplat(splat) {
-		let groups = splat.match(/(.*)\/(\d+)$/);
-		if (groups != null) {
-			let [_, search, page] = groups;
+		let re = new RegExp(`${this.props.baseURL}\\/(([a-zA-Z][a-zA-Z0-9]*)\\/|)(.*)(\\/(\\d+)|)$`);
+		let groups = splat.match(re);
 
-			this.state = this.state
-				.setIn(["params", "search"], search)
-				.setIn(["params", "page"], page);
+		if (groups) {
+			console.log(groups);
+			let [_, __, model, search, ___, page] = groups;
+
+			return {model, search, page: ___};
 		}
 		else return {};
 	}
 
 	render() {
 		return (
-			<div>Test 2:
+			<div>
 				<List zDepth={1}>
-				<ListItem primaryText= {this.state.getIn(["params", "search"])} />
-				<ListItem primaryText={this.state.getIn(["params", "page"])} />
+					<ListItem
+						primaryText="Model"
+						secondaryText= {this.location.model} />
+					<ListItem
+						primaryText="Page"
+						secondaryText= {this.location.page} />
+					<ListItem
+						primaryText="Search Expression"
+						secondaryText= {this.location.search} />
+				</List>
+
+				<List zDepth={1}>
+					<ListItem 
+						primaryText="Is search?"
+						secondaryText= {this.props.isSearch} />
+					<ListItem
+						primaryText=""
+						secondaryText= {this.props.results} />
+				</List>
+
+				<List zDepth={1}>
+					<ListItem 
+						primaryText="Is details?"
+						secondaryText= {this.props.isDetails} />
+					<ListItem
+						primaryText=""
+						secondaryText= {this.props.details} />
 				</List>
 			</div>
 		);
 	}
 }
 
-class Test3 extends React.Component {
-	render() {
-		return <div></div>;
-	}
-}
-
-
-
 
 window.addEventListener("DOMContentLoaded", () => {
 	injectTapEventPlugin();
 	let state = window.__AnubisState;
 	let store = configureStore(appReducers, state);
+	let appData = state.applicationData;
+	/*
+					<Route path={appData.searchRoute} component={RecordList}>
+					</Route>
+	 */
+
+	console.log(appData);
 
 	ReactDOM.render(
 		<Provider store={store}>
 			<Router history={browserHistory}>
-				<Route path={state.baseURL} component={App}>
-					<Route path="test1" component={Test1}></Route>
-					<Route path="*" component={Test2}></Route>
+				<Route path={appData.baseURL} component={App}>
+					<Route path={appData.detailsRoute} component={RecordZoom}>
+					</Route>
 				</Route>
 			</Router>
 		</Provider>
