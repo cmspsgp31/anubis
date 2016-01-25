@@ -20,13 +20,32 @@
 from collections import OrderedDict
 from operator import itemgetter
 
-from anubis.sql_aggregators import ProcedureAggregate
+from anubis.sql_aggregators import ProcedureOrderingAnnotation
 from django.db import connection as base_connection, connections
 from django.db import models
 from django.db.models.query import QuerySet
+from django.db.models.expressions import Ref, F
 
 
 class ProcedureQuerySet(QuerySet):
+    """Class to provide a procedure aware QuerySet (and, with the
+    :meth:`as_manager` method, a Manager) to Djang models.
+
+    Example:
+        Use this class as follows to enable procedure queries on your models::
+
+            from django.db.models import Model, CharField
+            from anubis.query import ProcedureQuerySet
+
+            class MyModel(Model):
+                myText = CharField()
+
+                class QuerySet(ProcedureQuerySet):
+                    pass
+
+                objects = QuerySet.as_manager()
+    """
+
     order_by_procedure_column = "anubis_index"
 
     def _get_connection(self):
@@ -55,28 +74,62 @@ class ProcedureQuerySet(QuerySet):
                                         extra_fields=extra_fields)
 
     def order_by_aggregates(self, *aggregates, field="id", extra_fields=None):
-        annotation = OrderedDict([("{}_{}".format(agg.default_alias, i), agg)
-                                  for i, agg in enumerate(aggregates)])
+        annotation = OrderedDict([
+            ("{}_{}".format(agg.default_alias, i), agg)
+            for i, agg in enumerate(aggregates)
+        ])
+
         fields = list(annotation.keys())
+        fields = [Ref(f, annotation[f]) for f in fields]
 
         if extra_fields is not None:
-            fields += extra_fields
+            fields += [F(f) for f in extra_fields]
         else:
-            fields.append(field)
+            fields.append(F(field))
 
         return self.annotate(**annotation).order_by(*fields)
 
     def procedure_aggregate(self, procname, *args, **kwargs):
+        """Helper method for generating ordering annotations.
+
+        Returns:
+            anubis.sql_aggregators.ProcedureOrderingAnnotation: An ordering
+                annotation with the correct procedure name (including table
+                name).
+        """
         procname = "{}_{}".format(self.model._meta.db_table, procname)
 
-        return ProcedureAggregate(procname, *args, **kwargs)
+        return ProcedureOrderingAnnotation(procname, *args, **kwargs)
 
     def procedure(self, procname, *args):
-        """
-            Atenção! *NUNCA*, *JAMAIS* passe valores de input diretamente para
-            a variável procname! Ela *NÃO* é tratada, e valores de nome de
-            nomes de funções devem ser EXPLICITAMENTE permitidos pelo
-            aplicativo!
+        """This method calls a procedure from the database.
+
+        This method calls a procedure from the database. It expects the
+        procedure to be name in the format "[table_name]_[procname]", and that
+        it returns an array of primary keys. This is for composability with
+        other queryset methods. For procedures that return arbitrary values,
+        use :meth:`unchainable_procedure`.
+
+        Note:
+            Don't **ever** pass untreated user input values (or any values that
+            cannot be implicitly trusted) to `procname`. Its value is not
+            treated in anyway and **can be used for SQL-injection attacks**. If
+            you must get the `procname` dinamically, set up a list of allowed
+            names and check against that before calling this function.
+
+        Args:
+            procname (str): The name of the procedure, minus the starting
+                "[table_name]_" prefix. **This value is not treated and can be
+                used for SQL injection attacks**. Never pass untreated user
+                input or any values that cannot be implicitly trusted to it.
+            *args: Arguments to be passed to the procedure. These values will
+                be passed as binding parameters in the SQL query, so they should
+                be safe (but don't quote me on this).
+
+        Returns:
+            ProcedureQuerySet: A queryset containing the records whose primary
+            keys match the ones in the array returned by the database stored
+            procedure.
         """
         connection = self._get_connection()
         cursor = connection.cursor()
@@ -136,20 +189,6 @@ class ProcedureQuerySet(QuerySet):
         cursor.execute(query, args)
 
         return cursor.fetchone()[0]
-
-
-class ProcedureManager(models.Manager):
-    def get_queryset(self):
-        return ProcedureQuerySet(self.model, using=self._db)
-
-    def procedure(self, procname, *args):
-        return self.get_queryset().procedure(procname, *args)
-
-    def unchainable_procedure(self, procname, *args):
-        return self.get_queryset().unchainable_procedure(procname, *args)
-
-    def single_valued_procedure(self, procname, *args):
-        return self.get_queryset().single_valued_procedure(procname, *args)
 
 
 def call_procedure(procname):

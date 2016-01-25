@@ -232,8 +232,8 @@ setup(
         "anubis.app",
         "anubis.app.templatetags"],
     install_requires=[
-        "Django<1.8",
-        "djangorestframework<3",
+        "Django >1.7, <1.9",
+        "djangorestframework <3",
         "psycopg2"],
     package_data={
         'anubis': [

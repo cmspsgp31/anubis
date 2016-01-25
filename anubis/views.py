@@ -73,11 +73,27 @@ class TemplateRetrieverView(APIView):
                 if template not in self.allowed_templates:
                     raise NotAcceptable("Template: {}".format(template))
 
-                from django.template.loaders.app_directories import Loader
+                from django.template.utils import EngineHandler
+                from django.template.base import TemplateDoesNotExist
 
-                loader = Loader()
+                engines = EngineHandler()
                 name = "{}.html".format(template)
-                template_body = loader.load_template_source(name)[0]
+
+                template_data = None
+
+                for engine in engines.all():
+                    for loader in engine.engine.template_loaders:
+                        try:
+                            template_data = loader.load_template_source(name)
+                        except TemplateDoesNotExist:
+                            pass
+                        else:
+                            break
+
+                if template_data is None:
+                    raise TemplateDoesNotExist(name)
+
+                template_body = template_data[0]
 
                 response[template] = self.reformat_template(template_body)
             else:
@@ -999,6 +1015,9 @@ class AppViewMixin(StateViewMixin):
 
         return {
             "title": "Anubis Search Interface",
+            "footer": ("© 2016, Câmara Municipal de São Paulo, "
+                       "Secretaria de Documentação, "
+                       "Equipe de Documentação do Legislativo."),
             "baseURL": self.base_url,
             "searchRoute": react_search_route,
             "detailsRoute": react_details_route,

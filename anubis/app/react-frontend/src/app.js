@@ -3,6 +3,7 @@ import {connect} from 'react-redux';
 import {Paper, RaisedButton} from 'material-ui';
 import Actions from './actions';
 import Header from './components/header';
+import Footer from './components/footer';
 import {Link, RouteHandler} from 'react-router';
 
 let getStateProps = state => ({
@@ -22,7 +23,7 @@ export default class App extends React.Component {
 			<div>
 				<Header />
 
-				<div>
+				<div style={{padding: "20px"}}>
 					<Link to={this.detailsHtml("sessoes", 15748)}>
 						<RaisedButton
 							label="Sessão 15748"
@@ -31,6 +32,8 @@ export default class App extends React.Component {
 				</div>
 
 				<div>{this.props.children}</div>
+
+				<Footer />
 
 			</div>
 		);

@@ -68,8 +68,11 @@ export default class RecordZoom extends React.Component {
 				title={this.props.hasDetails && ("Id: " + id) || ("Carregando")}
 				modal={true}
 				open={true}
-				actions={<RaisedButton label="Fechar"
-					primary={true} onTouchTap={this.props.goBack} />}>
+				actions={<RaisedButton
+					disabled={!this.props.hasDetails}
+					label="Fechar"
+					primary={true}
+					onTouchTap={this.props.goBack} />}>
 				{contents}
 			</Dialog>
 		);
