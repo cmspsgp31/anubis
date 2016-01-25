@@ -55,10 +55,7 @@ export default class RecordZoom extends React.Component {
 		let id = (this.props.object) ? this.props.object.get('id') : null;
 
 		let contents = (this.props.hasDetails) ?
-			<div>
-				<p>Model: {JSON.stringify(this.props.model_data)}</p>
-				<p>{JSON.stringify(this.props.object)}</p>
-			</div>
+			<div>Empty.</div>
 			: <div style={{textAlign: "center"}}>
 				<CircularProgress mode="indeterminate" size={2}/>;
 			</div>

@@ -867,6 +867,21 @@ class StateViewMixin:
 
 
 class AppViewMixin(StateViewMixin):
+    record_zoom = """
+    import React from 'react';
+
+    class RecordZoom extends React.Component {
+        render() {
+            return (
+                <div>
+                    <p>Model: {JSON.stringify(this.props.model_data)}</p>
+                    <p>{JSON.stringify(this.props.object)}</p>
+                </div>
+            );
+        }
+    }
+    """
+
     @classmethod
     def url_search(cls, app_prefix=None, **kwargs):
         if app_prefix is not None:
@@ -928,10 +943,10 @@ class AppViewMixin(StateViewMixin):
 
         base_state.update({
             "tokenEditor": self.get_token_state(),
-            "counter": 0,
             "applicationData": self.get_application_data(),
             "models": self.get_models_meta(),
             "user": self.get_user_data(),
+            "templates": self.get_templates(),
        })
 
         return base_state
@@ -964,6 +979,11 @@ class AppViewMixin(StateViewMixin):
 
         return self.user_serializer(self.request.user).data \
             if self.request.user.is_authenticated() else None
+
+    def get_templates(self):
+        return {
+            "record": self.record_zoom
+        }
 
     def get_token_state(self):
         return {
