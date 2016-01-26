@@ -1,10 +1,10 @@
 import reduceReducers from 'reduce-reducers';
 import {handleActions} from 'redux-actions';
 
-import {Details} from './api_reducers';
-import {CacheDetails} from './cache_reducers';
+import {Details, Search} from './api_reducers';
+import {CacheDetails, CacheSearch} from './cache_reducers';
 
-export let appReducers = [Details, CacheDetails];
+export let appReducers = [Details, CacheDetails, Search, CacheSearch];
 
 export function combineReducers(reducerMapList) {
 	let reducers = reducerMapList.map(({ReducerMap, ...data}) => {

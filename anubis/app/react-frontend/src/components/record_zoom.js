@@ -9,13 +9,13 @@ import Actions from '../actions';
 
 let getStateProps = state => {
 	let object = state.getIn(['details', 'object']);
-	let model_name = state.getIn(['details', 'model']);
-	let model_data = state.getIn(['models', model_name]);
+	let modelName = state.getIn(['details', 'model']);
+	let modelData = state.getIn(['models', modelName]);
 	let detailsApi = state.getIn(['applicationData', 'detailsApi']);
 	let hasDetails = !!state.get("details");
 	let cache = state.getIn(['cache', 'details']);
 
-	return {object, model_name, model_data, detailsApi, hasDetails, cache};
+	return {object, modelName, modelData, detailsApi, hasDetails, cache};
 };
 
 let getDispatchProps = dispatch => ({
@@ -44,7 +44,7 @@ export default class RecordZoom extends React.Component {
 
 			if (cached) this.props.restoreDetails(cached);
 			else this.props.fetchDetails(this.detailsApi);
-		};
+		}
 	}
 
 	componentWillUnmount() {
@@ -53,18 +53,27 @@ export default class RecordZoom extends React.Component {
 
 	render() {
 		let id = (this.props.object) ? this.props.object.get('id') : null;
-
-		let contents = (this.props.hasDetails) ?
-			<div>Empty.</div>
-			: <div style={{textAlign: "center"}}>
+		let contents = (
+			<div style={{textAlign: "center"}}>
 				<CircularProgress mode="indeterminate" size={2}/>;
 			</div>
+		);
+		let title = "Carregando...";
+
+		if (this.props.hasDetails) {
+			let [getTitle, Contents] = this.props.templates[
+				this.props.modelName];
+
+			contents = <Contents ref="contents" {...this.props} />;
+			title = getTitle(this.props, this.getStyles);
+		}
 
 		return (
 			<Dialog
-				title={this.props.hasDetails && ("Id: " + id) || ("Carregando")}
+				title={title}
 				modal={true}
 				open={true}
+				autoScrollBodyContent={true}
 				actions={<RaisedButton
 					disabled={!this.props.hasDetails}
 					label="Fechar"

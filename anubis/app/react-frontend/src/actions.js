@@ -1,16 +1,25 @@
 import {createAction} from 'redux-actions';
 import I from 'immutable';
 
+let server = prop => async link => {
+	let response = await fetch(link, {credentials: 'same-origin'});
+	let json = await response.json();
+
+	return I.fromJS(json[prop]);
+};
+
 export default class Actions {
 	static clearDetails = createAction('CLEAR_DETAILS');
 
-	static fetchDetails = createAction('FETCH_DETAILS',
-		async link => {
-			let response = await fetch(link);
-			let json = await response.json();
+	static fetchDetails = createAction('FETCH_DETAILS', server('details'));
 
-			return I.fromJS(json.details);
-		});
+	static restoreDetails = createAction('FETCH_DETAILS');
 
-	static restoreDetails = createAction('FETCH_DETAILS')
+	static clearSearch = createAction('CLEAR_SEARCH');
+
+	static fetchSearch = createAction('FETCH_SEARCH', server('searchResults'));
+
+	static restoreSearch = createAction('FETCH_SEARCH');
+
+	static clearSearchCache = createAction('CLEAR_SEARCH_CACHE');
 }

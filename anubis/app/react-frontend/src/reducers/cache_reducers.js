@@ -13,3 +13,31 @@ export let CacheDetails = {
 	},
 	keyPath: ["cache", "details"]
 }
+
+export let CacheSearch = {
+	ReducerMap: {
+		'FETCH_SEARCH': (state, action) => {
+			let expr = action.payload.get('textExpression');
+			let model = action.payload.get('model');
+			let page = action.payload.getIn(['pagination', 'currentPage'], "0");
+			let sorting = action.payload.getIn(['sorting', 'current', 'by']);
+
+			if (!sorting) sorting = "none";
+
+			sorting = ((action.payload.getIn(['sorting', 'current',
+				'ascending'])) ? "+" : "-") + sorting;
+
+			if (!I.Map.isMap(state)) state = I.Map();
+
+			return state.updateIn([model, expr, sorting, `${page}`],
+				() => action.payload);
+		},
+		'CLEAR_SEARCH_CACHE': (state, action) => {
+			let keys = action.payload;
+
+			return state.deleteIn([keys.model, keys.expr, keys.sorting,
+					`${keys.page}`]);
+		}
+	},
+	keyPath: ["cache", "searchResults"]
+}

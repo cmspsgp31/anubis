@@ -44,6 +44,29 @@ from anubis.aggregators import QuerySetAggregator, TokenAggregator
 from anubis.filters import Filter, ConversionFilter
 from anubis.url import BooleanBuilder
 
+def load_template(template, type_="html"):
+    from django.template.utils import EngineHandler
+    from django.template.base import TemplateDoesNotExist
+
+    engines = EngineHandler()
+    name = ".".join([template, type_])
+
+    template_data = None
+
+    for engine in engines.all():
+        for loader in engine.engine.template_loaders:
+            try:
+                template_data = loader.load_template_source(name)
+            except TemplateDoesNotExist:
+                pass
+            else:
+                break
+
+    if template_data is None:
+        raise TemplateDoesNotExist(name)
+
+    return template_data[0]
+
 
 
 class TemplateRetrieverView(APIView):
@@ -73,27 +96,7 @@ class TemplateRetrieverView(APIView):
                 if template not in self.allowed_templates:
                     raise NotAcceptable("Template: {}".format(template))
 
-                from django.template.utils import EngineHandler
-                from django.template.base import TemplateDoesNotExist
-
-                engines = EngineHandler()
-                name = "{}.html".format(template)
-
-                template_data = None
-
-                for engine in engines.all():
-                    for loader in engine.engine.template_loaders:
-                        try:
-                            template_data = loader.load_template_source(name)
-                        except TemplateDoesNotExist:
-                            pass
-                        else:
-                            break
-
-                if template_data is None:
-                    raise TemplateDoesNotExist(name)
-
-                template_body = template_data[0]
+                template_body = load_template(template)
 
                 response[template] = self.reformat_template(template_body)
             else:
@@ -448,8 +451,12 @@ class StateViewMixin:
     :ivar is_multi_modeled: Tells whether the search acts in multiple models.
     :vartype bool:
 
+    :ivar is_sortable: Tell whether the search can be sorted.
+    :vartype bool:
+
     :ivar boolean_expression: Represents the requested search, if there is one.
     :vartype Optional[rest_framework.serializers.ModelSerializer]:
+
 
     Attributes:
         base_url (str): Base URL for the application. Should either start with
@@ -492,27 +499,39 @@ class StateViewMixin:
         user_serializer (Optional[rest_framework.serializers.Serializer]):
             Serializer for the user model. Set this to :const:`None` if you
             want to disable user related functionality.
-        details_parameter (str): The parameter *name* (from Django URL matching)
-            which contains the ID of the record being displayed. The Anubis'
-            search interface will display this as a modal dialog above the
-            search results (if there are any).
+        details_parameter (str): The parameter *name* (from Django URL
+            matching) which contains the ID of the record being displayed.
+            The Anubis' search interface will display this as a modal dialog
+            above the search results (if there are any).
         details_slug (str): A slug to put on URLs when retrieving details.
         search_slug (str): A slug to put on URLs when performing searches.
+        sorting_options (List[str]): A list of possible sorting options. Pass
+            :const:`None` to disallow sorting.
     """
 
     base_url = ""
+    api_prefix = "api"
+
     model = None
-    serializers = None
     default_model = None
     model_parameter = "model"
+
+    serializers = None
+
     expression_parameter = "search"
     filters = {}
+
     objects_per_page = None
     page_parameter = "page"
+
     details_parameter = "details"
     details_slug = "details"
+
     search_slug = "search"
-    api_prefix = "api"
+
+    sorting_options = None
+    sorting_parameter = "sorted_by"
+    sorting_default = None
 
     class _UserSerializer(ModelSerializer):
         class Meta:
@@ -528,6 +547,10 @@ class StateViewMixin:
     @classmethod
     def _is_paginated(cls):
         return cls.objects_per_page is not None
+
+    @classmethod
+    def _is_sortable(cls):
+        return cls.sorting_options is not None
 
     @classmethod
     def _url_part_details_id(cls):
@@ -549,6 +572,14 @@ class StateViewMixin:
             return ""
 
     @classmethod
+    def _url_part_sort(cls):
+        if cls._is_sortable():
+            sorting = "|".join(cls.sorting_options)
+            return r"(?P<{}>[+-]{})/".format(cls.sorting_parameter, sorting)
+        else:
+            return ""
+
+    @classmethod
     def _url_part_expr(cls):
         return r"(?P<{}>.*)".format(cls.expression_parameter)
 
@@ -561,11 +592,12 @@ class StateViewMixin:
 
         name = "{}api_search".format(app_prefix)
 
-        search_url = "^{api_prefix}/{search_slug}/{m}{p}{expr}$".format(**{
+        search_url = "^{api_prefix}/{search_slug}/{m}{p}{s}{expr}$".format(**{
             "api_prefix": cls.api_prefix,
             "search_slug": cls.search_slug,
             "m": cls._url_part_model(),
             "p": cls._url_part_page(),
+            "s": cls._url_part_sort(),
             "expr": cls._url_part_expr()
         })
 
@@ -594,7 +626,13 @@ class StateViewMixin:
 
         self.is_paginated = self._is_paginated()
         self.is_multi_modeled = self._is_multi_modeled()
+        self.is_sortable = self._is_sortable()
         self.boolean_expression = None
+
+        self._sorting = {
+            "by": None,
+            "ascending": True
+        }
 
         if self.is_multi_modeled:
             self._model_lookup = self.model
@@ -602,6 +640,9 @@ class StateViewMixin:
 
             self._serializer_lookup = self.serializers
             self.serializers = None
+        else:
+            self._model_lookup = {'_default': self.model}
+            self._model_key = "_default"
 
     def get(self, *args, **kwargs):
         self._prepare_attributes()
@@ -649,7 +690,7 @@ class StateViewMixin:
                 whole of Anubis' state.
         """
 
-        self.object_list  = self.filter_queryset(self.get_queryset())
+        self.object_list = self.filter_queryset(self.get_queryset())
 
         context = self.get_context_data() # Changes self.object_list
         state = context["anubis_state"]
@@ -668,7 +709,32 @@ class StateViewMixin:
         else:
             queryset = original.none()
 
+        queryset = self.sort_queryset(queryset)
+
         return queryset
+
+    def sort_queryset(self, queryset):
+        if not self.is_sortable:
+            return queryset
+
+        sort_key = self.kwargs[self.sorting_parameter]
+        ascending = sort_key[0] == "+"
+        sort_key = sort_key[1:]
+
+        options = self.sorting_options if not self.is_multi_modeled \
+            else self.sorting_options[self._model_key]
+
+        assert sort_key in options, "Sorting by {} is notallowed." \
+            .format(sort_key)
+
+        self._sorting['by'] = sort_key
+        self._sorting['ascending'] = ascending
+
+        sort_method = "sort_by_{}".format(sort_key) \
+            if not self.is_multi_modeled \
+            else "sort_{}_by_{}".format(self._model_key, sort_key)
+
+        return getattr(self, sort_method)(queryset)
 
     def get_context_data(self, **kwargs):
         anubis_state = self.get_full_state()
@@ -745,9 +811,10 @@ class StateViewMixin:
                 return filter_
 
             base_filter = None
+            other_models = [key for key in self._model_lookup.keys() \
+                          if key != self._model_key]
 
-            for model_name in [key for key in self._model_lookup.keys() \
-                               if key != self._model_key]:
+            for model_name in other_models:
                 candidate = self.filters[model_name][filter_name]
 
                 if not isinstance(candidate, type) or \
@@ -784,14 +851,9 @@ class StateViewMixin:
         return self.boolean_expression.traverse(aggregator)
 
     def get_full_state(self):
-        pagination = self.get_pagination()
-
         anubis_state = {
             "searchResults": self.get_search_results(),
-            "pagination": pagination,
             "details": self.get_details(),
-            "sorting": self.get_sorting(),
-            "actions": self.get_actions(),
         }
 
         return anubis_state
@@ -818,14 +880,20 @@ class StateViewMixin:
             return None
 
     def get_search_results(self):
+        # TODO: textExpression should be computed from the parsed
+        # boolean_expression.
         expression = self.boolean_expression
         visible = self.boolean_expression is not None
 
         return {
             "expression": expression,
+            "textExpression": self.kwargs.get(self.expression_parameter, ""),
+            "pagination": self.get_pagination(),
+            "actions": self.get_actions(),
             "visible": visible,
             "model": self._model_key,
             "results": self.object_list,
+            "sorting": self.get_sorting(),
             "selection": []
         }
 
@@ -839,12 +907,13 @@ class StateViewMixin:
         self.object_list = page.object_list
 
         return {
-            "current_page": current_page,
-            "total_pages": page.paginator.num_pages,
-            "is_paginated": page.has_other_pages(),
-            "next_page_number": page.next_page_number() \
+            "currentPage": current_page,
+            "totalPages": page.paginator.num_pages,
+            "objectsPerPage": self.objects_per_page,
+            "isPaginated": page.has_other_pages(),
+            "nextPageNumber": page.next_page_number() \
                 if page.has_next() else None,
-            "previous_page_number": page.previous_page_number() \
+            "previousPageNumber": page.previous_page_number() \
                 if page.has_previous() else None,
         }
 
@@ -852,9 +921,17 @@ class StateViewMixin:
         return {}
 
     def get_sorting(self):
+        if self.is_sortable:
+            options = self.sorting_options if self.is_multi_modeled else {
+                "_default": self.sorting_options
+            }
+        else:
+            options = None
+
         return {
-            "by": None,
-            "ascending": True
+            "available": options,
+            "current": self._sorting,
+            "default": self.sorting_default
         }
 
     def get_final_response(self, original):
@@ -867,20 +944,8 @@ class StateViewMixin:
 
 
 class AppViewMixin(StateViewMixin):
-    record_zoom = """
-    import React from 'react';
-
-    class RecordZoom extends React.Component {
-        render() {
-            return (
-                <div>
-                    <p>Model: {JSON.stringify(this.props.model_data)}</p>
-                    <p>{JSON.stringify(this.props.object)}</p>
-                </div>
-            );
-        }
-    }
-    """
+    record_zoom = "record_zoom"
+    record_list = "record_list"
 
     @classmethod
     def url_search(cls, app_prefix=None, **kwargs):
@@ -891,10 +956,11 @@ class AppViewMixin(StateViewMixin):
 
         name = "{}html_search".format(app_prefix)
 
-        search_url = "^{search_slug}/{m}{p}{expr}$".format(**{
+        search_url = "^{search_slug}/{m}{p}{s}{expr}$".format(**{
             "search_slug": cls.search_slug,
             "m": cls._url_part_model(),
             "p": cls._url_part_page(),
+            "s": cls._url_part_sort(),
             "expr": cls._url_part_expr()
         })
 
@@ -927,12 +993,13 @@ class AppViewMixin(StateViewMixin):
         name = "{}html_search_and_details".format(app_prefix)
 
         s_and_d_url = ("^{details_slug}/{m}{id}/"
-                       "{search_slug}/{p}{expr}$").format(**{
+                       "{search_slug}/{p}{s}{expr}$").format(**{
                            "details_slug": cls.details_slug,
                            "m": cls._url_part_model(),
                            "id": cls._url_part_details_id(),
                            "search_slug": cls.search_slug,
                            "p": cls._url_part_page(),
+                           "s": cls._url_part_sort(),
                            "expr": cls._url_part_expr(),
                        })
 
@@ -952,8 +1019,14 @@ class AppViewMixin(StateViewMixin):
         return base_state
 
     def get_serializer(self, *args, **kwargs):
-        kwargs["context"] = {"request": self.request}
+        kwargs["context"] = self.get_serializer_context()
         return self.get_serializer_class()(*args, **kwargs)
+
+    def get_serializer_context(self):
+        return {
+            'request': self.request,
+            'view': self
+        }
 
     def get_context_data(self, **kwargs):
         context = dict(super().get_context_data(**kwargs))
@@ -981,8 +1054,29 @@ class AppViewMixin(StateViewMixin):
             if self.request.user.is_authenticated() else None
 
     def get_templates(self):
+        from django.template.loader import get_template
+
+        def render(template):
+            return get_template("{}.js".format(template)).render()
+
+        if self.is_multi_modeled:
+            if hasattr(self.record_zoom, "items"):
+                record_zoom = {model: render(template) for model, template
+                               in self.record_zoom.items()}
+                record_list = {model: render(template) for model, template
+                               in self.record_list.items()}
+            else:
+                record_zoom = {model: render(self.record_zoom)
+                               for model in self._model_lookup.keys()}
+                record_list = {model: render(self.record_list)
+                               for model in self._model_lookup.keys()}
+        else:
+            record_zoom = {"_default": render(self.record_zoom)}
+            record_list = {"_default": render(self.record_list)}
+
         return {
-            "record": self.record_zoom
+            "record": record_zoom,
+            "search": record_list
         }
 
     def get_token_state(self):
@@ -996,11 +1090,31 @@ class AppViewMixin(StateViewMixin):
         }
 
     def get_application_data(self):
-        react_search_route = "{}/{}{}{}".format(
+        react_search_route = "{}/{}{}{}{}".format(
             self.search_slug,
             ":model/" if self.is_multi_modeled else "",
             ":page/" if self.is_paginated else "",
+            ":sorting/" if self.is_sortable else "",
             "*"
+        )
+
+        react_search_html = "{}/{}/{}{}{}{}".format(
+            self.base_url,
+            self.search_slug,
+            "${model}/" if self.is_multi_modeled else "",
+            "${page}/" if self.is_paginated else "",
+            "${sorting}/" if self.is_sortable else "",
+            "${expr}"
+        )
+
+        react_search_api = "{}/{}/{}/{}{}{}{}".format(
+            self.base_url,
+            self.api_prefix,
+            self.search_slug,
+            "${model}/" if self.is_multi_modeled else "",
+            "${page}/" if self.is_paginated else "",
+            "${sorting}/" if self.is_sortable else "",
+            "${expr}"
         )
 
         react_details_route = "{}/{}{}".format(
@@ -1024,12 +1138,13 @@ class AppViewMixin(StateViewMixin):
             "${id}"
         )
 
-        react_search_and_details_route = "{}/{}{}/{}/{}{}".format(
+        react_search_and_details_route = "{}/{}{}/{}/{}{}{}".format(
             self.details_slug,
             ":model/" if self.is_multi_modeled else "",
             ":id",
             self.search_slug,
             ":page/" if self.is_paginated else "",
+            ":sorting/" if self.is_sortable else "",
             "*"
         )
 
@@ -1040,6 +1155,8 @@ class AppViewMixin(StateViewMixin):
                        "Equipe de Documentação do Legislativo."),
             "baseURL": self.base_url,
             "searchRoute": react_search_route,
+            "searchHtml": react_search_html,
+            "searchApi": react_search_api,
             "detailsRoute": react_details_route,
             "detailsApi": react_details_api,
             "detailsHtml": react_details_html,

@@ -20,6 +20,7 @@ System.config({
     "babel-runtime": "npm:babel-runtime@5.8.34",
     "core-js": "npm:core-js@1.2.6",
     "immutable": "npm:immutable@3.7.6",
+    "lodash": "npm:lodash@4.0.1",
     "material-ui": "npm:material-ui@0.14.2",
     "react": "npm:react@0.14.6",
     "react-dom": "npm:react-dom@0.14.6",
@@ -223,6 +224,9 @@ System.config({
       "lodash._getnative": "npm:lodash._getnative@3.9.1",
       "lodash._isiterateecall": "npm:lodash._isiterateecall@3.0.9",
       "lodash.isarray": "npm:lodash.isarray@3.0.4"
+    },
+    "npm:lodash@4.0.1": {
+      "process": "github:jspm/nodelibs-process@0.1.2"
     },
     "npm:loose-envify@1.1.0": {
       "js-tokens": "npm:js-tokens@1.0.2",

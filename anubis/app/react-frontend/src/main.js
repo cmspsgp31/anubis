@@ -6,6 +6,7 @@ import {Provider} from 'react-redux';
 import {connect} from 'react-redux';
 import {Router, Route, browserHistory} from 'react-router';
 import {List, ListItem} from 'material-ui';
+import MaterialUI from 'material-ui';
 
 import injectTapEventPlugin from "react-tap-event-plugin";
 
@@ -15,6 +16,11 @@ import configureStore from './configureStore';
 
 import RecordList from './components/record_list.js';
 import RecordZoom from './components/record_zoom.js';
+
+import Babel from 'babel';
+import _ from 'lodash';
+
+import {Link} from 'react-router';
 
 let getStateProps = s => ({
 	routing: s.get('routing'),
@@ -89,20 +95,52 @@ class RouterTest extends React.Component {
 window.addEventListener("DOMContentLoaded", () => {
 	injectTapEventPlugin();
 	let state = window.__AnubisState;
-	let store = configureStore(appReducers, state);
 	let appData = state.applicationData;
-	/*
-					<Route path={appData.searchRoute} component={RecordList}>
-					</Route>
-	 */
 
-	console.log(appData);
+	let recordTemplates = _.mapValues(state.templates.record, template => {
+		let transform = Babel.transform(template, { stage: 0 });
+		let code = `((React, MUI) => {
+			${transform.code}
+			return [getTitle, RecordZoom];
+		})(React, MaterialUI)`;
+
+		let [getTitle, contentsCls] = eval(code);
+
+		return [getTitle, contentsCls];
+	});
+
+	let searchTemplates = _.mapValues(state.templates.search, template => {
+		let transform = Babel.transform(template, { stage: 0 });
+		let code = `((React, MUI, Link) => {
+			${transform.code}
+			return RecordList;
+		})(React, MaterialUI, Link)`;
+
+		let contentsCls = eval(code);
+
+		return contentsCls;
+	});
+
+	let zoomComponent = (props) => <RecordZoom {...props}
+		templates={recordTemplates}
+		/>;
+
+	let searchComponent = (props) => <RecordList {...props}
+		templates={searchTemplates}
+		/>;
+
+	let store = configureStore(appReducers, state);
 
 	ReactDOM.render(
 		<Provider store={store}>
 			<Router history={browserHistory}>
 				<Route path={appData.baseURL} component={App}>
-					<Route path={appData.detailsRoute} component={RecordZoom}>
+					<Route
+						path={appData.detailsRoute}
+						component={zoomComponent}>
+					</Route>
+					<Route path={appData.searchRoute}
+						component={searchComponent}>
 					</Route>
 				</Route>
 			</Router>
