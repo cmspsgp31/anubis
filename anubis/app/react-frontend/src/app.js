@@ -25,9 +25,9 @@ export default class App extends React.Component {
 
 	render() {
 		let linkDetails = this.detailsHtml("sessoes", 15748);
-		let linkSearch = this.searchHtml("sessoes", "1", null,
+		let linkSearch = this.searchHtml("sessoes", "1", "+realizacao",
 			'data,"11/2015"');
-		let linkSearch2 = this.searchHtml("sessoes", "1", null,
+		let linkSearch2 = this.searchHtml("sessoes", "1", "+realizacao",
 			'data,"11/2015"/texto_exato,"uber"');
 
 		return (

@@ -574,8 +574,15 @@ class StateViewMixin:
     @classmethod
     def _url_part_sort(cls):
         if cls._is_sortable():
-            sorting = "|".join(cls.sorting_options)
-            return r"(?P<{}>[+-]{})/".format(cls.sorting_parameter, sorting)
+            if cls._is_multi_modeled():
+                options = [option[0] \
+                           for options in cls.sorting_options.values() \
+                           for option in options]
+            else:
+                options = [option[0] for option in cls.sorting_options]
+
+            sorting = "|".join(set(options))
+            return r"(?P<{}>[+-]({}))/".format(cls.sorting_parameter, sorting)
         else:
             return ""
 
@@ -714,18 +721,18 @@ class StateViewMixin:
         return queryset
 
     def sort_queryset(self, queryset):
-        if not self.is_sortable:
+        if not self.is_sortable or self.boolean_expression is None:
             return queryset
 
         sort_key = self.kwargs[self.sorting_parameter]
-        ascending = sort_key[0] == "+"
+        ascending = not sort_key[0] == "-"
         sort_key = sort_key[1:]
 
         options = self.sorting_options if not self.is_multi_modeled \
             else self.sorting_options[self._model_key]
 
-        assert sort_key in options, "Sorting by {} is notallowed." \
-            .format(sort_key)
+        assert sort_key in [i[0] for i in options], \
+            "Sorting by {} is not allowed.".format(sort_key)
 
         self._sorting['by'] = sort_key
         self._sorting['ascending'] = ascending
@@ -734,7 +741,7 @@ class StateViewMixin:
             if not self.is_multi_modeled \
             else "sort_{}_by_{}".format(self._model_key, sort_key)
 
-        return getattr(self, sort_method)(queryset)
+        return getattr(self, sort_method)(queryset, ascending)
 
     def get_context_data(self, **kwargs):
         anubis_state = self.get_full_state()
@@ -906,11 +913,19 @@ class StateViewMixin:
 
         self.object_list = page.object_list
 
+        def get_from_and_to(page_number):
+            from_ = (page_number - 1) * self.objects_per_page + 1
+            to_ = min(page_number * self.objects_per_page,
+                      page.paginator.count)
+
+            return (page_number, from_, to_)
+
+        all_pages = [get_from_and_to(num) for num in page.paginator.page_range]
+
         return {
             "currentPage": current_page,
-            "totalPages": page.paginator.num_pages,
-            "objectsPerPage": self.objects_per_page,
-            "isPaginated": page.has_other_pages(),
+            "allPages": all_pages,
+            "recordCount": page.paginator.count,
             "nextPageNumber": page.next_page_number() \
                 if page.has_next() else None,
             "previousPageNumber": page.previous_page_number() \
@@ -925,13 +940,17 @@ class StateViewMixin:
             options = self.sorting_options if self.is_multi_modeled else {
                 "_default": self.sorting_options
             }
+            default = self.sorting_default if self.is_multi_modeled else {
+                "_default": self.sorting_default
+            }
         else:
             options = None
+            default = None
 
         return {
             "available": options,
             "current": self._sorting,
-            "default": self.sorting_default
+            "default": default
         }
 
     def get_final_response(self, original):
