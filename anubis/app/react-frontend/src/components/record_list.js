@@ -7,28 +7,57 @@ import {RaisedButton,
 	ToolbarSeparator,
 	CircularProgress,
 	IconMenu,
+	FlatButton,
 	DropDownMenu,
 	IconButton,
 	MenuItem,
 	Icons,
+	FontIcon,
 } from 'material-ui';
 import ContentSort from 'material-ui/lib/svg-icons/content/sort';
 import ActionTrendingDown from 'material-ui/lib/svg-icons/action/trending-down';
 import ActionTrendingUp from 'material-ui/lib/svg-icons/action/trending-up';
 import ToggleCheckBoxOutlineBlank from 'material-ui/lib/svg-icons/toggle/check-box-outline-blank';
+import NavigationArrowUpward from 'material-ui/lib/svg-icons/navigation/arrow-upward';
 import {Link} from 'react-router';
 import {routeActions} from 'redux-simple-router';
 import {bindActionCreators} from 'redux';
+import _ from 'lodash';
 
 import Actions from '../actions';
 
+// TEMPORARY FIX until 
+// "https://github.com/callemall/material-ui/"
+// "commit/fe6fb8570b563d816145e17a8605fa599639cca5"
+// is tagged and released from Material UI.
+
+// import NavigationArrowDownward from 'material-ui/lib/svg-icons/navigation/arrow-downward';
+
+import PureRenderMixin from 'npm:react-addons-pure-render-mixin@0.14.6';
+import {SvgIcon} from 'material-ui';
+
+const NavigationArrowDownward = React.createClass({
+	mixins: [PureRenderMixin],
+	render() {
+		return (
+		<SvgIcon {...this.props}>
+			<path d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z"/>
+		</SvgIcon>
+		);
+	}
+})
+
+// END TEMPORARY FIX
+
 let getStateProps = state => {
+	let searchResults = state.get('searchResults');
 	let results = state.getIn(['searchResults', 'results']);
 	let modelName = state.getIn(['searchResults', 'model']);
 	let modelData = state.getIn(['models', modelName]);
 	let searchApi = state.getIn(['applicationData', 'searchApi']);
 	let searchHtml = state.getIn(['applicationData', 'searchHtml']);
-	let detailsHtml = state.getIn(['applicationData', 'detailsHtml']);
+	let searchAndDetailsHtml = state.getIn(['applicationData',
+		'searchAndDetailsHtml']);
 	let isSearch = state.getIn(['searchResults', 'visible']);
 	let sorting = state.getIn(['searchResults', 'sorting']);
 	let pagination = state.getIn(['searchResults', 'pagination']);
@@ -37,7 +66,8 @@ let getStateProps = state => {
 	let baseURL = state.getIn(['applicationData', 'baseURL']);
 
 	return {results, modelName, modelData, searchApi, searchHtml, isSearch,
-		detailsHtml, sorting, pagination, selection, cache, baseURL};
+		searchAndDetailsHtml, sorting, pagination, selection, cache, baseURL,
+		searchResults};
 };
 
 let getDispatchProps = dispatch => ({
@@ -50,6 +80,10 @@ let getDispatchProps = dispatch => ({
 
 @connect(getStateProps, getDispatchProps)
 export default class RecordList extends React.Component {
+	static contextTypes = {
+		muiTheme: React.PropTypes.object,
+	}
+
 	get searchApi() {
 		let model = this.props.params.model;
 		let expr = this.props.params.splat;
@@ -59,8 +93,13 @@ export default class RecordList extends React.Component {
 		return eval("`" + this.props.searchApi + "`");
 	}
 
-	detailsHtml(model, id) {
-		return eval("`" + this.props.detailsHtml + "`");
+	searchAndDetailsHtml(id) {
+		let model = this.props.params.model;
+		let expr = this.props.params.splat;
+		let page = this.props.params.page;
+		let sorting = this.props.params.sorting;
+
+		return eval("`" + this.props.searchAndDetailsHtml + "`");
 	}
 
 	searchHtml({model, expr, page, sorting}) {
@@ -86,14 +125,44 @@ export default class RecordList extends React.Component {
 		else this.props.fetchSearch(this.searchApi);
 	}
 
+	conditionalCache(params) {
+		let model = params.model || "_default";
+		let expr = params.splat;
+		let page = params.page || "0";
+		let sorting = params.sorting || "+none";
+
+		let cached = (this.props.cache) ?
+			this.props.cache.getIn([model, expr, sorting, `${page}`]) :
+			null;
+
+		if (!cached) this.props.restoreSearch(this.props.searchResults);
+	}
+
 	componentWillMount() {
 		if (!this.props.isSearch) {
 			this.fetchSearch(this.props.params);
 		}
+		else {
+			this.conditionalCache(this.props.params);
+		}
 	}
 
 	componentDidUpdate(previousProps) {
-		if (this.props.params != previousProps.params) {
+		let params = this.props.params;
+		let searchParams = [params.model, params.splat, params.sorting,
+			params.page];
+
+		let prevParams = previousProps.params;
+		let prevSearchParams = [prevParams.model, prevParams.splat,
+			prevParams.sorting, prevParams.page];
+
+		let same = _.reduce(
+			_.zipWith(searchParams, prevSearchParams, (a, b) => a == b),
+			(acc, elem) => acc && elem,
+			true
+		);
+
+		if (!same) {
 			this.props.clearSearch();
 			this.fetchSearch(this.props.params);
 		}
@@ -114,6 +183,16 @@ export default class RecordList extends React.Component {
 		this.props.fetchSearch(this.searchApi);
 	}
 
+	goTo(params) {
+		this.props.goTo(this.searchHtml(params));
+	}
+
+	_makeSorting({by, ascending}) {
+		let prefix = (ascending) ? "+" : "-";
+
+		return `${prefix}${by}`;
+	}
+
 	getPaginationElement() {
 		if (!this.props.pagination) return null;
 
@@ -128,15 +207,13 @@ export default class RecordList extends React.Component {
 		return (
 			<ToolbarGroup firstChild={true}>
 				<IconButton
-					onTouchTap={() => this.props.goTo(this.searchHtml({page: prevPage}))}
+					onTouchTap={() => this.goTo({page: prevPage})}
 					disabled={!prevPage}
 					style={{float: "left", top: "3px"}} >
 					<Icons.NavigationChevronLeft />
 				</IconButton>
 				<DropDownMenu
-					onChange={(ev, i, value) => {
-						this.props.goTo(this.searchHtml({page: value}))
-					}}
+					onChange={(ev, i, value) => this.goTo({page: value})}
 					value={`${currentPage}`}
 					style={{marginRight: "0px"}}>
 					{allPages.map(([num, from, to]) => {
@@ -149,7 +226,7 @@ export default class RecordList extends React.Component {
 					}).toJS()}
 				</DropDownMenu>
 				<IconButton
-					onTouchTap={() => this.props.goTo(this.searchHtml({page: nextPage}))}
+					onTouchTap={() => this.goTo({page: nextPage})}
 					disabled={!nextPage}
 					style={{float: "left", top: "3px"}} >
 					<Icons.NavigationChevronRight />
@@ -166,40 +243,62 @@ export default class RecordList extends React.Component {
 		let current = this.props.sorting.getIn(['current', 'by']);
 		let currentAsc = this.props.sorting.getIn(['current', 'ascending']);
 
-		return (
-			<IconMenu
+		let upwardColor = (currentAsc) ?
+			this.context.muiTheme.flatButton.primaryTextColor :
+			this.context.muiTheme.flatButton.textColor;
+
+		let downwardColor = (!currentAsc) ?
+			this.context.muiTheme.flatButton.primaryTextColor :
+			this.context.muiTheme.flatButton.textColor;
+
+		return [
+			<DropDownMenu
+				key="sortSelector"
 				value={current}
-				iconButtonElement={<IconButton>
-					<ContentSort />
-				</IconButton>}
-				style={{float: "left", top: "3px"}}
+				style={{marginRight: "0px"}}
+				onChange={(ev, i, value) => {
+					let sorting = this._makeSorting({by: value,
+						ascending: currentAsc});
+					this.goTo({sorting});
+				}}
 				>
 					{available.map(([type, desc]) => {
-						let selected = type == current;
-						let leftIcon = <ToggleCheckBoxOutlineBlank />;
-						let rightIcon = <ActionTrendingDown />;
-
-						if (selected) {
-							leftIcon = (currentAsc) ?
-								<ActionTrendingUp /> :
-								<ActionTrendingDown />;
-
-							rightIcon = (!currentAsc) ?
-								<ActionTrendingUp /> :
-								<ActionTrendingDown />;
-						}
-
 						return (
-							<MenuItem
-								primaryText={desc}
-								value={type}
-								leftIcon={leftIcon}
-								rightIcon={rightIcon}
-								/>
+							<MenuItem key={`sort_${type}`}
+								primaryText={desc} value={type} />
 						);
 					}).toJS()}
-			</IconMenu>
-		);
+			</DropDownMenu>,
+			<IconButton
+				key="sortAsc"
+				style={{float: "left", top: "3px"}}
+				onTouchTap={() => {
+					if (!currentAsc) {
+						let sorting = this._makeSorting({by: current,
+							ascending: true});
+						this.goTo({sorting});
+					}
+				}}
+				>
+					<NavigationArrowUpward key="sortAscArrow"
+						color={upwardColor} />
+			</IconButton>,
+			<IconButton
+				key="sortDesc"
+				style={{float: "left", top: "3px"}}
+				onTouchTap={() => {
+					if (currentAsc) {
+						let sorting = this._makeSorting({by: current,
+							ascending: false});
+						this.goTo({sorting});
+					}
+				}}
+				>
+					<NavigationArrowDownward key="sortDescArrow"
+						color={downwardColor} />
+			</IconButton>,
+			<ToolbarSeparator key="sortSeparator" style={{marginLeft: "12px"}}/>,
+		];
 	}
 
 	render() {
@@ -213,8 +312,7 @@ export default class RecordList extends React.Component {
 			let Item = this.props.templates[this.props.modelName];
 
 			let tiles = this.props.results.map(record => {
-				let link = this.detailsHtml(this.props.modelName,
-					record.get('id'));
+				let link = this.searchAndDetailsHtml(record.get('id'));
 				let id = record.get('id');
 
 				return (
@@ -246,8 +344,6 @@ export default class RecordList extends React.Component {
 						{pagination}
 						<ToolbarGroup lastChild={true}>
 							{sorting}
-							{sorting &&
-								<ToolbarSeparator style={{marginLeft: "12px"}}/>}
 							<RaisedButton
 								label="Recarregar"
 								primary={true}
@@ -255,6 +351,7 @@ export default class RecordList extends React.Component {
 							/>
 							<RaisedButton
 								label="Limpar"
+								style={{marginLeft: "0px"}}
 								secondary={true}
 								onTouchTap={() => {
 									this.props.goTo(this.props.baseURL);

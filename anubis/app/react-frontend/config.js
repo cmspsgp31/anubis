@@ -33,6 +33,7 @@ System.config({
     "redux-actions": "npm:redux-actions@0.9.0",
     "redux-promise": "npm:redux-promise@0.5.1",
     "redux-simple-router": "npm:redux-simple-router@2.0.3",
+    "whatwg-fetch": "npm:whatwg-fetch@0.11.0",
     "github:jspm/nodelibs-assert@0.1.0": {
       "assert": "npm:assert@1.3.0"
     },

@@ -3,6 +3,8 @@ import I from 'immutable';
 export let CacheDetails = {
 	ReducerMap: {
 		'FETCH_DETAILS': (state, action) => {
+			if (!action.payload.get) return state;
+
 			let model = action.payload.get("model");
 			let id = action.payload.getIn(["object", "id"]);
 
@@ -17,6 +19,8 @@ export let CacheDetails = {
 export let CacheSearch = {
 	ReducerMap: {
 		'FETCH_SEARCH': (state, action) => {
+			if (!action.payload.get) return state;
+
 			let expr = action.payload.get('textExpression');
 			let model = action.payload.get('model');
 			let page = action.payload.getIn(['pagination', 'currentPage'], "0");

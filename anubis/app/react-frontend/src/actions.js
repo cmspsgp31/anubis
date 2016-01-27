@@ -5,6 +5,8 @@ let server = prop => async link => {
 	let response = await fetch(link, {credentials: 'same-origin'});
 	let json = await response.json();
 
+	if (response.status != 200) throw json;
+
 	return I.fromJS(json[prop]);
 };
 
@@ -22,4 +24,10 @@ export default class Actions {
 	static restoreSearch = createAction('FETCH_SEARCH');
 
 	static clearSearchCache = createAction('CLEAR_SEARCH_CACHE');
+
+	static setGlobalError = createAction('SET_GLOBAL_ERROR');
+
+	static showGlobalErrorDetails = createAction('SHOW_GLOBAL_ERROR_DETAILS');
+
+	static clearGlobalError = createAction('CLEAR_GLOBAL_ERROR');
 }

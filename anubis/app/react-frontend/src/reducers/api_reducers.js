@@ -3,6 +3,11 @@ import I from 'immutable';
 export let Details = {
 	ReducerMap: {
 		'FETCH_DETAILS': (state, action) => {
+			if (action.error) {
+				return (state) ? state.set("error", action.payload) :
+					I.fromJS({error: action.payload});
+			}
+
 			return action.payload;
 		},
 		'CLEAR_DETAILS': (state, action) => null

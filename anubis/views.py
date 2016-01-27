@@ -1167,17 +1167,45 @@ class AppViewMixin(StateViewMixin):
             "*"
         )
 
+        react_search_and_details_html = "{}/{}/{}{}/{}/{}{}{}".format(
+            self.base_url,
+            self.details_slug,
+            "${model}/" if self.is_multi_modeled else "",
+            "${id}",
+            self.search_slug,
+            "${page}/" if self.is_paginated else "",
+            "${sorting}/" if self.is_sortable else "",
+            "${expr}"
+        )
+
+        react_search_and_details_api = "{}/{}/{}/{}{}/{}/{}{}{}".format(
+            self.base_url,
+            self.api_prefix,
+            self.details_slug,
+            "${model}/" if self.is_multi_modeled else "",
+            "${id}",
+            self.search_slug,
+            "${page}/" if self.is_paginated else "",
+            "${sorting}/" if self.is_sortable else "",
+            "${expr}"
+        )
+
         return {
             "title": "Anubis Search Interface",
             "footer": ("© 2016, Câmara Municipal de São Paulo, "
                        "Secretaria de Documentação, "
                        "Equipe de Documentação do Legislativo."),
             "baseURL": self.base_url,
+
             "searchRoute": react_search_route,
             "searchHtml": react_search_html,
             "searchApi": react_search_api,
+
             "detailsRoute": react_details_route,
-            "detailsApi": react_details_api,
             "detailsHtml": react_details_html,
+            "detailsApi": react_details_api,
+
             "searchAndDetailsRoute": react_search_and_details_route,
+            "searchAndDetailsHtml": react_search_and_details_html,
+            "searchAndDetailsApi": react_search_and_details_api,
         }
