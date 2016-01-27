@@ -14,40 +14,14 @@ import {RaisedButton,
 	Icons,
 	FontIcon,
 } from 'material-ui';
-import ContentSort from 'material-ui/lib/svg-icons/content/sort';
-import ActionTrendingDown from 'material-ui/lib/svg-icons/action/trending-down';
-import ActionTrendingUp from 'material-ui/lib/svg-icons/action/trending-up';
-import ToggleCheckBoxOutlineBlank from 'material-ui/lib/svg-icons/toggle/check-box-outline-blank';
-import NavigationArrowUpward from 'material-ui/lib/svg-icons/navigation/arrow-upward';
+import {ContentSort, NavigationArrowUpward,
+	NavigationArrowDownward} from 'material-ui/lib/svg-icons';
 import {Link} from 'react-router';
 import {routeActions} from 'redux-simple-router';
 import {bindActionCreators} from 'redux';
 import _ from 'lodash';
 
 import Actions from '../actions';
-
-// TEMPORARY FIX until 
-// "https://github.com/callemall/material-ui/"
-// "commit/fe6fb8570b563d816145e17a8605fa599639cca5"
-// is tagged and released from Material UI.
-
-// import NavigationArrowDownward from 'material-ui/lib/svg-icons/navigation/arrow-downward';
-
-import PureRenderMixin from 'npm:react-addons-pure-render-mixin@0.14.6';
-import {SvgIcon} from 'material-ui';
-
-const NavigationArrowDownward = React.createClass({
-	mixins: [PureRenderMixin],
-	render() {
-		return (
-		<SvgIcon {...this.props}>
-			<path d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z"/>
-		</SvgIcon>
-		);
-	}
-})
-
-// END TEMPORARY FIX
 
 let getStateProps = state => {
 	let searchResults = state.get('searchResults');
@@ -319,7 +293,7 @@ export default class RecordList extends React.Component {
 					<li
 						key={`li_${id}`}
 						style={{
-							minWidth: "300px",
+							minWidth: "200px",
 							margin: "10px",
 							flexGrow: "1",
 						}} >
@@ -334,7 +308,7 @@ export default class RecordList extends React.Component {
 			let sorting = this.getSortingMenu();
 
 			contents = (
-				<div>
+				<div style={{marginBottom: "56px"}}>
 					<Toolbar style={{
 							display: "flex",
 							justifyContent: "space-between",

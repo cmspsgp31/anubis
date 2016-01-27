@@ -1082,13 +1082,17 @@ class AppViewMixin(StateViewMixin):
             if hasattr(self.record_zoom, "items"):
                 record_zoom = {model: render(template) for model, template
                                in self.record_zoom.items()}
-                record_list = {model: render(template) for model, template
-                               in self.record_list.items()}
             else:
                 record_zoom = {model: render(self.record_zoom)
                                for model in self._model_lookup.keys()}
+
+            if hasattr(self.record_list, "items"):
+                record_list = {model: render(template) for model, template
+                               in self.record_list.items()}
+            else:
                 record_list = {model: render(self.record_list)
                                for model in self._model_lookup.keys()}
+
         else:
             record_zoom = {"_default": render(self.record_zoom)}
             record_list = {"_default": render(self.record_list)}

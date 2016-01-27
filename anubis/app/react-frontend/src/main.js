@@ -8,6 +8,7 @@ import {connect} from 'react-redux';
 import {Router, Route, browserHistory} from 'react-router';
 import {List, ListItem} from 'material-ui';
 import MaterialUI from 'material-ui';
+import * as Icons from 'material-ui/lib/svg-icons';
 
 import injectTapEventPlugin from "react-tap-event-plugin";
 
@@ -30,10 +31,10 @@ window.addEventListener("DOMContentLoaded", () => {
 
 	let recordTemplates = _.mapValues(state.templates.record, template => {
 		let transform = Babel.transform(template, { stage: 0 });
-		let code = `((React, MUI) => {
+		let code = `((React, MUI, Icons, Link, _) => {
 			${transform.code}
 			return [getTitle, RecordZoom];
-		})(React, MaterialUI)`;
+		})(React, MaterialUI, Icons, Link, _)`;
 
 		let [getTitle, contentsCls] = eval(code);
 
@@ -42,10 +43,10 @@ window.addEventListener("DOMContentLoaded", () => {
 
 	let searchTemplates = _.mapValues(state.templates.search, template => {
 		let transform = Babel.transform(template, { stage: 0 });
-		let code = `((React, MUI, Link) => {
+		let code = `((React, MUI, Icons, Link, _) => {
 			${transform.code}
 			return RecordList;
-		})(React, MaterialUI, Link)`;
+		})(React, MaterialUI, Icons, Link, _)`;
 
 		let contentsCls = eval(code);
 

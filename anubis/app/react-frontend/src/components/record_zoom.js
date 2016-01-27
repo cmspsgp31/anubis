@@ -1,7 +1,7 @@
 import React from 'react';
 import I from 'immutable';
 import {connect} from 'react-redux';
-import {Dialog, RaisedButton, CircularProgress} from 'material-ui';
+import {Dialog, RaisedButton, FlatButton, CircularProgress} from 'material-ui';
 import {routeActions} from 'redux-simple-router';
 import {bindActionCreators} from 'redux';
 
@@ -13,14 +13,16 @@ let getStateProps = state => {
 	let modelName = state.getIn(['details', 'model']);
 	let modelData = state.getIn(['models', modelName]);
 	let detailsApi = state.getIn(['applicationData', 'detailsApi']);
+	let detailsHtml = state.getIn(['applicationData', 'detailsHtml']);
 	let hasDetails = !!state.get("details");
 	let cache = state.getIn(['cache', 'details']);
 	let searchHtml = state.getIn(['applicationData', 'searchHtml']);
 	let baseURL = state.getIn(['applicationData', 'baseURL']);
 	let error = state.getIn(['details', 'error']);
+	let appData = state.get('applicationData');
 
 	return {object, modelName, modelData, detailsApi, hasDetails, cache,
-		searchHtml, baseURL, fullDetails, error};
+		searchHtml, baseURL, fullDetails, error, detailsHtml, appData};
 };
 
 let getDispatchProps = dispatch => ({
@@ -34,6 +36,10 @@ let getDispatchProps = dispatch => ({
 
 @connect(getStateProps, getDispatchProps)
 export default class RecordZoom extends React.Component {
+	static contextTypes = {
+		muiTheme: React.PropTypes.object,
+	}
+
 	constructor(props) {
 		super(props);
 
@@ -127,14 +133,47 @@ export default class RecordZoom extends React.Component {
 		}, 450);
 	}
 
+	get titleStyle() {
+		const muiTheme = this.context.muiTheme;
+		const rawTheme = muiTheme.rawTheme;
+		const spacing = rawTheme.spacing;
+		const gutter = spacing.desktopGutter;
+
+		return {
+			margin: 0,
+			padding: `${gutter}px ${gutter}px 0 ${gutter}px`,
+			color: rawTheme.palette.textColor,
+			fontSize: 24,
+			fontFamily: "'Roboto', sans-serif",
+			lineHeight: '32px',
+			fontWeight: 500,
+		};
+	}
+
 	render() {
 		let id = (this.props.object) ? this.props.object.get('id') : null;
+		let title = "Carregando...";
+
 		let contents = (
 			<div style={{textAlign: "center"}}>
-				<CircularProgress mode="indeterminate" size={2}/>;
+				<CircularProgress mode="indeterminate" size={2}/>
 			</div>
 		);
-		let title = "Carregando...";
+
+		let actions = [
+			<FlatButton
+				key="close"
+				disabled={!this.props.hasDetails}
+				label="Fechar"
+				onTouchTap={() => this._close()} />
+		];
+
+		let makeActions = (elems) => <div style={{
+			display: "flex",
+			justifyContent: "space-between",
+			alignItems: "center",
+			padding: "6px"
+		}}>{elems}</div>;
 
 		if (this.props.error) {
 			contents = <div></div>;
@@ -145,8 +184,16 @@ export default class RecordZoom extends React.Component {
 				this.props.modelName];
 
 			contents = <Contents {...this.props} />;
-			title = getTitle(this.props, this.getStyles);
+			title = getTitle(this.props, this.titleStyle,
+				this.context.muiTheme);
+
+			if (Contents.getActions) {
+				actions = Contents.getActions(this.props,
+					this.context.muiTheme).concat(actions);
+			}
 		}
+
+		if (actions.length == 1) actions = [<div></div>].concat(actions);
 
 		return (
 			<Dialog
@@ -156,11 +203,7 @@ export default class RecordZoom extends React.Component {
 				open={this.state.visible}
 				autoScrollBodyContent={true}
 				onRequestClose={() => this._close()}
-				actions={<RaisedButton
-					disabled={!this.props.hasDetails}
-					label="Fechar"
-					primary={true}
-					onTouchTap={() => this._close()} />}>
+				actions={makeActions(actions)}>
 				{contents}
 			</Dialog>
 		);
