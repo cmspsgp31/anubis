@@ -559,7 +559,7 @@ class StateViewMixin:
     @classmethod
     def _url_part_model(cls):
         if cls._is_multi_modeled():
-            models = "|".join(cls.model.keys())
+            models = "|".join(dict(cls.model).keys())
             return r"(?P<{}>{})/".format(cls.model_parameter, models)
         else:
             return ""
@@ -642,12 +642,14 @@ class StateViewMixin:
         }
 
         if self.is_multi_modeled:
-            self._model_lookup = self.model
+            self._model_order = [model for model, _ in self.model]
+            self._model_lookup = dict(self.model)
             self.model = None
 
             self._serializer_lookup = self.serializers
             self.serializers = None
         else:
+            self._model_order = ["_default"]
             self._model_lookup = {'_default': self.model}
             self._model_key = "_default"
 
@@ -772,9 +774,6 @@ class StateViewMixin:
 
     def get_model(self):
         if not self.is_multi_modeled:
-            self._model_key = "_default"
-            self._model_lookup = {"_default": self.model}
-
             return self.model
 
         self._model_key = self.kwargs.get(self.model_parameter,
@@ -917,6 +916,9 @@ class StateViewMixin:
             from_ = (page_number - 1) * self.objects_per_page + 1
             to_ = min(page_number * self.objects_per_page,
                       page.paginator.count)
+
+            if page.paginator.count == 0:
+                from_ = 0
 
             return (page_number, from_, to_)
 
@@ -1062,6 +1064,7 @@ class AppViewMixin(StateViewMixin):
     def get_models_meta(self):
         return {key: {"names": (model._meta.verbose_name.title(),
                                 model._meta.verbose_name_plural.title()),
+                      "order": self._model_order.index(key)
                       }
                 for key, model in self._model_lookup.items()}
 
@@ -1194,6 +1197,13 @@ class AppViewMixin(StateViewMixin):
             "${expr}"
         )
 
+        sorting_default = self.sorting_default
+
+        if not self.is_multi_modeled:
+            sorting_default = {"_default": self.sorting_default}
+        elif not self.is_sortable:
+            sorting_default = dict.fromkeys(self._model_lookup.keys())
+
         return {
             "title": "Anubis Search Interface",
             "footer": ("© 2016, Câmara Municipal de São Paulo, "
@@ -1212,4 +1222,6 @@ class AppViewMixin(StateViewMixin):
             "searchAndDetailsRoute": react_search_and_details_route,
             "searchAndDetailsHtml": react_search_and_details_html,
             "searchAndDetailsApi": react_search_and_details_api,
+
+            "sortingDefaults": sorting_default
         }

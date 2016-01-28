@@ -13,9 +13,11 @@ import {RaisedButton,
 	MenuItem,
 	Icons,
 	FontIcon,
+	Tabs,
+	Tab
 } from 'material-ui';
 import {ContentSort, NavigationArrowUpward,
-	NavigationArrowDownward} from 'material-ui/lib/svg-icons';
+	NavigationArrowDownward, SocialShare} from 'material-ui/lib/svg-icons';
 import {Link} from 'react-router';
 import {routeActions} from 'redux-simple-router';
 import {bindActionCreators} from 'redux';
@@ -38,10 +40,12 @@ let getStateProps = state => {
 	let selection = state.getIn(['searchResults', 'sorting']);
 	let cache = state.getIn(['cache', 'searchResults']);
 	let baseURL = state.getIn(['applicationData', 'baseURL']);
+	let sortingDefaults = state.getIn(['applicationData', 'sortingDefaults']);
+	let models = state.get('models');
 
 	return {results, modelName, modelData, searchApi, searchHtml, isSearch,
 		searchAndDetailsHtml, sorting, pagination, selection, cache, baseURL,
-		searchResults};
+		searchResults, models, sortingDefaults};
 };
 
 let getDispatchProps = dispatch => ({
@@ -189,14 +193,20 @@ export default class RecordList extends React.Component {
 				<DropDownMenu
 					onChange={(ev, i, value) => this.goTo({page: value})}
 					value={`${currentPage}`}
+					disabled={total == 0}
 					style={{marginRight: "0px"}}>
 					{allPages.map(([num, from, to]) => {
-							return (<MenuItem
-								key={`${num}`}
-								value={`${num}`}
-								primaryText={`Registros ${from} a ${to} de ${total}`}
-							/>);
+						let text = `Resultados ${from} a ${to} de ${total}`;
 
+						if (total == 0) {
+							text = "Nenhum resultado encontrado.";
+						}
+
+						return (<MenuItem
+							key={`${num}`}
+							value={`${num}`}
+							primaryText={text}
+						/>);
 					}).toJS()}
 				</DropDownMenu>
 				<IconButton
@@ -275,6 +285,35 @@ export default class RecordList extends React.Component {
 		];
 	}
 
+	getModelSwitcher() {
+		if (this.props.models.size < 2) return null;
+
+		const models = this.props.models
+			.map((model, key) => model.set("key", key))
+			.toList()
+			.sortBy(model => model.get('order'))
+			.toJS();
+
+		let selectedModel = this.props.modelName || models[0].key;
+
+		return (
+			<Tabs
+				value={selectedModel}
+				onChange={value => this.goTo({
+					model: value,
+					page: "1",
+					sorting: this.props.sortingDefaults[value]
+				})}
+			>
+				{models.map(model => <Tab
+					key={`switch_to_${model.key}`}
+					value={model.key}
+					label={model.names[1]}
+				/>)}
+			</Tabs>
+		);
+	}
+
 	render() {
 		let contents = (
 			<div style={{textAlign: "center"}}>
@@ -306,9 +345,11 @@ export default class RecordList extends React.Component {
 
 			let pagination = this.getPaginationElement();
 			let sorting = this.getSortingMenu();
+			let models = this.getModelSwitcher();
 
 			contents = (
 				<div style={{marginBottom: "56px"}}>
+					{models}
 					<Toolbar style={{
 							display: "flex",
 							justifyContent: "space-between",
@@ -331,6 +372,14 @@ export default class RecordList extends React.Component {
 									this.props.goTo(this.props.baseURL);
 								}}
 							/>
+							<Link to={this.searchHtml({})}>
+								<IconButton
+									tooltip="Link"
+									style={{top: "3px"}}
+								>
+									<SocialShare />
+								</IconButton>
+							</Link>
 						</ToolbarGroup>
 					</Toolbar>
 					<ul style={{
