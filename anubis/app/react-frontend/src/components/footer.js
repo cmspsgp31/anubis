@@ -8,11 +8,17 @@ let getStateProps = state => ({
 
 @connect(getStateProps)
 export default class Header extends React.Component {
+	static contextTypes = {
+		muiTheme: React.PropTypes.object,
+	}
+
 	render() {
+		let color = this.context.muiTheme.flatButton.textColor;
+
 		return (
 			<Toolbar style={{position: "fixed", bottom: 0, fontFamily: "'Roboto', sans-serif"}}>
 				<ToolbarGroup>
-					<ToolbarTitle text={this.props.footer}/>
+					<ToolbarTitle style={{color}} text={this.props.footer}/>
 				</ToolbarGroup>
 			</Toolbar>
 		)

@@ -1,29 +1,18 @@
 import React from 'react';
 import I from 'immutable';
+import _ from 'lodash';
+
 import {connect} from 'react-redux';
-import {RaisedButton,
-	Toolbar,
-	ToolbarGroup,
-	ToolbarSeparator,
-	CircularProgress,
-	IconMenu,
-	FlatButton,
-	DropDownMenu,
-	IconButton,
-	MenuItem,
-	Icons,
-	FontIcon,
-	Tabs,
-	Tab
-} from 'material-ui';
-import {ContentSort, NavigationArrowUpward,
-	NavigationArrowDownward, SocialShare} from 'material-ui/lib/svg-icons';
+import {RaisedButton, Toolbar, ToolbarGroup, ToolbarSeparator, CircularProgress,
+	IconMenu, FlatButton, DropDownMenu, IconButton, MenuItem, Icons, FontIcon,
+	Tabs, Tab } from 'material-ui';
+import {ContentSort, NavigationArrowUpward, NavigationArrowDownward,
+	SocialShare} from 'material-ui/lib/svg-icons';
 import {Link} from 'react-router';
 import {routeActions} from 'redux-simple-router';
 import {bindActionCreators} from 'redux';
-import _ from 'lodash';
 
-import Actions from '../actions';
+import Actions from 'actions';
 
 let getStateProps = state => {
 	let searchResults = state.get('searchResults');
@@ -42,10 +31,11 @@ let getStateProps = state => {
 	let baseURL = state.getIn(['applicationData', 'baseURL']);
 	let sortingDefaults = state.getIn(['applicationData', 'sortingDefaults']);
 	let models = state.get('models');
+	let error = state.getIn(['searchResults', 'error']);
 
 	return {results, modelName, modelData, searchApi, searchHtml, isSearch,
 		searchAndDetailsHtml, sorting, pagination, selection, cache, baseURL,
-		searchResults, models, sortingDefaults};
+		searchResults, models, sortingDefaults, error};
 };
 
 let getDispatchProps = dispatch => ({
@@ -53,6 +43,7 @@ let getDispatchProps = dispatch => ({
 	restoreSearch: bindActionCreators(Actions.restoreSearch, dispatch),
 	clearSearch: bindActionCreators(Actions.clearSearch, dispatch),
 	clearSearchCache: bindActionCreators(Actions.clearSearchCache, dispatch),
+	setGlobalError: bindActionCreators(Actions.setGlobalError, dispatch),
 	goTo: url => dispatch(routeActions.push(url))
 })
 
@@ -126,6 +117,12 @@ export default class RecordList extends React.Component {
 	}
 
 	componentDidUpdate(previousProps) {
+		if (this.props.error) {
+			this.props.setGlobalError(this.props.error);
+			// this.goToRoot();
+			return;
+		}
+
 		let params = this.props.params;
 		let searchParams = [params.model, params.splat, params.sorting,
 			params.page];
@@ -163,6 +160,10 @@ export default class RecordList extends React.Component {
 
 	goTo(params) {
 		this.props.goTo(this.searchHtml(params));
+	}
+
+	goToRoot() {
+		this.props.goTo(this.props.baseURL);
 	}
 
 	_makeSorting({by, ascending}) {
@@ -302,7 +303,7 @@ export default class RecordList extends React.Component {
 				onChange={value => this.goTo({
 					model: value,
 					page: "1",
-					sorting: this.props.sortingDefaults[value]
+					sorting: this.props.sortingDefaults.get(value)
 				})}
 			>
 				{models.map(model => <Tab
@@ -321,7 +322,10 @@ export default class RecordList extends React.Component {
 			</div>
 		);
 
-		if (this.props.isSearch) {
+		if (this.props.error) {
+			contents = <div></div>;
+		}
+		else if (this.props.isSearch) {
 			let Item = this.props.templates[this.props.modelName];
 
 			let tiles = this.props.results.map(record => {
@@ -368,9 +372,7 @@ export default class RecordList extends React.Component {
 								label="Limpar"
 								style={{marginLeft: "0px"}}
 								secondary={true}
-								onTouchTap={() => {
-									this.props.goTo(this.props.baseURL);
-								}}
+								onTouchTap={() => this.goToRoot()}
 							/>
 							<Link to={this.searchHtml({})}>
 								<IconButton

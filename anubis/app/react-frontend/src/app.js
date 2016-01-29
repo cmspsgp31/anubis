@@ -1,18 +1,21 @@
 import React from 'react';
-import {connect} from 'react-redux';
-import {Paper, RaisedButton, Dialog, Snackbar} from 'material-ui';
-import Actions from './actions';
-import Header from './components/header';
-import Footer from './components/footer';
-import {Link, RouteHandler} from 'react-router';
-import {bindActionCreators} from 'redux';
 import I from 'immutable';
 import _ from 'lodash';
-
 import AppTheme from 'material-ui/lib/styles/raw-themes/light-raw-theme';
 import ThemeManager from 'material-ui/lib/styles/theme-manager';
 
+import {Paper, RaisedButton, Dialog, Snackbar} from 'material-ui';
+import {connect} from 'react-redux';
+import {Link, RouteHandler} from 'react-router';
+import {bindActionCreators} from 'redux';
+
+import Actions from 'actions';
+import Header from 'components/header';
+import Footer from 'components/footer';
+
+
 let getStateProps = state => ({
+	appTheme: state.getIn(['templates', 'appTheme']),
 	routing: state.get('routing'),
 	baseURL: state.getIn(['applicationData', 'baseURL']),
 	detailsHtml: state.getIn(['applicationData', 'detailsHtml']),
@@ -40,7 +43,9 @@ export default class App extends React.Component {
 	}
 
 	get theme() {
-		return ThemeManager.getMuiTheme(AppTheme);
+		return (this.props.appTheme) ?
+			ThemeManager.getMuiTheme(this.props.appTheme.toJS()) :
+			ThemeManager.getMuiTheme(AppTheme);
 	}
 
 	detailsHtml(model, id) {

@@ -1,28 +1,27 @@
 import 'babel/polyfill';
 import 'whatwg-fetch';
+
 import React from 'react';
 import ReactDOM from 'react-dom';
 import I from 'immutable';
+import Babel from 'babel';
+import _ from 'lodash';
+import MaterialUI from 'material-ui';
+import * as Icons from 'material-ui/lib/svg-icons';
+import injectTapEventPlugin from "react-tap-event-plugin";
+
 import {Provider} from 'react-redux';
 import {connect} from 'react-redux';
 import {Router, Route, browserHistory} from 'react-router';
 import {List, ListItem} from 'material-ui';
-import MaterialUI from 'material-ui';
-import * as Icons from 'material-ui/lib/svg-icons';
-
-import injectTapEventPlugin from "react-tap-event-plugin";
-
-import App from './app';
-import {appReducers} from './reducers/reducer.js';
-import configureStore from './configureStore';
-
-import RecordList from './components/record_list.js';
-import RecordZoom from './components/record_zoom.js';
-
-import Babel from 'babel';
-import _ from 'lodash';
-
 import {Link} from 'react-router';
+
+import App from 'app';
+import configureStore from 'configureStore';
+import RecordList from 'components/record_list';
+import RecordZoom from 'components/record_zoom';
+
+import {appReducers} from 'reducers/reducer';
 
 window.addEventListener("DOMContentLoaded", () => {
 	injectTapEventPlugin();
@@ -52,6 +51,18 @@ window.addEventListener("DOMContentLoaded", () => {
 
 		return contentsCls;
 	});
+
+	state.templates.appTheme = (template => {
+		let transform = Babel.transform(template, { stage: 0 });
+		let code = `((Colors, ColorManipulator) => {
+			${transform.code}
+			return AppTheme;
+		})(MaterialUI.Styles.Colors, MaterialUI.Utils.ColorManipulator)`;
+
+		let theme = eval(code);
+
+		return theme;
+	})(state.templates.appTheme);
 
 	let zoomComponent = (props) => <RecordZoom {...props}
 		key="zoomComponent"

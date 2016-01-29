@@ -1,11 +1,12 @@
 import React from 'react';
 import I from 'immutable';
+
 import {connect} from 'react-redux';
 import {Dialog, RaisedButton, FlatButton, CircularProgress} from 'material-ui';
 import {routeActions} from 'redux-simple-router';
 import {bindActionCreators} from 'redux';
 
-import Actions from '../actions';
+import Actions from 'actions';
 
 let getStateProps = state => {
 	let fullDetails = state.get('details');

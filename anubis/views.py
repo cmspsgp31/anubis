@@ -967,6 +967,7 @@ class StateViewMixin:
 class AppViewMixin(StateViewMixin):
     record_zoom = "record_zoom"
     record_list = "record_list"
+    app_theme = "app_theme"
 
     @classmethod
     def url_search(cls, app_prefix=None, **kwargs):
@@ -1102,7 +1103,8 @@ class AppViewMixin(StateViewMixin):
 
         return {
             "record": record_zoom,
-            "search": record_list
+            "search": record_list,
+            "appTheme": render(self.app_theme)
         }
 
     def get_token_state(self):
@@ -1223,5 +1225,22 @@ class AppViewMixin(StateViewMixin):
             "searchAndDetailsHtml": react_search_and_details_html,
             "searchAndDetailsApi": react_search_and_details_api,
 
-            "sortingDefaults": sorting_default
+            "sortingDefaults": sorting_default,
+
+            "theme": {
+                "spacing": {
+                    "iconSize": 24,
+                    "desktopGutter": 24,
+                    "desktopGutterMore": 32,
+                    "desktopGutterLess": 16,
+                    "desktopGutterMini": 8,
+                    "desktopKeylineIncrement": 64,
+                    "desktopDropDownMenuItemHeight": 32,
+                    "desktopDropDownMenuFontSize": 15,
+                    "desktopLeftNavMenuItemHeight": 48,
+                    "desktopSubheaderHeight": 48,
+                    "desktopToolbarHeight": 56,
+                },
+
+            }
         }

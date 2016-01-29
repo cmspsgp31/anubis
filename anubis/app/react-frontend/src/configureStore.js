@@ -1,11 +1,11 @@
 import React from 'react';
 import I from 'immutable';
+import promiseMiddleware from 'redux-promise';
+
 import {browserHistory} from 'react-router';
 import {syncHistory, routeReducer} from 'redux-simple-router';
 import {createStore, applyMiddleware, compose} from 'redux';
-import promiseMiddleware from 'redux-promise';
 import {combineReducers} from './reducers/reducer.js';
-
 
 export default function (reducers, initialState) {
 	let immState = I.fromJS(initialState);
