@@ -1,9 +1,9 @@
 import reduceReducers from 'reduce-reducers';
 import {handleActions} from 'redux-actions';
 
-import {Details, Search} from './api_reducers';
-import {CacheDetails, CacheSearch} from './cache_reducers';
-import {App} from './application_reducers';
+import {Details, Search} from 'reducers/api_reducers';
+import {CacheDetails, CacheSearch} from 'reducers/cache_reducers';
+import {App} from 'reducers/application_reducers';
 
 export let appReducers = [Details, CacheDetails, Search, CacheSearch, App];
 

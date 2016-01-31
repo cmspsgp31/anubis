@@ -23,46 +23,56 @@ import RecordZoom from 'components/record_zoom';
 
 import {appReducers} from 'reducers/reducer';
 
+function compile(code, vars, returnWhat) {
+	let [globals, args] = _.reduce(
+		vars,
+		([globals, args], global, arg) => [
+			_.concat(globals, global), _.concat(args, arg)
+		],
+		[[], []]
+	);
+
+	let transform = Babel.transform(code, {stage: 0});
+
+	let transformedCode = `(function (${_.join(args, ", ")}) {
+		${transform.code}
+		return ${returnWhat};
+	})(${_.join(globals, ", ")})`;
+
+	return eval(transformedCode);
+}
+
+
 window.addEventListener("DOMContentLoaded", () => {
 	injectTapEventPlugin();
 	let state = window.__AnubisState;
 	let appData = state.applicationData;
 
-	let recordTemplates = _.mapValues(state.templates.record, template => {
-		let transform = Babel.transform(template, { stage: 0 });
-		let code = `((React, MUI, Icons, Link, _) => {
-			${transform.code}
-			return [getTitle, RecordZoom];
-		})(React, MaterialUI, Icons, Link, _)`;
+	let templateVars = {
+		React: "React",
+		MUI: "MaterialUI",
+		Icons: "Icons",
+		Link: "Link",
+		_: "_"
+	};
 
-		let [getTitle, contentsCls] = eval(code);
+	let themeVars = {
+		Colors: "MaterialUI.Styles.Colors",
+		ColorManipulator: "MaterialUI.Utils.ColorManipulator"
+	};
 
-		return [getTitle, contentsCls];
-	});
+	let recordTemplates = _.mapValues(
+		state.templates.record,
+		template => compile(template, templateVars, "[getTitle, RecordZoom]")
+	);
 
-	let searchTemplates = _.mapValues(state.templates.search, template => {
-		let transform = Babel.transform(template, { stage: 0 });
-		let code = `((React, MUI, Icons, Link, _) => {
-			${transform.code}
-			return RecordList;
-		})(React, MaterialUI, Icons, Link, _)`;
+	let searchTemplates = _.mapValues(
+		state.templates.search,
+		template => compile(template, templateVars, "RecordList")
+	);
 
-		let contentsCls = eval(code);
-
-		return contentsCls;
-	});
-
-	state.templates.appTheme = (template => {
-		let transform = Babel.transform(template, { stage: 0 });
-		let code = `((Colors, ColorManipulator) => {
-			${transform.code}
-			return AppTheme;
-		})(MaterialUI.Styles.Colors, MaterialUI.Utils.ColorManipulator)`;
-
-		let theme = eval(code);
-
-		return theme;
-	})(state.templates.appTheme);
+	state.templates.appTheme = compile(state.templates.appTheme, themeVars,
+		"AppTheme");
 
 	let zoomComponent = (props) => <RecordZoom {...props}
 		key="zoomComponent"

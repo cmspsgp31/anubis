@@ -184,7 +184,7 @@ export default class RecordList extends React.Component {
 		let nextPage = pagination.get('nextPageNumber');
 
 		return (
-			<ToolbarGroup firstChild={true}>
+			<ToolbarGroup>
 				<IconButton
 					onTouchTap={() => this.goTo({page: prevPage})}
 					disabled={!prevPage}
@@ -236,7 +236,7 @@ export default class RecordList extends React.Component {
 			this.context.muiTheme.flatButton.primaryTextColor :
 			this.context.muiTheme.flatButton.textColor;
 
-		return [
+		return (<ToolbarGroup>
 			<DropDownMenu
 				key="sortSelector"
 				value={current}
@@ -253,7 +253,7 @@ export default class RecordList extends React.Component {
 								primaryText={desc} value={type} />
 						);
 					}).toJS()}
-			</DropDownMenu>,
+			</DropDownMenu>
 			<IconButton
 				key="sortAsc"
 				style={{float: "left", top: "3px"}}
@@ -267,7 +267,7 @@ export default class RecordList extends React.Component {
 				>
 					<NavigationArrowUpward key="sortAscArrow"
 						color={upwardColor} />
-			</IconButton>,
+			</IconButton>
 			<IconButton
 				key="sortDesc"
 				style={{float: "left", top: "3px"}}
@@ -281,9 +281,8 @@ export default class RecordList extends React.Component {
 				>
 					<NavigationArrowDownward key="sortDescArrow"
 						color={downwardColor} />
-			</IconButton>,
-			<ToolbarSeparator key="sortSeparator" style={{marginLeft: "12px"}}/>,
-		];
+			</IconButton>
+		</ToolbarGroup>);
 	}
 
 	getModelSwitcher() {
@@ -356,13 +355,15 @@ export default class RecordList extends React.Component {
 					{models}
 					<Toolbar style={{
 							display: "flex",
-							justifyContent: "space-between",
+							justifyContent: "space-around",
 							alignItems: "stretch",
-							flexFlow: "row wrap"
+							flexFlow: "row wrap",
+							height: "",
+							minHeight: "56px"
 						}}>
 						{pagination}
+						{sorting}
 						<ToolbarGroup lastChild={true}>
-							{sorting}
 							<RaisedButton
 								label="Recarregar"
 								primary={true}
