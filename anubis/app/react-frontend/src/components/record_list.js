@@ -44,7 +44,8 @@ let getDispatchProps = dispatch => ({
 	clearSearch: bindActionCreators(Actions.clearSearch, dispatch),
 	clearSearchCache: bindActionCreators(Actions.clearSearchCache, dispatch),
 	setGlobalError: bindActionCreators(Actions.setGlobalError, dispatch),
-	goTo: url => dispatch(routeActions.push(url))
+	goTo: url => dispatch(routeActions.push(url)),
+	replaceWith: url => dispatch(routeActions.replace(url)),
 })
 
 @connect(getStateProps, getDispatchProps)
@@ -119,7 +120,7 @@ export default class RecordList extends React.Component {
 	componentDidUpdate(previousProps) {
 		if (this.props.error) {
 			this.props.setGlobalError(this.props.error);
-			// this.goToRoot();
+			this.props.replaceWith(this.props.baseURL);
 			return;
 		}
 

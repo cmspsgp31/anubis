@@ -12,6 +12,7 @@ import {bindActionCreators} from 'redux';
 import Actions from 'actions';
 import Header from 'components/header';
 import Footer from 'components/footer';
+import TokenInput from 'components/token_input';
 
 
 let getStateProps = state => ({
@@ -130,7 +131,9 @@ export default class App extends React.Component {
 			<div>
 				<Header />
 
-				<div style={{padding: "20px"}}>
+				<TokenInput params={this.props.params} />
+
+				<div>
 					<Link to={linkDetails}>
 						<RaisedButton
 							style={{margin: "10px"}}

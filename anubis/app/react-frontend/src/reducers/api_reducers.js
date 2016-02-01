@@ -4,7 +4,7 @@ export let Details = {
 	ReducerMap: {
 		'FETCH_DETAILS': (state, action) => {
 			if (action.error) {
-				return (state) ? state.set("error", action.payload) :
+				return (state) ? state.set("error", I.fromJS(action.payload)) :
 					I.fromJS({error: action.payload});
 			}
 
@@ -18,6 +18,10 @@ export let Details = {
 export let Search = {
 	ReducerMap: {
 		'FETCH_SEARCH': (state, action) => {
+			if (action.error) {
+				return state.set("error", I.fromJS(action.payload));
+			}
+
 			return action.payload;
 		},
 		'CLEAR_SEARCH': (state, action) => (I.fromJS({

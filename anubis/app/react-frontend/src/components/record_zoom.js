@@ -29,6 +29,7 @@ let getStateProps = state => {
 let getDispatchProps = dispatch => ({
 	goBack: () => dispatch(routeActions.goBack()),
 	goTo: url => dispatch(routeActions.push(url)),
+	replaceWith: url => dispatch(routeActions.replace(url)),
 	fetchDetails: bindActionCreators(Actions.fetchDetails, dispatch),
 	restoreDetails: bindActionCreators(Actions.restoreDetails, dispatch),
 	clearDetails: bindActionCreators(Actions.clearDetails, dispatch),
@@ -123,13 +124,15 @@ export default class RecordZoom extends React.Component {
 
 	_close() {
 		this.setState({visible: false});
+		let nav = (this.props.error) ? this.props.replaceWith :
+			this.props.goTo;
 
 		setTimeout(() => {
 			if (this.props.alsoSearching) {
-				this.props.goTo(this.searchHtml);
+				nav(this.searchHtml);
 			}
 			else {
-				this.props.goTo(this.props.baseURL);
+				nav(this.props.baseURL);
 			}
 		}, 450);
 	}

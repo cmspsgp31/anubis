@@ -1200,9 +1200,11 @@ class AppViewMixin(StateViewMixin):
         )
 
         sorting_default = self.sorting_default
+        default_model = self.default_model
 
         if not self.is_multi_modeled:
             sorting_default = {"_default": self.sorting_default}
+            default_model = "_default"
         elif not self.is_sortable:
             sorting_default = dict.fromkeys(self._model_lookup.keys())
 
@@ -1224,6 +1226,8 @@ class AppViewMixin(StateViewMixin):
             "searchAndDetailsRoute": react_search_and_details_route,
             "searchAndDetailsHtml": react_search_and_details_html,
             "searchAndDetailsApi": react_search_and_details_api,
+
+            "defaultModel": default_model,
 
             "sortingDefaults": sorting_default,
 
