@@ -25,6 +25,7 @@ System.config({
     "material-ui": "npm:material-ui@0.14.3",
     "react": "npm:react@0.14.6",
     "react-dom": "npm:react-dom@0.14.6",
+    "react-immutable-proptypes": "npm:react-immutable-proptypes@1.5.1",
     "react-motion": "npm:react-motion@0.3.1",
     "react-redux": "npm:react-redux@4.0.6",
     "react-router": "npm:react-router@2.0.0-rc5",
@@ -230,6 +231,9 @@ System.config({
     },
     "npm:react-dom@0.14.6": {
       "react": "npm:react@0.14.6"
+    },
+    "npm:react-immutable-proptypes@1.5.1": {
+      "immutable": "npm:immutable@3.7.6"
     },
     "npm:react-motion@0.3.1": {
       "performance-now": "npm:performance-now@0.2.0",

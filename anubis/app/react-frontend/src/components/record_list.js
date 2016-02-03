@@ -1,12 +1,11 @@
 import React from 'react';
-import I from 'immutable';
 import _ from 'lodash';
+import IPropTypes from 'react-immutable-proptypes';
 
 import {connect} from 'react-redux';
-import {RaisedButton, Toolbar, ToolbarGroup, ToolbarSeparator, CircularProgress,
-	IconMenu, FlatButton, DropDownMenu, IconButton, MenuItem, Icons, FontIcon,
-	Tabs, Tab } from 'material-ui';
-import {ContentSort, NavigationArrowUpward, NavigationArrowDownward,
+import {RaisedButton, Toolbar, ToolbarGroup, CircularProgress, DropDownMenu,
+	IconButton, MenuItem, Icons, Tabs, Tab} from 'material-ui';
+import {NavigationArrowUpward, NavigationArrowDownward,
 	SocialShare} from 'material-ui/lib/svg-icons';
 import {Link} from 'react-router';
 import {routeActions} from 'redux-simple-router';
@@ -50,62 +49,39 @@ let getDispatchProps = dispatch => ({
 
 @connect(getStateProps, getDispatchProps)
 export default class RecordList extends React.Component {
+	static propTypes = {
+		baseURL: React.PropTypes.string,
+		cache: IPropTypes.map,
+		clearSearch: React.PropTypes.func,
+		clearSearchCache: React.PropTypes.func,
+		error: React.PropTypes.any,
+		fetchSearch: React.PropTypes.func,
+		goTo: React.PropTypes.func,
+		isSearch: React.PropTypes.bool,
+		modelName: React.PropTypes.string,
+		models: IPropTypes.map,
+		pagination: IPropTypes.map,
+		params: React.PropTypes.shape({
+			splat: React.PropTypes.string,
+			model: React.PropTypes.string,
+			sorting: React.PropTypes.string,
+			page: React.PropTypes.string,
+		}),
+		replaceWith: React.PropTypes.func,
+		restoreSearch: React.PropTypes.func,
+		results: IPropTypes.listOf(IPropTypes.map),
+		searchAndDetailsHtml: React.PropTypes.string,
+		searchApi: React.PropTypes.string,
+		searchHtml: React.PropTypes.string,
+		searchResults: IPropTypes.map,
+		setGlobalError: React.PropTypes.func,
+		sorting: IPropTypes.map,
+		sortingDefaults: IPropTypes.map,
+		templates: React.PropTypes.object,
+	}
+
 	static contextTypes = {
 		muiTheme: React.PropTypes.object,
-	}
-
-	get searchApi() {
-		let model = this.props.params.model;
-		let expr = this.props.params.splat;
-		let page = this.props.params.page;
-		let sorting = this.props.params.sorting;
-
-		return eval("`" + this.props.searchApi + "`");
-	}
-
-	searchAndDetailsHtml(id) {
-		let model = this.props.params.model;
-		let expr = this.props.params.splat;
-		let page = this.props.params.page;
-		let sorting = this.props.params.sorting;
-
-		return eval("`" + this.props.searchAndDetailsHtml + "`");
-	}
-
-	searchHtml({model, expr, page, sorting}) {
-		model = model || this.props.params.model;
-		expr = expr || this.props.params.splat;
-		page = page || this.props.params.page;
-		sorting = sorting || this.props.params.sorting;
-
-		return eval("`" + this.props.searchHtml + "`")
-	}
-
-	fetchSearch(params) {
-		let model = params.model || "_default";
-		let expr = params.splat;
-		let page = params.page || "0";
-		let sorting = params.sorting || "+none";
-
-		let cached = (this.props.cache) ?
-			this.props.cache.getIn([model, expr, sorting, `${page}`]) :
-			null;
-
-		if (cached) this.props.restoreSearch(cached);
-		else this.props.fetchSearch(this.searchApi);
-	}
-
-	conditionalCache(params) {
-		let model = params.model || "_default";
-		let expr = params.splat;
-		let page = params.page || "0";
-		let sorting = params.sorting || "+none";
-
-		let cached = (this.props.cache) ?
-			this.props.cache.getIn([model, expr, sorting, `${page}`]) :
-			null;
-
-		if (!cached) this.props.restoreSearch(this.props.searchResults);
 	}
 
 	componentWillMount() {
@@ -148,6 +124,65 @@ export default class RecordList extends React.Component {
 		if (this.props.isSearch) this.props.clearSearch();
 	}
 
+	get searchApi() {
+		/*eslint-disable no-unused-vars */
+		let model = this.props.params.model;
+		let expr = this.props.params.splat;
+		let page = this.props.params.page;
+		let sorting = this.props.params.sorting;
+		/*eslint-enable */
+
+		return eval("`" + this.props.searchApi + "`");
+	}
+
+		/*eslint-disable no-unused-vars */
+	searchAndDetailsHtml(id) {
+		let model = this.props.params.model;
+		let expr = this.props.params.splat;
+		let page = this.props.params.page;
+		let sorting = this.props.params.sorting;
+		/*eslint-enable */
+
+		return eval("`" + this.props.searchAndDetailsHtml + "`");
+	}
+
+	searchHtml({model, expr, page, sorting}) {
+		model = model || this.props.params.model;
+		expr = expr || this.props.params.splat;
+		page = page || this.props.params.page;
+		sorting = sorting || this.props.params.sorting;
+
+		return eval("`" + this.props.searchHtml + "`")
+	}
+
+	fetchSearch(params) {
+		let model = params.model || "_default";
+		let expr = params.splat;
+		let page = params.page || "0";
+		let sorting = params.sorting || "+none";
+
+		let cached = (this.props.cache) ?
+			this.props.cache.getIn([model, expr, sorting, `${page}`]) :
+			null;
+
+		if (cached) this.props.restoreSearch(cached);
+		else this.props.fetchSearch(this.searchApi);
+	}
+
+	conditionalCache(params) {
+		let model = params.model || "_default";
+		let expr = params.splat;
+		let page = params.page || "0";
+		let sorting = params.sorting || "+none";
+
+		let cached = (this.props.cache) ?
+			this.props.cache.getIn([model, expr, sorting, `${page}`]) :
+			null;
+
+		if (!cached) this.props.restoreSearch(this.props.searchResults);
+	}
+
+
 	_clearCache() {
 		let model = this.props.params.model || "_default";
 		let expr = this.props.params.splat;
@@ -187,16 +222,18 @@ export default class RecordList extends React.Component {
 		return (
 			<ToolbarGroup>
 				<IconButton
-					onTouchTap={() => this.goTo({page: prevPage})}
 					disabled={!prevPage}
-					style={{float: "left", top: "3px"}} >
+					onTouchTap={() => this.goTo({page: prevPage})}
+					style={{float: "left", top: "3px"}}
+				>
 					<Icons.NavigationChevronLeft />
 				</IconButton>
 				<DropDownMenu
-					onChange={(ev, i, value) => this.goTo({page: value})}
-					value={`${currentPage}`}
 					disabled={total == 0}
-					style={{marginRight: "0px"}}>
+					onChange={(ev, i, value) => this.goTo({page: value})}
+					style={{marginRight: "0px"}}
+					value={`${currentPage}`}
+				>
 					{allPages.map(([num, from, to]) => {
 						let text = `Resultados ${from} a ${to} de ${total}`;
 
@@ -204,17 +241,19 @@ export default class RecordList extends React.Component {
 							text = "Nenhum resultado encontrado.";
 						}
 
-						return (<MenuItem
-							key={`${num}`}
-							value={`${num}`}
-							primaryText={text}
-						/>);
+						return (
+							<MenuItem
+								key={`${num}`}
+								primaryText={text}
+								value={`${num}`}
+							/>);
 					}).toJS()}
 				</DropDownMenu>
 				<IconButton
-					onTouchTap={() => this.goTo({page: nextPage})}
 					disabled={!nextPage}
-					style={{float: "left", top: "3px"}} >
+					onTouchTap={() => this.goTo({page: nextPage})}
+					style={{float: "left", top: "3px"}}
+				>
 					<Icons.NavigationChevronRight />
 				</IconButton>
 			</ToolbarGroup>
@@ -240,24 +279,26 @@ export default class RecordList extends React.Component {
 		return (<ToolbarGroup>
 			<DropDownMenu
 				key="sortSelector"
-				value={current}
-				style={{marginRight: "0px"}}
 				onChange={(ev, i, value) => {
 					let sorting = this._makeSorting({by: value,
 						ascending: currentAsc});
 					this.goTo({sorting});
 				}}
-				>
+				style={{marginRight: "0px"}}
+				value={current}
+			>
 					{available.map(([type, desc]) => {
 						return (
-							<MenuItem key={`sort_${type}`}
-								primaryText={desc} value={type} />
+							<MenuItem
+								key={`sort_${type}`}
+								primaryText={desc}
+								value={type}
+							/>
 						);
 					}).toJS()}
 			</DropDownMenu>
 			<IconButton
 				key="sortAsc"
-				style={{float: "left", top: "3px"}}
 				onTouchTap={() => {
 					if (!currentAsc) {
 						let sorting = this._makeSorting({by: current,
@@ -265,13 +306,15 @@ export default class RecordList extends React.Component {
 						this.goTo({sorting});
 					}
 				}}
-				>
-					<NavigationArrowUpward key="sortAscArrow"
-						color={upwardColor} />
+				style={{float: "left", top: "3px"}}
+			>
+				<NavigationArrowUpward
+					color={upwardColor}
+					key="sortAscArrow"
+				/>
 			</IconButton>
 			<IconButton
 				key="sortDesc"
-				style={{float: "left", top: "3px"}}
 				onTouchTap={() => {
 					if (currentAsc) {
 						let sorting = this._makeSorting({by: current,
@@ -279,9 +322,12 @@ export default class RecordList extends React.Component {
 						this.goTo({sorting});
 					}
 				}}
-				>
-					<NavigationArrowDownward key="sortDescArrow"
-						color={downwardColor} />
+				style={{float: "left", top: "3px"}}
+			>
+				<NavigationArrowDownward
+					color={downwardColor}
+					key="sortDescArrow"
+				/>
 			</IconButton>
 		</ToolbarGroup>);
 	}
@@ -299,18 +345,19 @@ export default class RecordList extends React.Component {
 
 		return (
 			<Tabs
-				value={selectedModel}
 				onChange={value => this.goTo({
 					model: value,
 					page: "1",
-					sorting: this.props.sortingDefaults.get(value)
+					sorting: this.props.sortingDefaults.get(value),
 				})}
+				value={selectedModel}
 			>
-				{models.map(model => <Tab
-					key={`switch_to_${model.key}`}
-					value={model.key}
-					label={model.names[1]}
-				/>)}
+				{models.map(model =>
+					<Tab
+						key={`switch_to_${model.key}`}
+						label={model.names[1]}
+						value={model.key}
+					/>)}
 			</Tabs>
 		);
 	}
@@ -318,7 +365,9 @@ export default class RecordList extends React.Component {
 	render() {
 		let contents = (
 			<div style={{textAlign: "center"}}>
-				<CircularProgress mode="indeterminate" size={2} />
+				<CircularProgress mode="indeterminate"
+					size={2}
+				/>
 			</div>
 		);
 
@@ -339,9 +388,12 @@ export default class RecordList extends React.Component {
 							minWidth: "200px",
 							margin: "10px",
 							flexGrow: "1",
-						}} >
-						<Item key={id} record={record}
-							link={link} />
+						}}
+					>
+						<Item key={id}
+							link={link}
+							record={record}
+						/>
 					</li>
 				);
 
@@ -360,27 +412,25 @@ export default class RecordList extends React.Component {
 							alignItems: "stretch",
 							flexFlow: "row wrap",
 							height: "",
-							minHeight: "56px"
-						}}>
+							minHeight: "56px",
+						}}
+					>
 						{pagination}
 						{sorting}
-						<ToolbarGroup lastChild={true}>
+						<ToolbarGroup lastChild>
 							<RaisedButton
 								label="Recarregar"
-								primary={true}
 								onTouchTap={() => this._clearCache()}
+								primary
 							/>
 							<RaisedButton
 								label="Limpar"
-								style={{marginLeft: "0px"}}
-								secondary={true}
 								onTouchTap={() => this.goToRoot()}
+								secondary
+								style={{marginLeft: "0px"}}
 							/>
 							<Link to={this.searchHtml({})}>
-								<IconButton
-									tooltip="Link"
-									style={{top: "3px"}}
-								>
+								<IconButton style={{top: "3px"}}>
 									<SocialShare />
 								</IconButton>
 							</Link>
@@ -389,8 +439,9 @@ export default class RecordList extends React.Component {
 					<ul style={{
 						display: "flex",
 						flexFlow: "row wrap",
-						listStyle: "none"
-					}}>
+						listStyle: "none",
+					}}
+					>
 						{tiles}
 					</ul>
 				</div>

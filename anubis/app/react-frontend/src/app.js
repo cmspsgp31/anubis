@@ -73,7 +73,7 @@ export default class App extends React.Component {
 					open={showErrorDialog}
 					autoScrollBodyContent={true}
 					actions={
-						<RaisedButton 
+						<RaisedButton
 							label="Fechar"
 							primary={true}
 							onTouchTap={() => this.props.clearGlobalError()}
