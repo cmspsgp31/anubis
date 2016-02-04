@@ -111,7 +111,7 @@ System.config({
     "npm:flux-standard-action@0.6.0": {
       "lodash.isplainobject": "npm:lodash.isplainobject@3.2.0"
     },
-    "npm:history@2.0.0-rc2": {
+    "npm:history@2.0.0-rc3": {
       "child_process": "github:jspm/nodelibs-child_process@0.1.0",
       "deep-equal": "npm:deep-equal@1.0.1",
       "fs": "github:jspm/nodelibs-fs@0.1.2",
@@ -251,7 +251,7 @@ System.config({
     "npm:react-router@2.0.0-rc5": {
       "child_process": "github:jspm/nodelibs-child_process@0.1.0",
       "fs": "github:jspm/nodelibs-fs@0.1.2",
-      "history": "npm:history@2.0.0-rc2",
+      "history": "npm:history@2.0.0-rc3",
       "invariant": "npm:invariant@2.2.0",
       "process": "github:jspm/nodelibs-process@0.1.2",
       "warning": "npm:warning@2.1.0"
