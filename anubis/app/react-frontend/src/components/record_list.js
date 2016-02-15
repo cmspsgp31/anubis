@@ -1,5 +1,6 @@
 import React from 'react';
 import _ from 'lodash';
+import {PropTypes as RPropTypes} from 'react';
 import IPropTypes from 'react-immutable-proptypes';
 
 import {connect} from 'react-redux';
@@ -45,46 +46,52 @@ let getDispatchProps = dispatch => ({
 	setGlobalError: bindActionCreators(Actions.setGlobalError, dispatch),
 	goTo: url => dispatch(routeActions.push(url)),
 	replaceWith: url => dispatch(routeActions.replace(url)),
-})
+	enableEditor: bindActionCreators(Actions.enableEditor, dispatch),
+	disableEditor: bindActionCreators(Actions.disableEditor, dispatch),
+});
 
 @connect(getStateProps, getDispatchProps)
 export default class RecordList extends React.Component {
 	static propTypes = {
-		baseURL: React.PropTypes.string,
+		baseURL: RPropTypes.string,
 		cache: IPropTypes.map,
-		clearSearch: React.PropTypes.func,
-		clearSearchCache: React.PropTypes.func,
-		error: React.PropTypes.any,
-		fetchSearch: React.PropTypes.func,
-		goTo: React.PropTypes.func,
-		isSearch: React.PropTypes.bool,
-		modelName: React.PropTypes.string,
+		clearSearch: RPropTypes.func,
+		clearSearchCache: RPropTypes.func,
+		disableEditor: RPropTypes.func,
+		enableEditor: RPropTypes.func,
+		error: RPropTypes.any,
+		fetchSearch: RPropTypes.func,
+		goTo: RPropTypes.func,
+		isSearch: RPropTypes.bool,
+		modelName: RPropTypes.string,
 		models: IPropTypes.map,
 		pagination: IPropTypes.map,
-		params: React.PropTypes.shape({
-			splat: React.PropTypes.string,
-			model: React.PropTypes.string,
-			sorting: React.PropTypes.string,
-			page: React.PropTypes.string,
+		params: RPropTypes.shape({
+			splat: RPropTypes.string,
+			model: RPropTypes.string,
+			sorting: RPropTypes.string,
+			page: RPropTypes.string,
 		}),
-		replaceWith: React.PropTypes.func,
-		restoreSearch: React.PropTypes.func,
+		replaceWith: RPropTypes.func,
+		restoreSearch: RPropTypes.func,
 		results: IPropTypes.listOf(IPropTypes.map),
-		searchAndDetailsHtml: React.PropTypes.string,
-		searchApi: React.PropTypes.string,
-		searchHtml: React.PropTypes.string,
+		searchAndDetailsHtml: RPropTypes.string,
+		searchApi: RPropTypes.string,
+		searchHtml: RPropTypes.string,
 		searchResults: IPropTypes.map,
-		setGlobalError: React.PropTypes.func,
+		setGlobalError: RPropTypes.func,
 		sorting: IPropTypes.map,
 		sortingDefaults: IPropTypes.map,
-		templates: React.PropTypes.object,
+		templates: RPropTypes.object,
 	}
 
 	static contextTypes = {
-		muiTheme: React.PropTypes.object,
+		muiTheme: RPropTypes.object,
 	}
 
 	componentWillMount() {
+		this.props.enableEditor();
+
 		if (!this.props.isSearch) {
 			this.fetchSearch(this.props.params);
 		}
@@ -94,6 +101,8 @@ export default class RecordList extends React.Component {
 	}
 
 	componentDidUpdate(previousProps) {
+		this.props.enableEditor();
+
 		if (this.props.error) {
 			this.props.setGlobalError(this.props.error);
 			this.props.replaceWith(this.props.baseURL);
@@ -108,11 +117,8 @@ export default class RecordList extends React.Component {
 		let prevSearchParams = [prevParams.model, prevParams.splat,
 			prevParams.sorting, prevParams.page];
 
-		let same = _.reduce(
-			_.zipWith(searchParams, prevSearchParams, (a, b) => a == b),
-			(acc, elem) => acc && elem,
-			true
-		);
+		let same = _.zipWith(searchParams, prevSearchParams, (a, b) => a == b)
+			.every(x => x);
 
 		if (!same) {
 			this.props.clearSearch();
@@ -121,6 +127,8 @@ export default class RecordList extends React.Component {
 	}
 
 	componentWillUnmount() {
+		this.props.enableEditor();
+
 		if (this.props.isSearch) this.props.clearSearch();
 	}
 
@@ -152,7 +160,7 @@ export default class RecordList extends React.Component {
 		page = page || this.props.params.page;
 		sorting = sorting || this.props.params.sorting;
 
-		return eval("`" + this.props.searchHtml + "`")
+		return eval("`" + this.props.searchHtml + "`");
 	}
 
 	fetchSearch(params) {
@@ -166,7 +174,10 @@ export default class RecordList extends React.Component {
 			null;
 
 		if (cached) this.props.restoreSearch(cached);
-		else this.props.fetchSearch(this.searchApi);
+		else {
+			this.props.disableEditor();
+			this.props.fetchSearch(this.searchApi);
+		}
 	}
 
 	conditionalCache(params) {

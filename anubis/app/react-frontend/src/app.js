@@ -12,7 +12,7 @@ import {bindActionCreators} from 'redux';
 import Actions from 'actions';
 import Header from 'components/header';
 import Footer from 'components/footer';
-import TokenInput from 'components/token_input';
+import {TokenField} from 'components/TokenField/index';
 
 
 let getStateProps = state => ({
@@ -119,48 +119,35 @@ export default class App extends React.Component {
 	}
 
 	render() {
-		let linkDetails = this.detailsHtml("sessoes", 15748);
-		let linkSearch = this.searchHtml("sessoes", "1", "+realizacao",
-			'data,"11/2015"');
-		let linkSearch2 = this.searchHtml("sessoes", "1", "+realizacao",
-			'data,"11/2015"/texto_exato,"uber"');
-		let linkSearch3 = this.searchHtml("sessoes", "1", "+realizacao",
-			'data,"12/1980"');
+		let searchS = s => this.searchHtml("sessoes", "1", "+realizacao", s);
+		let searchV = s => this.searchHtml("volumes", "1", "+ano", s);
+
+		let buttons = [
+			[searchS('data,"11/2015"'), "Novembro/15"],
+			[searchS('data,"11/2015"/texto_exato,"uber"'),
+				"Novembro/15 + Uber"],
+			[searchS('data,"12/1980"'), "Dezembro/1980"],
+		];
 
 		return (
 			<div>
 				<Header />
 
-				<TokenInput params={this.props.params} />
+				<TokenField params={this.props.params} />
 
 				<div>
-					<Link to={linkDetails}>
-						<RaisedButton
-							style={{margin: "10px"}}
-							label="Sessão 15748"
-							primary={true} />
-					</Link>
-
-					<Link to={linkSearch}>
-						<RaisedButton
-							style={{margin: "10px"}}
-							label="Novembro/15"
-							primary={true} />
-					</Link>
-
-					<Link to={linkSearch2}>
-						<RaisedButton
-							style={{margin: "10px"}}
-							label="Novembro/15 + Uber"
-							primary={true} />
-					</Link>
-
-					<Link to={linkSearch3}>
-						<RaisedButton
-							style={{margin: "10px"}}
-							label="Dezembro/1980"
-							primary={true} />
-					</Link>
+					{buttons.map(([link, label], i) => (
+						<Link
+							key={`button_${i}`}
+							to={link}
+						>
+							<RaisedButton
+								label={label}
+								primary
+								style={{margin: "10px"}}
+							/>
+						</Link>
+					))}
 				</div>
 
 				{this.props.list}

@@ -1,5 +1,3 @@
-import I from 'immutable';
-
 export let App = {
 	ReducerMap: {
 		'SET_GLOBAL_ERROR': (state, action) => {
@@ -7,12 +5,12 @@ export let App = {
 				.set('globalError', action.payload)
 				.set('showErrorDetails', false);
 		},
-		'SHOW_GLOBAL_ERROR_DETAILS': (state, action) => {
+		'SHOW_GLOBAL_ERROR_DETAILS': state => {
 			return state.set('showErrorDetails', true);
 		},
-		'CLEAR_GLOBAL_ERROR': (state, action) => {
+		'CLEAR_GLOBAL_ERROR': state => {
 			return state.remove('globalError').remove('showErrorDetails');
-		}
+		},
 	},
-	keyPath: ['applicationData']
+	keyPath: ['applicationData'],
 }

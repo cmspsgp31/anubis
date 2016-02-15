@@ -42,11 +42,19 @@
   "eslintConfig": {
     "extends": "eslint:recommended",
     "parser": "babel-eslint",
+    "env": {
+      "browser": true,
+      "node": true
+    },
     "rules": {
       "strict": 0,
       "comma-dangle": [
         1,
         "always-multiline"
+      ],
+      "semi": [
+        2,
+        "always"
       ],
       "react/display-name": 0,
       "react/forbid-prop-types": 0,

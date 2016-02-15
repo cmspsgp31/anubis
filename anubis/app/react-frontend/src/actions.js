@@ -30,4 +30,10 @@ export default class Actions {
 	static showGlobalErrorDetails = createAction('SHOW_GLOBAL_ERROR_DETAILS');
 
 	static clearGlobalError = createAction('CLEAR_GLOBAL_ERROR');
+
+	static enableEditor = createAction('ENABLE_EDITOR');
+
+	static disableEditor = createAction('DISABLE_EDITOR');
+
+	static toggleEditor = createAction('TOGGLE_EDITOR');
 }

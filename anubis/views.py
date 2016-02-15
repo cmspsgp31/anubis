@@ -30,7 +30,7 @@ from functools import reduce
 from rest_framework.exceptions import NotAcceptable
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
-from rest_framework.serializers import ModelSerializer, Serializer
+from rest_framework.serializers import ModelSerializer
 from rest_framework.views import APIView
 
 from django.conf.urls import url
@@ -1109,12 +1109,8 @@ class AppViewMixin(StateViewMixin):
 
     def get_token_state(self):
         return {
-            "editorText": "",
-            "editorPosition": -1,
-            "tokenList": [],
-            "expression": "",
-            "parseTree": None,
-            "model": None
+            "canSearch": True,
+            "fieldsets": self.get_fieldsets()
         }
 
     def get_application_data(self):
@@ -1248,3 +1244,13 @@ class AppViewMixin(StateViewMixin):
 
             }
         }
+
+    def render_field(self, field):
+        return field.__class__.__name__
+
+    def get_fieldsets(self):
+        return {filter_name: {"description": filter_.description,
+                              "fields": [(name, self.render_field(f)) \
+                                         for name, f in filter_.fields.items()],
+                              "arg_count": len(filter_.field_keys)}
+                for filter_name, filter_ in self.get_filters().items()}

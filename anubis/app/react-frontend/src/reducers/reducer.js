@@ -4,8 +4,16 @@ import {handleActions} from 'redux-actions';
 import {Details, Search} from 'reducers/api_reducers';
 import {CacheDetails, CacheSearch} from 'reducers/cache_reducers';
 import {App} from 'reducers/application_reducers';
+import {Editor} from 'reducers/editor_reducers';
 
-export let appReducers = [Details, CacheDetails, Search, CacheSearch, App];
+export let appReducers = [
+	Details,
+	CacheDetails,
+	Search,
+	CacheSearch,
+	App,
+	Editor,
+];
 
 export function combineReducers(reducerMapList) {
 	let reducers = reducerMapList.map(({ReducerMap, ...data}) => {

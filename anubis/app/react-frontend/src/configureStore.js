@@ -1,11 +1,10 @@
-import React from 'react';
 import I from 'immutable';
 import promiseMiddleware from 'redux-promise';
 import reduceReducers from 'reduce-reducers';
 
 import {browserHistory} from 'react-router';
 import {syncHistory, routeReducer} from 'redux-simple-router';
-import {createStore, applyMiddleware, compose} from 'redux';
+import {createStore, applyMiddleware} from 'redux';
 
 import {combineReducers} from 'reducers/reducer';
 
@@ -13,7 +12,7 @@ export default function (reducers, initialState) {
 	let immState = I.fromJS(initialState);
 	let reduxRouterMiddleware = syncHistory(browserHistory);
 	let customRouteReducer = (state, action) => {
-		return state.updateIn("routing", value => routeReducer(value, action));
+		return state.update("routing", value => routeReducer(value, action));
 	};
 
 	let reducer = reduceReducers(combineReducers(reducers), customRouteReducer);
@@ -28,7 +27,7 @@ export default function (reducers, initialState) {
 		let selectState = state => state.get('routing');
 
 		reduxRouterMiddleware.listenForReplays(store, selectState);
-	}
+	};
 
 	return store;
 }
