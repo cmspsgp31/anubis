@@ -2,7 +2,7 @@ import React from 'react';
 import IPropTypes from 'react-immutable-proptypes';
 import {PropTypes as RPropTypes} from 'react';
 
-import {routeActions} from 'redux-simple-router';
+import {routeActions} from 'react-router-redux';
 
 export const tokenPropTypes = {
 	canSearch: RPropTypes.bool,
@@ -30,7 +30,7 @@ export const getDispatchProps = dispatch => ({
 	goTo: url => dispatch(routeActions.push(url)),
 });
 
-export class InternalTokenField extends React.Component {
+export class TokenEditor extends React.Component {
 	static propTypes = Object.assign({}, tokenPropTypes, {
 		disabled: RPropTypes.bool,
 		onBlur: RPropTypes.func,
@@ -38,6 +38,7 @@ export class InternalTokenField extends React.Component {
 		onFocus: RPropTypes.func,
 		onKeyDown: RPropTypes.func,
 		style: RPropTypes.object,
+		value: RPropTypes.string,
 	});
 
 	getInputNode() {

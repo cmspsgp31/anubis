@@ -3,7 +3,7 @@ import promiseMiddleware from 'redux-promise';
 import reduceReducers from 'reduce-reducers';
 
 import {browserHistory} from 'react-router';
-import {syncHistory, routeReducer} from 'redux-simple-router';
+import {syncHistory, routeReducer} from 'react-router-redux';
 import {createStore, applyMiddleware} from 'redux';
 
 import {combineReducers} from 'reducers/reducer';

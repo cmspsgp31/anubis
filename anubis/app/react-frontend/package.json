@@ -4,8 +4,7 @@
   "description": "Frontend for the Anubis library based on ReactJS.",
   "main": "src/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "node_modules/.bin/jspm install && node_modules/.bin/jspm bundle-sfx main build/anubis.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Ugo Pozo",
   "license": "GPL-3.0",
@@ -15,28 +14,28 @@
   },
   "jspm": {
     "dependencies": {
-      "babel-polyfill": "npm:babel-polyfill@^6.3.14",
-      "immutable": "npm:immutable@^3.7.6",
-      "lodash": "npm:lodash@^4.0.1",
-      "material-ui": "npm:material-ui@^0.14.3",
-      "react": "npm:react@^0.14.6",
-      "react-dom": "npm:react-dom@^0.14.6",
-      "react-immutable-proptypes": "npm:react-immutable-proptypes@^1.5.1",
-      "react-motion": "npm:react-motion@^0.3.1",
-      "react-redux": "npm:react-redux@^4.0.6",
-      "react-router": "npm:react-router@^2.0.0-rc5",
-      "react-tap-event-plugin": "npm:react-tap-event-plugin@^0.2.1",
-      "reduce-reducers": "npm:reduce-reducers@^0.1.1",
-      "redux": "npm:redux@^3.0.5",
-      "redux-actions": "npm:redux-actions@^0.9.0",
-      "redux-promise": "npm:redux-promise@^0.5.1",
-      "redux-simple-router": "npm:redux-simple-router@^2.0.3",
-      "whatwg-fetch": "npm:whatwg-fetch@^0.11.0"
+      "babel-polyfill": "npm:babel-polyfill@^6",
+      "immutable": "npm:immutable@^3",
+      "lodash": "npm:lodash@^4",
+      "material-ui": "npm:material-ui@^0.14",
+      "react": "npm:react@^0.14",
+      "react-dom": "npm:react-dom@^0.14",
+      "react-immutable-proptypes": "npm:react-immutable-proptypes@^1.5",
+      "react-motion": "npm:react-motion@^0.4",
+      "react-redux": "npm:react-redux@^4",
+      "react-router": "npm:react-router@^2",
+      "react-router-redux": "npm:react-router-redux@^2",
+      "react-tap-event-plugin": "npm:react-tap-event-plugin@^0.2",
+      "reduce-reducers": "npm:reduce-reducers@^0.1",
+      "redux": "npm:redux@^3",
+      "redux-actions": "npm:redux-actions@^0.9",
+      "redux-promise": "npm:redux-promise@^0.5",
+      "whatwg-fetch": "npm:whatwg-fetch@^0.11"
     },
     "devDependencies": {
-      "babel": "npm:babel-core@^5.8.24",
-      "babel-runtime": "npm:babel-runtime@^5.8.24",
-      "core-js": "npm:core-js@^1.1.4"
+      "babel": "npm:babel-core@^5",
+      "babel-runtime": "npm:babel-runtime@^5",
+      "core-js": "npm:core-js@^2"
     }
   },
   "eslintConfig": {
@@ -117,25 +116,27 @@
     ]
   },
   "devDependencies": {
-    "babel": "^6.3.26",
-    "babel-polyfill": "^6.3.14",
-    "babel-runtime": "^6.3.19",
-    "core-js": "^2.0.3",
-    "immutable": "^3.7.6",
-    "lodash": "^4.2.1",
-    "material-ui": "^0.14.4",
-    "react": "^0.14.7",
-    "react-dom": "^0.14.7",
-    "react-immutable-proptypes": "^1.5.1",
-    "react-motion": "^0.4.2",
-    "react-redux": "^4.2.1",
-    "react-router": "^2.0.0-rc5",
-    "react-tap-event-plugin": "^0.2.2",
-    "reduce-reducers": "^0.1.2",
-    "redux": "^3.2.1",
-    "redux-actions": "^0.9.1",
-    "redux-promise": "^0.5.1",
-    "redux-simple-router": "^2.0.4",
-    "whatwg-fetch": "^0.11.0"
+    "babel": "^5",
+    "babel-eslint": "^4.1.8",
+    "eslint-plugin-react": "^3.16.1",
+    "babel-polyfill": "^6",
+    "immutable": "^3",
+    "lodash": "^4",
+    "material-ui": "^0.14",
+    "react": "^0.14",
+    "react-dom": "^0.14",
+    "react-immutable-proptypes": "^1.5",
+    "react-motion": "^0.4",
+    "react-redux": "^4",
+    "react-router": "^2",
+    "react-tap-event-plugin": "^0.2",
+    "reduce-reducers": "^0.1",
+    "redux": "^3",
+    "redux-actions": "^0.9",
+    "redux-promise": "^0.5",
+    "react-router-redux": "^2",
+    "whatwg-fetch": "^0.11",
+    "babel-runtime": "^5",
+    "core-js": "^2"
   }
 }

@@ -1,7 +1,5 @@
 import React from 'react';
-import _ from 'lodash';
 import {PropTypes as RPropTypes} from 'react';
-import IPropTypes from 'react-immutable-proptypes';
 import {Paper} from 'material-ui';
 
 export default class Token extends React.Component {
@@ -37,8 +35,7 @@ export default class Token extends React.Component {
 			<Paper
 				style={this.style}
 				zDepth={1}
-			>
-			</Paper>
+			/>
 		);
 	}
 

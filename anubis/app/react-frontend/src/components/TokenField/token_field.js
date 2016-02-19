@@ -4,14 +4,17 @@ import React from 'react';
 import I from 'immutable';
 
 import {connect} from 'react-redux';
+
 import {TextField} from 'material-ui';
 
 import {
-	InternalTokenField,
+	TokenEditor,
 	tokenPropTypes,
 	getStateProps,
 	getDispatchProps,
-} from './internal_token_field';
+} from './token_editor';
+
+import UnitTokenSelector from './unit_token_selector';
 
 
 @connect(getStateProps, getDispatchProps)
@@ -83,13 +86,15 @@ export class TokenField extends React.Component {
 	}
 
 	handleSearch = () => {
-		this.props.goTo(this.searchHtml);
+		if (this.immState.get('textExpression') != "") {
+			this.props.goTo(this.searchHtml);
+		}
 	}
 
 	render() {
 		/*eslint-disable react/no-string-refs*/
-		let internalComp = (
-			<InternalTokenField
+		let editor = (
+			<TokenEditor
 				{...this.props}
 				ref="input"
 				value={this.immState.get('textExpression')}
@@ -121,9 +126,13 @@ export class TokenField extends React.Component {
 							minHeight: "72px",
 						}}
 					>
-						{internalComp}
+						{editor}
 					</TextField>
 				</div>
+
+				<UnitTokenSelector
+					onSearch={this.handleSearch}
+				/>
 			</div>
 		);
 	}

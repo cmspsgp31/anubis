@@ -9,7 +9,7 @@ import {RaisedButton, Toolbar, ToolbarGroup, CircularProgress, DropDownMenu,
 import {NavigationArrowUpward, NavigationArrowDownward,
 	SocialShare} from 'material-ui/lib/svg-icons';
 import {Link} from 'react-router';
-import {routeActions} from 'redux-simple-router';
+import {routeActions} from 'react-router-redux';
 import {bindActionCreators} from 'redux';
 
 import Actions from 'actions';

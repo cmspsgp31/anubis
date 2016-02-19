@@ -3,7 +3,6 @@ import 'whatwg-fetch';
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import I from 'immutable';
 import Babel from 'babel';
 import _ from 'lodash';
 import MaterialUI from 'material-ui';
@@ -11,9 +10,7 @@ import * as Icons from 'material-ui/lib/svg-icons';
 import injectTapEventPlugin from "react-tap-event-plugin";
 
 import {Provider} from 'react-redux';
-import {connect} from 'react-redux';
 import {Router, Route, browserHistory} from 'react-router';
-import {List, ListItem} from 'material-ui';
 import {Link} from 'react-router';
 
 import App from 'app';
@@ -27,7 +24,7 @@ function compile(code, vars, returnWhat) {
 	let [globals, args] = _.reduce(
 		vars,
 		([globals, args], global, arg) => [
-			_.concat(globals, global), _.concat(args, arg)
+			_.concat(globals, global), _.concat(args, arg),
 		],
 		[[], []]
 	);

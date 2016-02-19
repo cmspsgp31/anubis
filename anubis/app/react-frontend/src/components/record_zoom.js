@@ -4,7 +4,7 @@ import IPropTypes from 'react-immutable-proptypes';
 
 import {connect} from 'react-redux';
 import {Dialog, FlatButton, CircularProgress} from 'material-ui';
-import {routeActions} from 'redux-simple-router';
+import {routeActions} from 'react-router-redux';
 import {bindActionCreators} from 'redux';
 
 import Actions from 'actions';
