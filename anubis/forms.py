@@ -19,6 +19,35 @@
 # este programa. Se não, consulte <http://www.gnu.org/licenses/>.
 
 from django import forms
+from rest_framework import serializers
+
+class FieldSerializer(serializers.Serializer):
+    ui_element = serializers.SerializerMethodField('get_ui_element')
+    required = serializers.BooleanField()
+    label = serializers.CharField()
+    label_suffix = serializers.CharField()
+    help_text = serializers.CharField()
+    choices = serializers.SerializerMethodField('get_choices')
+    is_numeric = serializers.SerializerMethodField('get_is_numeric')
+
+    def get_ui_element(self, obj):
+        if isinstance(obj, forms.DateField):
+            return "DatePicker"
+        elif isinstance(obj, forms.ChoiceField):
+            return "SelectField"
+        else:
+            return "TextField"
+
+    def get_choices(self, obj):
+        choices = None
+
+        if isinstance(obj, forms.ChoiceField):
+            choices = obj.choices
+
+        return choices
+
+    def get_is_numeric(self, obj):
+        return isinstance(obj, (forms.IntegerField, forms.FloatField))
 
 
 class FilterForm(forms.Form):

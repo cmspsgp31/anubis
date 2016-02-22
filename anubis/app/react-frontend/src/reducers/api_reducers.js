@@ -10,9 +10,9 @@ export let Details = {
 
 			return action.payload;
 		},
-		'CLEAR_DETAILS': (state, action) => null
+		'CLEAR_DETAILS': () => null,
 	},
-	keyPath: ["details"]
+	keyPath: ["details"],
 };
 
 export let Search = {
@@ -24,8 +24,8 @@ export let Search = {
 
 			return action.payload;
 		},
-		'CLEAR_SEARCH': (state, action) => (I.fromJS({
-			expression: null,
+		'CLEAR_SEARCH': state => (I.fromJS({
+			expression: [],
 			textExpression: "",
 			pagination: null,
 			actions: {},
@@ -33,8 +33,8 @@ export let Search = {
 			model: state.get('model'),
 			results: [],
 			sorting: { by: null, ascending: true },
-			selection: []
-		}))
+			selection: [],
+		})),
 	},
-	keyPath: ["searchResults"]
+	keyPath: ["searchResults"],
 };

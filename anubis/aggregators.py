@@ -98,6 +98,78 @@ class QuerySetAggregator(Aggregator):
     def handle_impossible_case(self):
         return self.base_queryset
 
+class ListAggregator(Aggregator):
+    not_token = {
+        "key": "__NOT__"
+    }
+
+    and_token = {
+        "key": "__AND__"
+    }
+
+    or_token = {
+        "key": "__OR__"
+    }
+
+    left_parens_token = {
+        "key": "__LPARENS__"
+    }
+
+    right_parens_token = {
+        "key": "__RPARENS__"
+    }
+
+    def __init__(self, filters):
+        super().__init__()
+        self.filters = filters
+
+    def handle_base_expression(self, base_expression):
+        filter_ = self.filters[base_expression["field"]]
+        args = base_expression["args"]
+        form = filter_.bound_form(args)
+
+        field_data = {
+            "key": filter_.identifier,
+            "args": args,
+        }
+
+        if not form.is_valid():
+            field_data["errors"] = form.errors
+
+        return [field_data]
+
+    def handle_not_expression(self, not_expression, need_parens):
+        if need_parens:
+            not_expression = [self.left_parens_token] + not_expression + \
+                [self.right_parens_token]
+
+        return [self.not_token] + not_expression
+
+    def handle_and_expression(self, left_expression, right_expression,
+                              left_parens, right_parens):
+        if left_parens:
+            left_expression = [self.left_parens_token] + left_expression + \
+                [self.right_parens_token]
+
+        if right_parens:
+            right_expression = [self.left_parens_token] + right_expression + \
+                [self.right_parens_token]
+
+        return left_expression + [self.and_token] + right_expression
+
+    def handle_or_expression(self, left_expression, right_expression,
+                              left_parens, right_parens):
+        if left_parens:
+            left_expression = [self.left_parens_token] + left_expression + \
+                [self.right_parens_token]
+
+        if right_parens:
+            right_expression = [self.left_parens_token] + right_expression + \
+                [self.right_parens_token]
+
+        return left_expression + [self.or_token] + right_expression
+
+
 
 class TokenAggregator(Aggregator):
     def __init__(self, allowed_filters):

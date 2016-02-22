@@ -40,9 +40,11 @@ from django.core.exceptions import ImproperlyConfigured
 from django.http.response import HttpResponseForbidden
 from django.utils.translation import ugettext as _
 
-from anubis.aggregators import QuerySetAggregator, TokenAggregator
+from anubis.aggregators import QuerySetAggregator, TokenAggregator, \
+    ListAggregator
 from anubis.filters import Filter, ConversionFilter
 from anubis.url import BooleanBuilder
+from anubis.forms import FieldSerializer
 
 def load_template(template, type_="html"):
     from django.template.utils import EngineHandler
@@ -873,7 +875,7 @@ class StateViewMixin:
             except self.model.DoesNotExist:
                 details_obj = None
             else:
-                context = { "request": self.request }
+                context = {"request": self.request}
 
                 serializer = self \
                     .get_details_serializer_class()(details_obj,
@@ -881,15 +883,19 @@ class StateViewMixin:
 
                 details_obj = serializer.data
 
-            return { "object": details_obj, "model": self._model_key }
+            return {"object": details_obj, "model": self._model_key}
         else:
             return None
 
     def get_search_results(self):
         # TODO: textExpression should be computed from the parsed
         # boolean_expression.
-        expression = self.boolean_expression
+
+        aggregator = ListAggregator(self.get_filters())
         visible = self.boolean_expression is not None
+
+        expression = self.boolean_expression.traverse(aggregator) \
+            if visible else []
 
         return {
             "expression": expression,
@@ -1227,30 +1233,14 @@ class AppViewMixin(StateViewMixin):
 
             "sortingDefaults": sorting_default,
 
-            "theme": {
-                "spacing": {
-                    "iconSize": 24,
-                    "desktopGutter": 24,
-                    "desktopGutterMore": 32,
-                    "desktopGutterLess": 16,
-                    "desktopGutterMini": 8,
-                    "desktopKeylineIncrement": 64,
-                    "desktopDropDownMenuItemHeight": 32,
-                    "desktopDropDownMenuFontSize": 15,
-                    "desktopLeftNavMenuItemHeight": 48,
-                    "desktopSubheaderHeight": 48,
-                    "desktopToolbarHeight": 56,
-                },
-
-            }
         }
 
     def render_field(self, field):
-        return field.__class__.__name__
+        return FieldSerializer(field).data
 
     def get_fieldsets(self):
         return {filter_name: {"description": filter_.description,
-                              "fields": [(name, self.render_field(f)) \
-                                         for name, f in filter_.fields.items()],
+                              "fields": [self.render_field(filter_.fields[n]) \
+                                         for n in filter_.field_keys],
                               "arg_count": len(filter_.field_keys)}
                 for filter_name, filter_ in self.get_filters().items()}

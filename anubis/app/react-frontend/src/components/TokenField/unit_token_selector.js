@@ -1,6 +1,7 @@
 /* eslint-disable react/no-set-state */
 
 import React from 'react';
+import _ from 'lodash';
 import {FloatingActionButton} from 'material-ui';
 import {TransitionMotion, spring} from 'react-motion';
 
@@ -41,7 +42,10 @@ export default class UnitTokenSelector extends React.Component {
 	}
 
 	itemStyle = {
-		margin: "12px 0 0 0",
+		marginTop: "12px",
+		marginLeft: 0,
+		marginRight: 0,
+		marginBottom: 0,
 	}
 
 	get style() {
@@ -86,28 +90,6 @@ export default class UnitTokenSelector extends React.Component {
 		}
 	}
 
-	submenuItems() {
-		let items = [
-			<FloatingActionButton
-				key="add_button"
-				mini
-				secondary
-				style={this.itemStyle}
-			>
-				<ContentAdd />
-			</FloatingActionButton>,
-			<FloatingActionButton
-				key="search_button"
-				mini
-				secondary
-				style={this.itemStyle}
-			>
-				<ActionSearch />
-			</FloatingActionButton>,
-		];
-
-		return items;
-	}
 
 	renderFAB() {
 		let isExpanded = this.state.expandFAB;
@@ -162,7 +144,8 @@ export default class UnitTokenSelector extends React.Component {
 			opacity: conf.style.opacity/100,
 			display: "inline-block",
 			marginLeft: (i > 0) ? "-56px" : 0,
-			zIndex: (i > 0) ? 9002 : 9001,
+			zIndex: (i > 0) ? 9003 : 9002,
+			position: "relative",
 		};
 
 		return (
@@ -180,12 +163,60 @@ export default class UnitTokenSelector extends React.Component {
 	}
 
 	render() {
-		return (
-			<div style={this.style}>
-				{this.renderFAB()}
+		/*eslint-disable react/jsx-key*/
+		let icons = [
+			['add_button', <ContentAdd />],
+			['search_button', <ActionSearch />],
+		];
+		/*eslint-enable react/jsx-key*/
 
-				{this.state.expandFAB && this.submenuItems()}
-			</div>
+		/*eslint-disable comma-dangle*/
+		let keys = icons.map(([key, ]) => key);
+		/*eslint-enable comma-dangle*/
+
+		icons = _.fromPairs(icons);
+
+		let styles = (this.state.expandFAB) ? keys.map(key => ({
+			key,
+			style: { offset: spring(0, {precision: 0.6}) },
+		})) : [];
+
+		return (
+			<TransitionMotion
+				styles={styles}
+				willEnter={() => ({offset: 60})}
+				willLeave={() => ({offset: spring(60, {precision: 0.6})})}
+			>
+				{styles =>
+					<div style={this.style}>
+						{this.renderFAB()}
+
+						{styles.map(({key, style: s}) => {
+							let icon = icons[key];
+							let style = {
+								...this.itemStyle,
+								marginBottom: `-${s.offset}px`,
+								zIndex: 9001,
+								position: "relative",
+							};
+
+							return (
+								<div
+									key={key}
+									style={style}
+								>
+									<FloatingActionButton
+										mini
+										secondary
+									>
+										{icon}
+									</FloatingActionButton>
+								</div>
+							);
+						})}
+					</div>
+				}
+			</TransitionMotion>
 		);
 	}
 }

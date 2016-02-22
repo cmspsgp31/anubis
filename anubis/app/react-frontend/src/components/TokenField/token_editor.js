@@ -24,6 +24,7 @@ export const getStateProps = state => ({
 	defaultModel: state.getIn(['applicationData', 'defaultModel']),
 	sortingDefaults: state.getIn(['applicationData', 'sortingDefaults']),
 	canSearch: state.getIn(['tokenEditor', 'canSearch']),
+	fields: state.getIn(['tokenEditor', 'fieldsets']),
 });
 
 export const getDispatchProps = dispatch => ({
@@ -39,6 +40,13 @@ export class TokenEditor extends React.Component {
 		onKeyDown: RPropTypes.func,
 		style: RPropTypes.object,
 		value: RPropTypes.string,
+		fields: IPropTypes.map,
+		expression: IPropTypes.listOf(
+			IPropTypes.contains({
+				key: RPropTypes.string.isRequired,
+				args: IPropTypes.listOf(RPropTypes.string),
+			}),
+		),
 	});
 
 	getInputNode() {
@@ -47,6 +55,27 @@ export class TokenEditor extends React.Component {
 
 	setValue(value) {
 		this.lead = value;
+	}
+
+	get inputProps() {
+		let {disabled, onBlur, onChange, onFocus, onKeyDown} = this.props;
+
+		return {disabled, onBlur, onChange, onFocus, onKeyDown};
+	}
+
+	get tokens() {
+		return this.props.expression.map(obj => {
+			let key = obj.get('key');
+			let field = this.props.fields.get(key);
+			let values = obj.get('args', null);
+
+			if (!field) field = {key};
+			else field = field.toJS();
+
+			if (values && values.toJS) values = values.toJS();
+
+			return {...field, values};
+		}).toJS();
 	}
 
 	render() {
@@ -60,6 +89,8 @@ export class TokenEditor extends React.Component {
 			marginTop: "35px",
 			border: "1px solid black",
 		});
+
+		console.log(this.tokens);
 
 		return (
 			<div
