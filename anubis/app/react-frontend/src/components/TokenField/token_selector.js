@@ -110,7 +110,7 @@ export default class UnitTokenSelector extends React.Component {
 			key: (isExpanded) ? "close" : "search",
 			data: icon,
 			style: {
-				rotate: spring(0, config.rotation),
+				rotate: spring((isExpanded) ? 360 : 0, config.rotation),
 				opacity: spring(100, config.opacity),
 			},
 		};
@@ -119,11 +119,11 @@ export default class UnitTokenSelector extends React.Component {
 			<TransitionMotion
 				styles={[style]}
 				willEnter={() => ({
-					rotate: 360,
+					rotate: (isExpanded) ? 0 : 360,
 					opacity: 0,
 				})}
 				willLeave={() => ({
-					rotate: spring(360, config.rotation),
+					rotate: spring((isExpanded) ? 0 : 360, config.rotation),
 					opacity: spring(0, config.opacity),
 				})}
 			>

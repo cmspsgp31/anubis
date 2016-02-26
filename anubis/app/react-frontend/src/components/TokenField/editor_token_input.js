@@ -24,7 +24,7 @@ export const getStateProps = state => ({
 	defaultModel: state.getIn(['applicationData', 'defaultModel']),
 	sortingDefaults: state.getIn(['applicationData', 'sortingDefaults']),
 	canSearch: state.getIn(['tokenEditor', 'canSearch']),
-	fields: state.getIn(['tokenEditor', 'fieldsets']),
+	fieldsets: state.getIn(['tokenEditor', 'fieldsets']),
 });
 
 export const getDispatchProps = dispatch => ({
@@ -40,7 +40,7 @@ export class TokenEditor extends React.Component {
 		onKeyDown: RPropTypes.func,
 		style: RPropTypes.object,
 		value: RPropTypes.string,
-		fields: IPropTypes.map,
+		fieldsets: IPropTypes.map,
 		expression: IPropTypes.listOf(
 			IPropTypes.contains({
 				key: RPropTypes.string.isRequired,
@@ -66,15 +66,15 @@ export class TokenEditor extends React.Component {
 	get tokens() {
 		return this.props.expression.map(obj => {
 			let key = obj.get('key');
-			let field = this.props.fields.get(key);
+			let fieldset = this.props.fieldsets.get(key);
 			let values = obj.get('args', null);
 
-			if (!field) field = {key};
-			else field = field.toJS();
+			if (!fieldset) fieldset = {key};
+			else fieldset = fieldset.toJS();
 
 			if (values && values.toJS) values = values.toJS();
 
-			return {...field, values};
+			return {...fieldset, values, key};
 		}).toJS();
 	}
 
@@ -96,6 +96,11 @@ export class TokenEditor extends React.Component {
 			<div
 				style={style}
 			>
+				{this.tokens.map(({key}) =>
+					<div>
+					</div>
+				)}
+
 				<input
 					disabled={this.props.disabled}
 					onBlur={this.props.onBlur}

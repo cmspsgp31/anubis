@@ -1242,5 +1242,6 @@ class AppViewMixin(StateViewMixin):
         return {filter_name: {"description": filter_.description,
                               "fields": [self.render_field(filter_.fields[n]) \
                                          for n in filter_.field_keys],
-                              "arg_count": len(filter_.field_keys)}
+                              # "arg_count": len(filter_.field_keys)
+                              }
                 for filter_name, filter_ in self.get_filters().items()}

@@ -25,7 +25,6 @@ class FieldSerializer(serializers.Serializer):
     ui_element = serializers.SerializerMethodField('get_ui_element')
     required = serializers.BooleanField()
     label = serializers.CharField()
-    label_suffix = serializers.CharField()
     help_text = serializers.CharField()
     choices = serializers.SerializerMethodField('get_choices')
     is_numeric = serializers.SerializerMethodField('get_is_numeric')

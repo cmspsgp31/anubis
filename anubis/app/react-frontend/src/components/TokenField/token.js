@@ -27,7 +27,14 @@ export default class Token extends React.Component {
 
 	get style() {
 		return Object.assign({}, this.baseStyle, this.props.style);
-		// return _.merge(this.baseStyle, this.props.style);
+	}
+
+	get expr() {
+		return null;
+	}
+
+	renderContents() {
+		return "";
 	}
 
 	render() {
@@ -35,7 +42,9 @@ export default class Token extends React.Component {
 			<Paper
 				style={this.style}
 				zDepth={1}
-			/>
+			>
+				{this.renderContents()}
+			</Paper>
 		);
 	}
 
