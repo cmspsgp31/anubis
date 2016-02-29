@@ -25,9 +25,18 @@ class FieldSerializer(serializers.Serializer):
     ui_element = serializers.SerializerMethodField('get_ui_element')
     required = serializers.BooleanField()
     label = serializers.CharField()
-    help_text = serializers.CharField()
+    help_text = serializers.SerializerMethodField('get_help_text')
     choices = serializers.SerializerMethodField('get_choices')
     is_numeric = serializers.SerializerMethodField('get_is_numeric')
+    initial = serializers.SerializerMethodField('get_initial')
+
+    def get_help_text(self, obj):
+        if "placeholder" in obj.widget.attrs.keys() and \
+                obj.help_text == "":
+            return obj.widget.attrs["placeholder"]
+
+        return obj.help_text
+
 
     def get_ui_element(self, obj):
         if isinstance(obj, forms.DateField):
@@ -47,6 +56,9 @@ class FieldSerializer(serializers.Serializer):
 
     def get_is_numeric(self, obj):
         return isinstance(obj, (forms.IntegerField, forms.FloatField))
+
+    def get_initial(self, obj):
+        return obj.initial if obj.initial is not None else ""
 
 
 class FilterForm(forms.Form):

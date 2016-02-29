@@ -143,31 +143,31 @@ class ListAggregator(Aggregator):
             not_expression = [self.left_parens_token] + not_expression + \
                 [self.right_parens_token]
 
-        return [self.not_token] + not_expression
+        return [dict(self.not_token)] + not_expression
 
     def handle_and_expression(self, left_expression, right_expression,
                               left_parens, right_parens):
         if left_parens:
-            left_expression = [self.left_parens_token] + left_expression + \
-                [self.right_parens_token]
+            left_expression = [dict(self.left_parens_token)] + \
+                left_expression + [dict(self.right_parens_token)]
 
         if right_parens:
-            right_expression = [self.left_parens_token] + right_expression + \
-                [self.right_parens_token]
+            right_expression = [dict(self.left_parens_token)] + \
+                right_expression + [dict(self.right_parens_token)]
 
-        return left_expression + [self.and_token] + right_expression
+        return left_expression + [dict(self.and_token)] + right_expression
 
     def handle_or_expression(self, left_expression, right_expression,
                               left_parens, right_parens):
         if left_parens:
-            left_expression = [self.left_parens_token] + left_expression + \
-                [self.right_parens_token]
+            left_expression = [dict(self.left_parens_token)] + \
+                left_expression + [dict(self.right_parens_token)]
 
         if right_parens:
-            right_expression = [self.left_parens_token] + right_expression + \
-                [self.right_parens_token]
+            right_expression = [dict(self.left_parens_token)] + \
+                right_expression + [dict(self.right_parens_token)]
 
-        return left_expression + [self.or_token] + right_expression
+        return left_expression + [dict(self.or_token)] + right_expression
 
 
 

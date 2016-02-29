@@ -1,18 +1,17 @@
 import React from 'react';
 import I from 'immutable';
-import _ from 'lodash';
 import AppTheme from 'material-ui/lib/styles/raw-themes/light-raw-theme';
 import ThemeManager from 'material-ui/lib/styles/theme-manager';
 
 import {Paper, RaisedButton, Dialog, Snackbar} from 'material-ui';
 import {connect} from 'react-redux';
-import {Link, RouteHandler} from 'react-router';
+import {Link} from 'react-router';
 import {bindActionCreators} from 'redux';
 
 import Actions from 'actions';
 import Header from 'components/header';
 import Footer from 'components/footer';
-import {TokenField} from 'components/TokenField/index';
+import TokenField from 'components/TokenField';
 
 
 let getStateProps = state => ({
@@ -127,6 +126,7 @@ export default class App extends React.Component {
 			[searchS('data,"11/2015"/texto_exato,"uber"'),
 				"Novembro/15 + Uber"],
 			[searchS('data,"12/1980"'), "Dezembro/1980"],
+			[searchS('!dados_sessao,"","1",""/data,"11/2015"/(texto_exato,"uber"+texto_exato,"táxi")'), "Pesquisa Complexa"],
 		];
 
 		return (
@@ -134,21 +134,6 @@ export default class App extends React.Component {
 				<Header />
 
 				<TokenField params={this.props.params} />
-
-				<div>
-					{buttons.map(([link, label], i) => (
-						<Link
-							key={`button_${i}`}
-							to={link}
-						>
-							<RaisedButton
-								label={label}
-								primary
-								style={{margin: "10px"}}
-							/>
-						</Link>
-					))}
-				</div>
 
 				{this.props.list}
 				{this.props.zoom}

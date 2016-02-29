@@ -21,6 +21,7 @@ System.config({
     "babel-runtime": "npm:babel-runtime@5.8.35",
     "core-js": "npm:core-js@1.2.6",
     "immutable": "npm:immutable@3.7.6",
+    "intl": "npm:intl@1.1.0",
     "lodash": "npm:lodash@4.5.0",
     "material-ui": "npm:material-ui@0.14.4",
     "react": "npm:react@0.14.7",
@@ -129,6 +130,9 @@ System.config({
     },
     "npm:inline-style-prefixer@0.6.7": {
       "bowser": "npm:bowser@1.0.0",
+      "process": "github:jspm/nodelibs-process@0.1.2"
+    },
+    "npm:intl@1.1.0": {
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
     "npm:invariant@2.2.0": {

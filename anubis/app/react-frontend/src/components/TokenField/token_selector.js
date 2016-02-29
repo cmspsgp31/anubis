@@ -13,7 +13,7 @@ import {
 
 import {PropTypes as RPropTypes} from 'react';
 
-export default class UnitTokenSelector extends React.Component {
+export default class TokenSelector extends React.Component {
 	static propTypes = {
 		onSearch: RPropTypes.func.isRequired,
 		style: RPropTypes.object,

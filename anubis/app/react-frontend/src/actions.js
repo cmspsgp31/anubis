@@ -36,4 +36,14 @@ export default class Actions {
 	static disableEditor = createAction('DISABLE_EDITOR');
 
 	static toggleEditor = createAction('TOGGLE_EDITOR');
+
+	static modifyInnerFieldEditor = createAction('MODIFY_INNER_FIELD_EDITOR');
+
+	static moveTokenEditor = createAction('MOVE_TOKEN_EDITOR');
+
+	static createTokenEditor = createAction('CREATE_TOKEN_EDITOR');
+
+	static deleteTokenEditor = createAction('DELETE_TOKEN_EDITOR');
+
+	static setTextExpressionEditor = createAction('SET_TEXT_EXPRESSION_EDITOR');
 }

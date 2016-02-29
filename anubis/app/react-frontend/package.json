@@ -16,6 +16,7 @@
     "dependencies": {
       "babel-polyfill": "npm:babel-polyfill@^6",
       "immutable": "npm:immutable@^3",
+      "intl": "npm:intl@^1.1.0",
       "lodash": "npm:lodash@^4",
       "material-ui": "npm:material-ui@^0.14",
       "react": "npm:react@^0.14",

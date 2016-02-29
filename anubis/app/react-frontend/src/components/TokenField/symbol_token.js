@@ -1,17 +1,26 @@
 import React from 'react';
 import Token from './token';
+import {Styles} from 'material-ui';
 
 class SymbolToken extends Token {
 	static key = null;
 
 	repr = null;
 
+	color = null;
+
 	get keyCodes() {
 		return [];
 	}
 
+	get baseStyle() {
+		return Object.assign({}, super.baseStyle, this.uppercaseStyle, {
+			backgroundColor: this.color,
+		});
+	}
+
 	renderContents() {
-		return <p>{this.repr}</p>;
+		return <p style={{display: "inline-block"}}>{this.repr}</p>;
 	}
 }
 
@@ -20,7 +29,9 @@ export class AndToken extends SymbolToken {
 
 	repr = "E";
 
-	get expr() {
+	color = Styles.Colors.cyan600;
+
+	static expr() {
 		return "/";
 	}
 }
@@ -30,7 +41,9 @@ export class OrToken extends SymbolToken {
 
 	repr = "OU";
 
-	get expr() {
+	color = Styles.Colors.teal400;
+
+	static expr() {
 		return "+";
 	}
 }
@@ -40,7 +53,9 @@ export class NotToken extends SymbolToken {
 
 	repr = "NÃO";
 
-	get expr() {
+	color = Styles.Colors.red400;
+
+	static expr() {
 		return "!";
 	}
 }
@@ -50,7 +65,9 @@ export class LeftParensToken extends SymbolToken {
 
 	repr = "(";
 
-	get expr() {
+	color = Styles.Colors.orange800;
+
+	static expr() {
 		return "(";
 	}
 }
@@ -60,7 +77,9 @@ export class RightParensToken extends SymbolToken {
 
 	repr = ")";
 
-	get expr() {
+	color = Styles.Colors.orange800;
+
+	static expr() {
 		return ")";
 	}
 }

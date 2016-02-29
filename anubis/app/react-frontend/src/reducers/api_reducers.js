@@ -27,6 +27,7 @@ export let Search = {
 		'CLEAR_SEARCH': state => (I.fromJS({
 			expression: [],
 			textExpression: "",
+			position: 0,
 			pagination: null,
 			actions: {},
 			visible: false,

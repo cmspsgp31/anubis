@@ -509,6 +509,9 @@ class StateViewMixin:
         search_slug (str): A slug to put on URLs when performing searches.
         sorting_options (List[str]): A list of possible sorting options. Pass
             :const:`None` to disallow sorting.
+        default_filter (str): The default filter to perform a search if text
+            is entered on the filter selector area and a search is performed.
+            If :const:`None`, defaults to the first key of the first model.
     """
 
     base_url = ""
@@ -522,6 +525,7 @@ class StateViewMixin:
 
     expression_parameter = "search"
     filters = {}
+    default_filter = None
 
     objects_per_page = None
     page_parameter = "page"
@@ -534,6 +538,7 @@ class StateViewMixin:
     sorting_options = None
     sorting_parameter = "sorted_by"
     sorting_default = None
+
 
     class _UserSerializer(ModelSerializer):
         class Meta:
@@ -897,7 +902,11 @@ class StateViewMixin:
         expression = self.boolean_expression.traverse(aggregator) \
             if visible else []
 
+        for i, unit in enumerate(expression):
+            unit.update({"index": i})
+
         return {
+            "position": len(expression),
             "expression": expression,
             "textExpression": self.kwargs.get(self.expression_parameter, ""),
             "pagination": self.get_pagination(),
@@ -1116,7 +1125,7 @@ class AppViewMixin(StateViewMixin):
     def get_token_state(self):
         return {
             "canSearch": True,
-            "fieldsets": self.get_fieldsets()
+            "fieldsets": self.get_fieldsets(),
         }
 
     def get_application_data(self):
@@ -1230,6 +1239,7 @@ class AppViewMixin(StateViewMixin):
             "searchAndDetailsApi": react_search_and_details_api,
 
             "defaultModel": default_model,
+            "defaultFilter": self.get_default_filter(),
 
             "sortingDefaults": sorting_default,
 
@@ -1242,6 +1252,14 @@ class AppViewMixin(StateViewMixin):
         return {filter_name: {"description": filter_.description,
                               "fields": [self.render_field(filter_.fields[n]) \
                                          for n in filter_.field_keys],
-                              # "arg_count": len(filter_.field_keys)
                               }
                 for filter_name, filter_ in self.get_filters().items()}
+
+    def get_default_filter(self):
+        if self.default_filter is not None:
+            return self.default_filter
+
+        keys = self.get_filters().keys()
+
+        return keys[0]
+

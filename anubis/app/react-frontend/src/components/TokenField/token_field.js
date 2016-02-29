@@ -1,140 +1,151 @@
-/* eslint-disable react/no-set-state */
-
+/* eslint-disable react/no-string-refs */
 import React from 'react';
-import I from 'immutable';
+import IPropTypes from 'react-immutable-proptypes';
 
 import {connect} from 'react-redux';
-
 import {TextField} from 'material-ui';
+import {PropTypes as RPropTypes} from 'react';
+import {bindActionCreators} from 'redux';
+import {routeActions} from 'react-router-redux';
 
-import {
-	TokenEditor,
-	tokenPropTypes,
-	getStateProps,
-	getDispatchProps,
-} from './token_editor';
+import TokenList from './token_list';
+import TokenSelector from './token_selector';
+import Actions from 'actions';
 
-import UnitTokenSelector from './unit_token_selector';
+const getStateProps = state => ({
+	defaultModel: state.getIn(['applicationData', 'defaultModel']),
+	modelName: state.getIn(['searchResults', 'model']),
+	models: state.get('models'),
+	searchHtml: state.getIn(['applicationData', 'searchHtml']),
+	sortingDefaults: state.getIn(['applicationData', 'sortingDefaults']),
+	tokenListStateProps: {
+		canSearch: state.getIn(['tokenEditor', 'canSearch']),
+		defaultFilter: state.getIn(['applicationData', 'defaultFilter']),
+		expression: state.getIn(['searchResults', 'expression']),
+		fieldsets: state.getIn(['tokenEditor', 'fieldsets']),
+		position: state.getIn(['searchResults', 'position']),
+	},
+	textExpression: state.getIn(['searchResults', 'textExpression']),
+});
 
+const getDispatchProps = dispatch => ({
+	goTo: url => dispatch(routeActions.push(url)),
+	tokenListDispatchProps: {
+		modifyInnerFieldEditor: bindActionCreators(
+			Actions.modifyInnerFieldEditor, dispatch),
+		moveTokenEditor: bindActionCreators(Actions.moveTokenEditor, dispatch),
+		createTokenEditor: bindActionCreators(Actions.createTokenEditor,
+			dispatch),
+		deleteTokenEditor: bindActionCreators(Actions.deleteTokenEditor,
+			dispatch),
+		setTextExpressionEditor: bindActionCreators(
+			Actions.setTextExpressionEditor, dispatch),
+	},
+});
 
 @connect(getStateProps, getDispatchProps)
-export class TokenField extends React.Component {
-	static propTypes = tokenPropTypes;
-
-	constructor(props) {
-		super(props);
-
-		this.state = {
-			state: I.fromJS({
-				"textExpression": "",
-			}),
-		};
+export default class TokenField extends React.Component {
+	static propTypes = {
+		defaultModel: RPropTypes.string,
+		goTo: RPropTypes.func,
+		modelName: RPropTypes.string,
+		models: IPropTypes.mapOf({
+			names: IPropTypes.listOf(RPropTypes.string),
+			order: RPropTypes.number,
+		}),
+		params: RPropTypes.shape({
+			splat: RPropTypes.string,
+			model: RPropTypes.string,
+			sorting: RPropTypes.string,
+			page: RPropTypes.string,
+		}),
+		searchHtml: RPropTypes.string,
+		sortingDefaults: IPropTypes.map,
+		textExpression: RPropTypes.string,
+		tokenListDispatchProps: IPropTypes.map,
+		tokenListStateProps: IPropTypes.map,
 	}
 
-	componentWillMount() {
-		this.setStateFromProps();
-	}
-
-	componentDidUpdate(previousProps) {
-		if (this.arePropsDiff(previousProps, this.props)) {
-			this.setStateFromProps();
-		}
-	}
-
-	arePropsDiff(prev, curr) {
-		let compareKeys = ["textExpression", "canSearch"];
-
-		let comparison = key => (curr[key] instanceof I.Collection) ?
-			!curr[key].equals(prev[key]) :
-			curr[key] != prev[key];
-
-		return compareKeys.some(comparison);
-	}
-
-	setStateFromProps() {
-		this.immState = s => s.merge(I.fromJS({
-			textExpression: this.props.textExpression,
-			canSearch: this.props.canSearch,
-		}));
-	}
-
-	get searchHtml() {
-		/*eslint-disable no-unused-vars */
-		let model = this.props.defaultModel;
-		let expr = this.immState.get('textExpression');
+	/*eslint-disable no-unused-vars */
+	searchHtml(expr) {
+		let model = this.props.modelName;
 		let page = 1;
-		let sorting = this.props.sortingDefaults.get(model);
-		/*eslint-enable no-unused-vars */
+		let sorting = this.props.params.sorting ||
+			this.props.sortingDefaults.get(model);
 
 		return eval("`" + this.props.searchHtml + "`");
 	}
+	/*eslint-enable no-unused-vars */
 
-	set immState(fn) {
-		this.setState(({state}) => ({state: fn(state)}));
+
+	get style() {
+		return {
+			height: "",
+			width: "",
+			marginTop: "35px",
+			border: "1px solid black",
+		};
 	}
 
-	get immState() {
-		return this.state.state;
+	focus = () => {
+		this.textField.focus();
 	}
 
-	get shouldDisable() {
-		return false;
+	isFocused = () => {
+		return (this.textField == undefined) ?
+			false :
+			this.textField.state.isFocused;
 	}
 
-	handleText = ev => {
-		this.immState = s => s.set('textExpression', ev.target.value);
-	}
-
-	handleSearch = () => {
-		if (this.immState.get('textExpression') != "") {
-			this.props.goTo(this.searchHtml);
-		}
+	handleSearch = ev => {
+		if (ev) ev.preventDefault();
+		this.props.goTo(this.searchHtml(this.textField.refs.input.expr));
 	}
 
 	render() {
-		/*eslint-disable react/no-string-refs*/
-		let editor = (
-			<TokenEditor
-				{...this.props}
-				ref="input"
-				value={this.immState.get('textExpression')}
-			/>
-		);
-		/*eslint-enable react/no-string-refs*/
-
 		return (
-			<div style={{
-				display: "flex",
-				flexFlow: "rows nowrap",
-				justifyContent: 'space-around',
-			}}
-			>
-				<div style={{
-					width: "70%",
-					margin: "0 auto 20px auto",
+			<div
+				style={{
+					display: "flex",
+					flexFlow: "rows nowrap",
+					justifyContent: 'space-around',
 				}}
+			>
+				<div
+					style={{
+						width: "70%",
+						margin: "0 auto 20px auto",
+					}}
 				>
 					<TextField
-						disabled={!this.immState.get('canSearch')}
 						floatingLabelText="Digite aqui sua pesquisa"
 						multiLine
-						onChange={this.handleText}
 						onEnterKeyDown={this.handleSearch}
+						ref={c => this.textField = c}
 						style={{
 							width: "100%",
 							height: "",
 							minHeight: "72px",
 						}}
+						value={this.props.textExpression}
 					>
-						{editor}
+						<TokenList
+							{...this.props.tokenListStateProps}
+							{...this.props.tokenListDispatchProps}
+							focus={this.focus}
+							isFocused={this.isFocused}
+							onSearch={this.handleSearch}
+							ref="input"
+							value={this.props.textExpression}
+						/>
 					</TextField>
 				</div>
 
-				<UnitTokenSelector
+				<TokenSelector
 					onSearch={this.handleSearch}
 				/>
 			</div>
 		);
 	}
-
 }
+
