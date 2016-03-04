@@ -1,5 +1,29 @@
-import I from 'immutable';
 import TokenList from 'components/TokenField/token_list';
+import UnitToken from 'components/TokenField/unit_token';
+import _ from 'lodash';
+
+const createAction = (state, token) => {
+	let position = state.getIn(['searchResults', 'position']);
+	let expression = state.getIn(['searchResults', 'expression']);
+
+	let prevToken = (position > 0) ?
+		expression.get(position - 1) :
+		null;
+
+	let nextToken = (position < expression.size) ?
+		expression.get(position) :
+		null;
+
+	let tokens = TokenList.connectToken(token, prevToken, nextToken);
+
+	state = tokens.reverse().reduce((state, token) =>
+		state.updateIn(['searchResults', 'expression'], expr =>
+			expr.insert(position, token)
+		), state);
+
+	return state.updateIn(['searchResults', 'position'], p =>
+		p + tokens.length);
+};
 
 export let Editor = {
 	ReducerMap: {
@@ -29,33 +53,41 @@ export let Editor = {
 		'CREATE_TOKEN_EDITOR': (state, action) => {
 			let key = action.payload;
 			let meta = state.getIn(['tokenEditor', 'fieldsets', key]);
+
 			let token = TokenList.buildNewToken(key, meta);
 
-			let position = state.getIn(['searchResults', 'position']);
-			let expression = state.getIn(['searchResults', 'expression']);
-
-			let prevToken = (position > 0) ?
-				expression.get(position - 1).toJS() :
-				null;
-
-			let nextToken = (position < expression.size) ?
-				expression.get(position).toJS() :
-				null;
-
-			let tokens = TokenList.connectToken(token, prevToken, nextToken);
-
-			state = tokens.reverse().reduce((state, token) =>
-				state.updateIn(['searchResults', 'expression'], expr =>
-					expr.insert(position, I.fromJS(token))
-				), state);
-
-			return state.updateIn(['searchResults', 'position'], p =>
-				p + tokens.length);
+			return createAction(state, token);
 		},
 		'SET_TEXT_EXPRESSION_EDITOR': (state, action) => state.setIn([
 			'searchResults',
 			'textExpression',
 		], action.payload),
+		'EXPAND_DEFAULT_UNIT_EDITOR': (state, action) => {
+			let key = state.getIn(['applicationData', 'defaultFilter']);
+			let meta = state.getIn(['tokenEditor', 'fieldsets', key]);
+			let token = TokenList.buildNewToken(key, meta);
+
+			token = token.setIn(['args', 0], action.payload);
+
+			return createAction(state, token);
+		},
+		'BUILD_TEXT_EXPR_EDITOR': state => {
+			const connectorMap = TokenList.connectorMap;
+			let expression = state.getIn(['searchResults',  'expression']);
+
+			let textExpression = expression.map(obj => {
+				if (_.has(connectorMap, obj.get('key'))) {
+					return connectorMap[obj.get('key')];
+				}
+
+				return UnitToken.expr(obj);
+			}).join("");
+
+			return state.setIn(['searchResults', 'textExpression'],
+				textExpression);
+		},
+		'TOGGLE_SEARCH_EDITOR': state => state.updateIn(['tokenEditor',
+			'shouldSearch'], b => !b),
 	},
 };
 

@@ -1125,6 +1125,7 @@ class AppViewMixin(StateViewMixin):
     def get_token_state(self):
         return {
             "canSearch": True,
+            "shouldSearch": False,
             "fieldsets": self.get_fieldsets(),
         }
 

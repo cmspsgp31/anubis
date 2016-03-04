@@ -46,4 +46,10 @@ export default class Actions {
 	static deleteTokenEditor = createAction('DELETE_TOKEN_EDITOR');
 
 	static setTextExpressionEditor = createAction('SET_TEXT_EXPRESSION_EDITOR');
+
+	static expandDefaultUnitEditor = createAction('EXPAND_DEFAULT_UNIT_EDITOR');
+
+	static buildTextExprEditor = createAction('BUILD_TEXT_EXPR_EDITOR');
+
+	static toggleSearchEditor = createAction('TOGGLE_SEARCH_EDITOR');
 }

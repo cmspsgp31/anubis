@@ -1,6 +1,7 @@
 /* eslint-disable react/no-set-state */
 
 import React from 'react';
+import I from 'immutable';
 import IPropTypes from 'react-immutable-proptypes';
 import _ from 'lodash';
 
@@ -41,6 +42,7 @@ export default class TokenList extends React.Component {
 		onFocus: RPropTypes.func.isRequired,
 		onKeyDown: RPropTypes.func.isRequired,
 		onSearch: RPropTypes.func.isRequired,
+		onUpdate: RPropTypes.func,
 		position: RPropTypes.number,
 		setTextExpressionEditor: RPropTypes.func,
 		value: RPropTypes.string,
@@ -114,6 +116,7 @@ export default class TokenList extends React.Component {
 				id,
 				onRemove: this.props.deleteTokenEditor,
 				onChange: this.props.modifyInnerFieldEditor,
+				onSearch: this.props.onSearch,
 			};
 
 			let symbolToken = _.values(SymbolTokens)
@@ -136,54 +139,17 @@ export default class TokenList extends React.Component {
 			);
 		}).toJS()});
 
-		this.props.setTextExpressionEditor(this.expr);
-	}
-
-	get expr() {
-		const connectorMap = this.constructor.connectorMap;
-
-		let tokenToExpr = obj => {
-			if (_.has(connectorMap, obj.key)) {
-				return connectorMap[obj.key];
-			}
-
-			return UnitToken.expr(obj);
-		};
-
-		let expr = this.props.expression.toJS().map(tokenToExpr);
-
-		if (this.state.editorValue != "") {
-			let meta = this.props.fieldsets.get(this.props.defaultFilter);
-			let editorToken = this.constructor.buildNewToken(
-				this.props.defaultFilter, meta);
-
-			editorToken.args[0] = this.state.editorValue;
-
-			let prevToken = (this.props.position > 0) ?
-				this.props.expression.get(this.props.position - 1).toJS() :
-				null;
-
-			let nextToken = (this.props.position < this.props.expression.size) ?
-				this.props.expression.get(this.props.position).toJS() :
-				null;
-
-			let tokens = this.constructor.connectToken(editorToken, prevToken,
-				nextToken);
-
-			expr.splice(this.props.position, 0, ...tokens.map(tokenToExpr));
-		}
-
-		return expr.join("");
+		this.props.onUpdate();
 	}
 
 	static buildNewToken(key, meta) {
-		let token = {
+		let token = I.fromJS({
 			key,
 			index: Date.now(),
-		};
+		});
 
 		if (meta) {
-			token.args = meta.get('fields').map(f => {
+			token = token.set('args', meta.get('fields').map(f => {
 				let arg = null;
 				if (f.get('ui_element') == "SelectField") {
 					arg = f.getIn(['choices', 0, 0]);
@@ -193,39 +159,39 @@ export default class TokenList extends React.Component {
 				}
 
 				return `${arg}`;
-			}).toJS();
+			}));
 		}
 
 		return token;
 	}
 
-	static connectToken(created, prev={}, next={}) {
-		prev = Object.assign({}, {key: "__AND__"}, prev);
-		next = Object.assign({}, {key: "__AND__"}, next);
+	static connectToken(created, prev, next) {
+		if (prev == null) prev = I.fromJS({key: "__AND__"});
+		if (next == null) next = I.fromJS({key: "__AND__"});
 
 		let isCreatedUnitToken = !_.has(this.connectorMap,
-			created.key);
+			created.get('key'));
 
 		let prevRequiresConnector = !_.has(this.connectorMap,
-			prev.key) || (prev.key == "__RPARENS__");
+			prev.get('key')) || (prev.get('key') == "__RPARENS__");
 
 		let nextRequiresConnector = !_.has(this.connectorMap,
-			next.key) || (next.key == "__LPARENS__");
+			next.get('key')) || (next.get('key') == "__LPARENS__");
 
 		let tokens = [created];
 
 		if (isCreatedUnitToken && prevRequiresConnector) {
-			tokens.splice(0, 0, {
+			tokens.splice(0, 0, I.fromJS({
 				key: "__AND__",
 				index: Date.now() + Math.floor(Math.random() * 100 + 10),
-			});
+			}));
 		}
 
 		if (isCreatedUnitToken && nextRequiresConnector) {
-			tokens.splice(tokens.length, 0, {
+			tokens.splice(tokens.length, 0, I.fromJS({
 				key: "__AND__",
-				index: Date.now() + Math.floor(Math.random() * 100 + 20),
-			});
+				index: Date.now() + Math.floor(Math.random() * 100 + 111),
+			}));
 		}
 
 		return tokens;

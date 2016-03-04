@@ -17,6 +17,7 @@ const getStateProps = state => ({
 	modelName: state.getIn(['searchResults', 'model']),
 	models: state.get('models'),
 	searchHtml: state.getIn(['applicationData', 'searchHtml']),
+	shouldSearch: state.getIn(['tokenEditor', 'shouldSearch']),
 	sortingDefaults: state.getIn(['applicationData', 'sortingDefaults']),
 	tokenListStateProps: {
 		canSearch: state.getIn(['tokenEditor', 'canSearch']),
@@ -29,7 +30,13 @@ const getStateProps = state => ({
 });
 
 const getDispatchProps = dispatch => ({
+	buildTextExprEditor: bindActionCreators(Actions.buildTextExprEditor,
+		dispatch),
+	expandDefaultUnitEditor: bindActionCreators(Actions.expandDefaultUnitEditor,
+		dispatch),
 	goTo: url => dispatch(routeActions.push(url)),
+	toggleSearchEditor: bindActionCreators(Actions.toggleSearchEditor,
+		dispatch),
 	tokenListDispatchProps: {
 		modifyInnerFieldEditor: bindActionCreators(
 			Actions.modifyInnerFieldEditor, dispatch),
@@ -38,15 +45,15 @@ const getDispatchProps = dispatch => ({
 			dispatch),
 		deleteTokenEditor: bindActionCreators(Actions.deleteTokenEditor,
 			dispatch),
-		setTextExpressionEditor: bindActionCreators(
-			Actions.setTextExpressionEditor, dispatch),
 	},
 });
 
 @connect(getStateProps, getDispatchProps)
 export default class TokenField extends React.Component {
 	static propTypes = {
+		buildTextExprEditor: RPropTypes.func,
 		defaultModel: RPropTypes.string,
+		expandDefaultUnitEditor: RPropTypes.func,
 		goTo: RPropTypes.func,
 		modelName: RPropTypes.string,
 		models: IPropTypes.mapOf({
@@ -60,14 +67,24 @@ export default class TokenField extends React.Component {
 			page: RPropTypes.string,
 		}),
 		searchHtml: RPropTypes.string,
+		shouldSearch: RPropTypes.bool,
 		sortingDefaults: IPropTypes.map,
 		textExpression: RPropTypes.string,
+		toggleSearchEditor: RPropTypes.func,
 		tokenListDispatchProps: IPropTypes.map,
 		tokenListStateProps: IPropTypes.map,
 	}
 
+	componentDidUpdate(prevProps) {
+		if (this.props.shouldSearch && !prevProps.shouldSearch) {
+			this.props.toggleSearchEditor();
+			this.props.goTo(this.searchHtml);
+		}
+	}
+
 	/*eslint-disable no-unused-vars */
-	searchHtml(expr) {
+	get searchHtml() {
+		let expr = this.props.textExpression;
 		let model = this.props.modelName;
 		let page = 1;
 		let sorting = this.props.params.sorting ||
@@ -76,16 +93,6 @@ export default class TokenField extends React.Component {
 		return eval("`" + this.props.searchHtml + "`");
 	}
 	/*eslint-enable no-unused-vars */
-
-
-	get style() {
-		return {
-			height: "",
-			width: "",
-			marginTop: "35px",
-			border: "1px solid black",
-		};
-	}
 
 	focus = () => {
 		this.textField.focus();
@@ -99,7 +106,24 @@ export default class TokenField extends React.Component {
 
 	handleSearch = ev => {
 		if (ev) ev.preventDefault();
-		this.props.goTo(this.searchHtml(this.textField.refs.input.expr));
+
+		let editorValue = this.textField.refs.input.state.editorValue;
+
+		if (editorValue && (editorValue != "")) {
+			this.props.expandDefaultUnitEditor(editorValue);
+
+			this.textField.refs.input.editorToken.lead.value = "";
+			this.textField.refs.input.setState({editorValue: ""});
+
+			this.props.buildTextExprEditor();
+		}
+
+
+		this.props.toggleSearchEditor();
+	}
+
+	handleUpdate = () => {
+		this.props.buildTextExprEditor();
 	}
 
 	render() {
@@ -135,6 +159,7 @@ export default class TokenField extends React.Component {
 							focus={this.focus}
 							isFocused={this.isFocused}
 							onSearch={this.handleSearch}
+							onUpdate={this.handleUpdate}
 							ref="input"
 							value={this.props.textExpression}
 						/>

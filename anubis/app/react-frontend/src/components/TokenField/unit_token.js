@@ -3,8 +3,7 @@ import IPropTypes from 'react-immutable-proptypes';
 import Intl from 'intl';
 
 import {PropTypes as RPropTypes} from 'react';
-import {TextField, SelectField, MenuItem, IconButton,
-	DatePickerDialog} from 'material-ui';
+import {TextField, SelectField, MenuItem, DatePickerDialog} from 'material-ui';
 import {ActionDateRange} from 'material-ui/lib/svg-icons';
 
 import _ from 'lodash';
@@ -30,6 +29,7 @@ export default class UnitToken extends Token {
 		),
 		index: RPropTypes.number,
 		onChange: RPropTypes.func,
+		onSearch: RPropTypes.func,
 		searchKey: RPropTypes.string,
 		values: IPropTypes.list,
 	});
@@ -39,12 +39,12 @@ export default class UnitToken extends Token {
 	}
 
 	static expr(obj) {
-		let key = obj.key;
-		let values = obj.args
+		let key = obj.get('key');
+		let values = obj.get('args')
 			.map(value => value.replace(/\$/g, "$$").replace(/"/g, '$"'))
 			.reduce((agg, value) => agg + `,"${value}"`, "");
 
-		if (obj.args.length == 0) values = ',""';
+		if (obj.get('args').size == 0) values = ',""';
 
 		return `${key}${values}`;
 	}
@@ -112,6 +112,7 @@ export default class UnitToken extends Token {
 							<TextField
 								hintText={field.help_text}
 								inputStyle={insideStyle}
+								onEnterKeyDown={this.props.onSearch}
 								onChange={this.handleFieldChange(i)}
 								style={{...outsideStyle, width: "205px"}}
 								value={value}
@@ -153,6 +154,7 @@ export default class UnitToken extends Token {
 						<TextField
 							hintText={field.help_text}
 							inputStyle={insideStyle}
+							onEnterKeyDown={this.props.onSearch}
 							onChange={this.handleFieldChange(i)}
 							style={{...outsideStyle, width: "auto"}}
 							value={value}

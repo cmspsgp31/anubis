@@ -68,6 +68,7 @@ export default class Token extends React.Component {
 			options.iconStyle);
 
 		let props = Object.assign({}, {
+			tabIndex: -1,
 			iconStyle,
 			style,
 		}, options.props);
