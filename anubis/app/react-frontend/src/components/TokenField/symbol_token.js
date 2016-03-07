@@ -1,5 +1,6 @@
 import React from 'react';
 import Token from './token';
+
 import {Styles} from 'material-ui';
 
 class SymbolToken extends Token {
@@ -30,10 +31,6 @@ export class AndToken extends SymbolToken {
 	repr = "E";
 
 	color = Styles.Colors.cyan600;
-
-	static expr() {
-		return "/";
-	}
 }
 
 export class OrToken extends SymbolToken {
@@ -42,10 +39,6 @@ export class OrToken extends SymbolToken {
 	repr = "OU";
 
 	color = Styles.Colors.teal400;
-
-	static expr() {
-		return "+";
-	}
 }
 
 export class NotToken extends SymbolToken {
@@ -54,10 +47,6 @@ export class NotToken extends SymbolToken {
 	repr = "NÃO";
 
 	color = Styles.Colors.red400;
-
-	static expr() {
-		return "!";
-	}
 }
 
 export class LeftParensToken extends SymbolToken {
@@ -66,10 +55,6 @@ export class LeftParensToken extends SymbolToken {
 	repr = "(";
 
 	color = Styles.Colors.orange800;
-
-	static expr() {
-		return "(";
-	}
 }
 
 export class RightParensToken extends SymbolToken {
@@ -78,8 +63,4 @@ export class RightParensToken extends SymbolToken {
 	repr = ")";
 
 	color = Styles.Colors.orange800;
-
-	static expr() {
-		return ")";
-	}
 }

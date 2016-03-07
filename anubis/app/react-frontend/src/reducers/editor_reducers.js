@@ -1,6 +1,7 @@
 import TokenList from 'components/TokenField/token_list';
 import UnitToken from 'components/TokenField/unit_token';
 import _ from 'lodash';
+import I from 'immutable';
 
 const createAction = (state, token) => {
 	let position = state.getIn(['searchResults', 'position']);
@@ -88,6 +89,22 @@ export let Editor = {
 		},
 		'TOGGLE_SEARCH_EDITOR': state => state.updateIn(['tokenEditor',
 			'shouldSearch'], b => !b),
+		'REORDER_TOKENS_EDITOR': (state, action) => {
+			let expr = state.getIn(['searchResults', 'expression']);
+			let tokenMap = I.Map(expr
+				.map(t => [`${t.get('index')}`, t])
+				.toArray());
+
+			let order = action.payload;
+			let position = order.indexOf('__EDITOR__');
+
+			order.splice(position, 1);
+
+			return state
+				.setIn(['searchResults', 'expression'],
+					I.List(order.map(id => tokenMap.get(`${id}`))))
+				.setIn(['searchResults', 'position'], position);
+		},
 	},
 };
 

@@ -1,12 +1,13 @@
 /* eslint-disable react/no-set-state */
 
 import React from 'react';
+import ReactDOM from 'react-dom';
 import I from 'immutable';
 import IPropTypes from 'react-immutable-proptypes';
 import _ from 'lodash';
 
 import {PropTypes as RPropTypes} from 'react';
-import {TransitionMotion, spring} from 'react-motion';
+// import {TransitionMotion, spring} from 'react-motion';
 
 import EditorToken from './editor_token';
 import * as SymbolTokens from './symbol_token';
@@ -44,7 +45,8 @@ export default class TokenList extends React.Component {
 		onSearch: RPropTypes.func.isRequired,
 		onUpdate: RPropTypes.func,
 		position: RPropTypes.number,
-		setTextExpressionEditor: RPropTypes.func,
+		reorderTokensEditor: RPropTypes.func,
+		textElement: RPropTypes.func,
 		value: RPropTypes.string,
 	};
 
@@ -62,7 +64,10 @@ export default class TokenList extends React.Component {
 	}
 
 	componentDidUpdate(prevProps) {
-		if (this.areExprsDiff(prevProps.expression, this.props.expression)) {
+		let diff = this.areExprsDiff(prevProps.expression,
+			this.props.expression);
+
+		if (diff) {
 			this.getTokens();
 		}
 	}
@@ -94,6 +99,10 @@ export default class TokenList extends React.Component {
 		return this.props.onChange({target: {value: this.props.value}});
 	}
 
+	handleSort = order => {
+		this.props.reorderTokensEditor(order);
+	}
+
 	getTokens() {
 		this.tokenObjects = [];
 
@@ -117,6 +126,7 @@ export default class TokenList extends React.Component {
 				onRemove: this.props.deleteTokenEditor,
 				onChange: this.props.modifyInnerFieldEditor,
 				onSearch: this.props.onSearch,
+				textElement: this.props.textElement,
 			};
 
 			let symbolToken = _.values(SymbolTokens)
@@ -124,9 +134,12 @@ export default class TokenList extends React.Component {
 				.filter(symbol => !!symbol);
 
 			if (symbolToken.length == 1) {
-				return React.createElement(symbolToken[0], {
+				let tokenCls = symbolToken[0];
+
+				return React.createElement(tokenCls, {
 					...props,
 					key: `token_${id}`,
+					sortData: `${id}`,
 					ref: t => this.tokenObjects.push(t),
 				});
 			}
@@ -135,6 +148,7 @@ export default class TokenList extends React.Component {
 					{...props}
 					key={`token_${id}`}
 					ref={t => this.tokenObjects.push(t)}
+					sortData={`${id}`}
 				/>
 			);
 		}).toJS()});
@@ -221,70 +235,72 @@ export default class TokenList extends React.Component {
 				key: `token_${token.props.id}`,
 				data: token,
 				style: {
-					opacity: spring(1, {precision: 0.1}),
-					left: spring(0, {precision: 10}),
+					// opacity: spring(1, {precision: 0.1}),
+					// left: spring(0, {precision: 10}),
 				},
 		}));
 
 		styles.splice(this.props.position, 0, {
 			key: "editor_token",
 			style: {},
-			data:
-				<EditorToken
-					deleteToken={this.props.deleteTokenEditor}
-					disabled={this.shouldDisable}
-					expressionSize={this.props.expression.size}
-					inputProps={this.inputProps}
-					insertToken={this.props.createTokenEditor}
-					isFocused={this.props.isFocused}
-					move={this.props.moveTokenEditor}
-					onSearch={this.props.onSearch}
-					position={this.props.position}
-					ref={c => this.editorToken = c}
-					units={this.props.fieldsets}
-				/>,
+			data: React.createElement(EditorToken, {
+				deleteToken: this.props.deleteTokenEditor,
+				disabled: this.shouldDisable,
+				expressionSize: this.props.expression.size,
+				inputProps: this.inputProps,
+				insertToken: this.props.createTokenEditor,
+				isFocused: this.props.isFocused,
+				move: this.props.moveTokenEditor,
+				onSearch: this.props.onSearch,
+				position: this.props.position,
+				ref: c => this.editorToken = c,
+				sortData: "__EDITOR__",
+				units: this.props.fieldsets,
+			}),
 		});
 
 		return (
-			<TransitionMotion
-				styles={styles}
-				willEnter={() => ({
-					opacity: 0,
-					left: -100,
-				})}
-				willLeave={() => ({
-					opacity: spring(0, {precision: 0.1}),
-					left: spring(100, {precision: 10}),
-				})}
+			<div
+				onTouchTap={ev => {
+					if (ev.target == this.mainEditingArea.element) {
+						this.props.focus();
+					}
+				}}
+				ref={c => this.mainEditingArea = c}
+				style={{
+					display: "flex",
+					flexFlow: "row wrap",
+					justifyContent: "flex-start",
+					alignContent: "flex-start",
+					paddingTop: "45px",
+					paddingBottom: "10px",
+				}}
 			>
-				{styles =>
-					<div
-						onTouchTap={ev => {
-							if (ev.target == this.mainEditingArea) {
-								this.props.focus();
-							}
-						}}
-						ref={c => this.mainEditingArea = c}
-						style={{
-							display: "flex",
-							flexFlow: "row wrap",
-							justifyContent: "flex-start",
-							alignContent: "flex-start",
-							paddingTop: "45px",
-							paddingBottom: "10px",
-						}}
-					>
-						{styles.map(style =>
-							React.cloneElement(style.data, {
-								style: style.style,
-								key: style.key,
-							})
-						)}
-
-					</div>
-				}
-			</TransitionMotion>
+				{Array.from(styles.map(s =>
+					React.cloneElement(s.data, {
+						// style: s.style,
+						key: s.key,
+					})
+				))}
+			</div>
 		);
+
+		// return (
+		// 	<TransitionMotion
+		// 		styles={styles}
+		// 		willEnter={() => ({
+		// 			opacity: 0,
+		// 			left: -100,
+		// 		})}
+		// 		willLeave={() => ({
+		// 			opacity: spring(0, {precision: 0.1}),
+		// 			left: spring(100, {precision: 10}),
+		// 		})}
+		// 	>
+		// 		{styles =>
+		// 		}
+		// 	</TransitionMotion>
+		// );
 	}
 
 }

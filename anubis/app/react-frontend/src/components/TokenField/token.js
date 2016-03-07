@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import {PropTypes as RPropTypes} from 'react';
 import {Paper} from 'material-ui';
 import {IconButton} from 'material-ui';
@@ -9,6 +10,7 @@ export default class Token extends React.Component {
 		index: RPropTypes.number,
 		onRemove: RPropTypes.func,
 		style: RPropTypes.object,
+		textElement: RPropTypes.func,
 	}
 
 	static contextTypes = {
@@ -27,12 +29,14 @@ export default class Token extends React.Component {
 
 		return {
 			fontSize: 14,
-			padding: "8px",
-			marginRight: "10px",
-			marginBottom: "12px",
+			padding: '8px',
+			marginRight: '10px',
+			marginBottom: '12px',
 			backgroundColor: bgColor,
 			color: textBgColor,
-			position: "relative",
+			position: 'relative',
+			cursor: 'move',
+			userSelect: 'none',
 		};
 	}
 
@@ -88,6 +92,7 @@ export default class Token extends React.Component {
 			style,
 			iconStyle,
 			props: {
+				key: "__CLOSE_BUTTON__",
 				onClick: () => this.props.onRemove(this.props.index),
 			},
 		});
@@ -98,14 +103,21 @@ export default class Token extends React.Component {
 	}
 
 	render() {
+		let contents = React.cloneElement(this.renderContents(),
+			{key: "__TOKEN_CONTENT__"});
+
+		contents = [contents, this.renderCloseButton()];
+
 		return (
-			<Paper
-				style={this.style}
-				zDepth={1}
-			>
-				{this.renderContents()}
-				{this.renderCloseButton()}
-			</Paper>
+			<div>
+				<Paper
+					ref={c => this.element = c}
+					style={this.style}
+					zDepth={1}
+				>
+					{contents}
+				</Paper>
+			</div>
 		);
 	}
 

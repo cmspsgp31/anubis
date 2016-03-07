@@ -52,4 +52,6 @@ export default class Actions {
 	static buildTextExprEditor = createAction('BUILD_TEXT_EXPR_EDITOR');
 
 	static toggleSearchEditor = createAction('TOGGLE_SEARCH_EDITOR');
+
+	static reorderTokensEditor = createAction('REORDER_TOKENS_EDITOR');
 }

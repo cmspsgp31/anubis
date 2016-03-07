@@ -45,6 +45,8 @@ const getDispatchProps = dispatch => ({
 			dispatch),
 		deleteTokenEditor: bindActionCreators(Actions.deleteTokenEditor,
 			dispatch),
+		reorderTokensEditor: bindActionCreators(Actions.reorderTokensEditor,
+			dispatch),
 	},
 });
 
@@ -160,6 +162,7 @@ export default class TokenField extends React.Component {
 							isFocused={this.isFocused}
 							onSearch={this.handleSearch}
 							onUpdate={this.handleUpdate}
+							textElement={() => this.textField}
 							ref="input"
 							value={this.props.textExpression}
 						/>

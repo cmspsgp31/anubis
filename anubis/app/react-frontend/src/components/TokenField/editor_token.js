@@ -7,7 +7,6 @@ import {ContentLink, ContentAddBox} from 'material-ui/lib/svg-icons';
 
 import Token from './token';
 
-
 export default class EditorToken extends Token {
 	static propTypes = {
 		deleteToken: RPropTypes.func,
@@ -168,6 +167,7 @@ export default class EditorToken extends Token {
 			position: "relative",
 			display: "inline-block",
 			flexGrow: "1",
+			userSelect: "all",
 		});
 
 		let baseIconColor = this.context.muiTheme.textField.borderColor;

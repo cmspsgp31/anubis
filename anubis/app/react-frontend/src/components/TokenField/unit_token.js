@@ -8,9 +8,7 @@ import {ActionDateRange} from 'material-ui/lib/svg-icons';
 
 import _ from 'lodash';
 
-
 import Token from './token';
-
 
 export default class UnitToken extends Token {
 	static propTypes = Object.assign({}, Token.propTypes, {
@@ -72,6 +70,7 @@ export default class UnitToken extends Token {
 				top: "-10px",
 				height: "auto",
 				lineHeight: "normal",
+				userSelect: "all",
 			};
 
 			let outsideStyle = {
@@ -112,8 +111,8 @@ export default class UnitToken extends Token {
 							<TextField
 								hintText={field.help_text}
 								inputStyle={insideStyle}
-								onEnterKeyDown={this.props.onSearch}
 								onChange={this.handleFieldChange(i)}
+								onEnterKeyDown={this.props.onSearch}
 								style={{...outsideStyle, width: "205px"}}
 								value={value}
 							/>
@@ -134,7 +133,6 @@ export default class UnitToken extends Token {
 								firstDayOfWeek={0}
 								locale="pt-BR"
 								maxDate={new Date()}
-								minDate={new Date(Date.UTC(1562, 1))}
 								onAccept={date => {
 									date = new Intl.DateTimeFormat("pt-BR")
 										.format(date);
@@ -154,8 +152,8 @@ export default class UnitToken extends Token {
 						<TextField
 							hintText={field.help_text}
 							inputStyle={insideStyle}
-							onEnterKeyDown={this.props.onSearch}
 							onChange={this.handleFieldChange(i)}
+							onEnterKeyDown={this.props.onSearch}
 							style={{...outsideStyle, width: "auto"}}
 							value={value}
 						/>
