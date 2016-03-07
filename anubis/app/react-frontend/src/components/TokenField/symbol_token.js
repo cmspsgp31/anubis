@@ -1,11 +1,10 @@
 import React from 'react';
-import Token from './token';
 
 import {Styles} from 'material-ui';
 
-class SymbolToken extends Token {
-	static key = null;
+import Token, {makeDraggable} from './token';
 
+class SymbolToken extends Token {
 	repr = null;
 
 	color = null;
@@ -25,42 +24,45 @@ class SymbolToken extends Token {
 	}
 }
 
-export class AndToken extends SymbolToken {
-	static key = "__AND__";
-
+@makeDraggable
+class AndToken extends SymbolToken {
 	repr = "E";
 
 	color = Styles.Colors.cyan600;
 }
 
-export class OrToken extends SymbolToken {
-	static key = "__OR__";
-
+@makeDraggable
+class OrToken extends SymbolToken {
 	repr = "OU";
 
 	color = Styles.Colors.teal400;
 }
 
-export class NotToken extends SymbolToken {
-	static key = "__NOT__";
-
+@makeDraggable
+class NotToken extends SymbolToken {
 	repr = "NÃO";
 
 	color = Styles.Colors.red400;
 }
 
-export class LeftParensToken extends SymbolToken {
-	static key = "__LPARENS__";
-
+@makeDraggable
+class LeftParensToken extends SymbolToken {
 	repr = "(";
 
 	color = Styles.Colors.orange800;
 }
 
-export class RightParensToken extends SymbolToken {
-	static key = "__RPARENS__";
-
+@makeDraggable
+class RightParensToken extends SymbolToken {
 	repr = ")";
 
 	color = Styles.Colors.orange800;
 }
+
+export default {
+	"__AND__": AndToken,
+	"__OR__": OrToken,
+	"__NOT__": NotToken,
+	"__LPARENS__": LeftParensToken,
+	"__RPARENS__": RightParensToken,
+};

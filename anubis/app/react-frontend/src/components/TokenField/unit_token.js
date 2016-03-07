@@ -8,8 +8,9 @@ import {ActionDateRange} from 'material-ui/lib/svg-icons';
 
 import _ from 'lodash';
 
-import Token from './token';
+import Token, {makeDraggable} from './token';
 
+@makeDraggable
 export default class UnitToken extends Token {
 	static propTypes = Object.assign({}, Token.propTypes, {
 		description: RPropTypes.string,
@@ -34,17 +35,6 @@ export default class UnitToken extends Token {
 
 	get fieldsValues() {
 		return _.zip(this.props.fields, this.props.values);
-	}
-
-	static expr(obj) {
-		let key = obj.get('key');
-		let values = obj.get('args')
-			.map(value => value.replace(/\$/g, "$$").replace(/"/g, '$"'))
-			.reduce((agg, value) => agg + `,"${value}"`, "");
-
-		if (obj.get('args').size == 0) values = ',""';
-
-		return `${key}${values}`;
 	}
 
 	handleFieldChange = index => {

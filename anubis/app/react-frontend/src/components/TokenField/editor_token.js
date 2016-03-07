@@ -4,13 +4,18 @@ import {PropTypes as RPropTypes} from 'react';
 import IPropTypes from 'react-immutable-proptypes';
 import {IconMenu, MenuItem} from 'material-ui';
 import {ContentLink, ContentAddBox} from 'material-ui/lib/svg-icons';
+import {DropTarget} from 'react-dnd';
 
-import Token from './token';
+import Token, {tokenTarget, TokenType} from './token';
 
+const boundTokenTarget = tokenTarget(() => '__EDITOR__');
+
+@DropTarget(TokenType, boundTokenTarget, c => ({dropTarget: c.dropTarget()}))
 export default class EditorToken extends Token {
 	static propTypes = {
 		deleteToken: RPropTypes.func,
 		disabled: RPropTypes.bool,
+		dropTarget: RPropTypes.func,
 		expressionSize: RPropTypes.number,
 		inputProps: RPropTypes.shape({
 			onBlur: RPropTypes.func.isRequired,
@@ -206,7 +211,7 @@ export default class EditorToken extends Token {
 			/>
 		));
 
-		return (
+		return this.props.dropTarget(
 			<div
 				style={style}
 			>

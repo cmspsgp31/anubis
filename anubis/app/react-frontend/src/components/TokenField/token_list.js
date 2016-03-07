@@ -1,7 +1,7 @@
 /* eslint-disable react/no-set-state */
 
 import React from 'react';
-import ReactDOM from 'react-dom';
+// import ReactDOM from 'react-dom';
 import I from 'immutable';
 import IPropTypes from 'react-immutable-proptypes';
 import _ from 'lodash';
@@ -10,7 +10,7 @@ import {PropTypes as RPropTypes} from 'react';
 // import {TransitionMotion, spring} from 'react-motion';
 
 import EditorToken from './editor_token';
-import * as SymbolTokens from './symbol_token';
+import SymbolTokens from './symbol_token';
 import UnitToken from './unit_token';
 
 export default class TokenList extends React.Component {
@@ -49,112 +49,6 @@ export default class TokenList extends React.Component {
 		textElement: RPropTypes.func,
 		value: RPropTypes.string,
 	};
-
-	constructor(props) {
-		super(props);
-
-		this.state = {
-			tokens: [],
-			editorValue: "",
-		};
-	}
-
-	componentWillMount() {
-		this.getTokens();
-	}
-
-	componentDidUpdate(prevProps) {
-		let diff = this.areExprsDiff(prevProps.expression,
-			this.props.expression);
-
-		if (diff) {
-			this.getTokens();
-		}
-	}
-
-	areExprsDiff(prev, current) {
-		if (prev.size != current.size) return true;
-
-		return _.zip(prev.toJS(), current.toJS()).some(([p, c]) => {
-			if (p.key != c.key) return true;
-
-			if ((!!p.args && !c.args) || (!p.args && !!c.args)) return true;
-
-			if (!p.args) return false;
-
-			if (p.args.length != c.args.length) return true;
-
-			return _.zip(p.args, c.args).some(([pa, ca]) => pa != ca);
-		});
-	}
-
-	get inputProps() {
-		let {onBlur,  onFocus, onKeyDown} = this.props;
-
-		return {onBlur, onChange: this.handleChange, onFocus, onKeyDown};
-	}
-
-	handleChange = ev => {
-		this.setState({editorValue: ev.target.value});
-		return this.props.onChange({target: {value: this.props.value}});
-	}
-
-	handleSort = order => {
-		this.props.reorderTokensEditor(order);
-	}
-
-	getTokens() {
-		this.tokenObjects = [];
-
-		this.setState({tokens: this.props.expression.map((obj, i) => {
-			let key = obj.get('key');
-			let fieldset = this.props.fieldsets.get(key);
-			let values = obj.get('args', null);
-			let id = obj.get('index');
-
-			if (!fieldset) fieldset = {key};
-			else fieldset = fieldset.toJS();
-
-			if (values && values.toJS) values = values.toJS();
-
-			let props = {
-				...fieldset,
-				values,
-				searchKey: key,
-				index: i,
-				id,
-				onRemove: this.props.deleteTokenEditor,
-				onChange: this.props.modifyInnerFieldEditor,
-				onSearch: this.props.onSearch,
-				textElement: this.props.textElement,
-			};
-
-			let symbolToken = _.values(SymbolTokens)
-				.map(symbol => (symbol.key == key) ? symbol : null)
-				.filter(symbol => !!symbol);
-
-			if (symbolToken.length == 1) {
-				let tokenCls = symbolToken[0];
-
-				return React.createElement(tokenCls, {
-					...props,
-					key: `token_${id}`,
-					sortData: `${id}`,
-					ref: t => this.tokenObjects.push(t),
-				});
-			}
-			else return (
-				<UnitToken
-					{...props}
-					key={`token_${id}`}
-					ref={t => this.tokenObjects.push(t)}
-					sortData={`${id}`}
-				/>
-			);
-		}).toJS()});
-
-		this.props.onUpdate();
-	}
 
 	static buildNewToken(key, meta) {
 		let token = I.fromJS({
@@ -219,6 +113,128 @@ export default class TokenList extends React.Component {
 		"__RPARENS__": ")",
 	}
 
+
+	constructor(props) {
+		super(props);
+
+		this.state = {
+			tokens: [],
+			editorValue: "",
+		};
+	}
+
+	componentWillMount() {
+		this.getTokens();
+	}
+
+	componentDidUpdate(prevProps) {
+		let diff = this.areExprsDiff(prevProps.expression,
+			this.props.expression);
+
+		if (diff) {
+			this.getTokens();
+		}
+	}
+
+	areExprsDiff(prev, current) {
+		if (prev.size != current.size) return true;
+
+		return _.zip(prev.toJS(), current.toJS()).some(([p, c]) => {
+			if (p.key != c.key) return true;
+
+			if ((!!p.args && !c.args) || (!p.args && !!c.args)) return true;
+
+			if (!p.args) return false;
+
+			if (p.args.length != c.args.length) return true;
+
+			return _.zip(p.args, c.args).some(([pa, ca]) => pa != ca);
+		});
+	}
+
+	get inputProps() {
+		let {onBlur,  onFocus, onKeyDown} = this.props;
+
+		return {onBlur, onChange: this.handleChange, onFocus, onKeyDown};
+	}
+
+	handleChange = ev => {
+		this.setState({editorValue: ev.target.value});
+		return this.props.onChange({target: {value: this.props.value}});
+	}
+
+	handleSort = (dragged, over, overOffset) => {
+		if (dragged == over) return;
+
+		let initOrder = this.props.expression.map(obj => obj.get('index'));
+
+		initOrder = initOrder.insert(this.props.position, '__EDITOR__');
+
+		let [overPos] = initOrder.findEntry(v => v == over);
+		let [draggedPos] = initOrder.findEntry(v => v == dragged);
+
+		if (draggedPos < overPos) overPos--;
+
+		overPos += overOffset;
+
+		let finalOrder = initOrder.remove(draggedPos).insert(overPos, dragged);
+
+		if (!I.is(initOrder, finalOrder)) {
+			this.props.reorderTokensEditor(finalOrder.toArray());
+		}
+	}
+
+	getTokens() {
+		this.tokenObjects = [];
+
+		this.setState({tokens: this.props.expression.map((obj, i) => {
+			let key = obj.get('key');
+			let fieldset = this.props.fieldsets.get(key);
+			let values = obj.get('args', null);
+			let id = obj.get('index');
+
+			if (!fieldset) fieldset = {key};
+			else fieldset = fieldset.toJS();
+
+			if (values && values.toJS) values = values.toJS();
+
+			let props = {
+				...fieldset,
+				values,
+				searchKey: key,
+				index: i,
+				id,
+				onRemove: this.props.deleteTokenEditor,
+				onChange: this.props.modifyInnerFieldEditor,
+				onSearch: this.props.onSearch,
+				onSort: this.handleSort,
+				textElement: this.props.textElement,
+				token: obj,
+			};
+
+			if (_.has(SymbolTokens, key)) {
+				let tokenCls = SymbolTokens[key];
+
+				return React.createElement(tokenCls, {
+					...props,
+					key: `token_${id}`,
+					sortData: `${id}`,
+					ref: t => this.tokenObjects.push(t),
+				});
+			}
+			else return (
+				<UnitToken
+					{...props}
+					key={`token_${id}`}
+					ref={t => this.tokenObjects.push(t)}
+					sortData={`${id}`}
+				/>
+			);
+		}).toJS()});
+
+		this.props.onUpdate();
+	}
+
 	getInputNode() {
 		return {
 			blur: () => this.editorToken.lead.blur(),
@@ -252,6 +268,7 @@ export default class TokenList extends React.Component {
 				isFocused: this.props.isFocused,
 				move: this.props.moveTokenEditor,
 				onSearch: this.props.onSearch,
+				onSort: this.handleSort,
 				position: this.props.position,
 				ref: c => this.editorToken = c,
 				sortData: "__EDITOR__",

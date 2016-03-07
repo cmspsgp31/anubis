@@ -1,7 +1,9 @@
 /* eslint-disable react/no-string-refs */
 import React from 'react';
 import IPropTypes from 'react-immutable-proptypes';
+import DnDBackend from 'react-dnd-html5-backend';
 
+import {DragDropContext} from 'react-dnd';
 import {connect} from 'react-redux';
 import {TextField} from 'material-ui';
 import {PropTypes as RPropTypes} from 'react';
@@ -50,6 +52,7 @@ const getDispatchProps = dispatch => ({
 	},
 });
 
+@DragDropContext(DnDBackend)
 @connect(getStateProps, getDispatchProps)
 export default class TokenField extends React.Component {
 	static propTypes = {

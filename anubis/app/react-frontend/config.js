@@ -22,9 +22,11 @@ System.config({
     "core-js": "npm:core-js@1.2.6",
     "immutable": "npm:immutable@3.7.6",
     "intl": "npm:intl@1.1.0",
-    "lodash": "npm:lodash@4.5.0",
+    "lodash": "npm:lodash@4.6.1",
     "material-ui": "npm:material-ui@0.14.4",
     "react": "npm:react@0.14.7",
+    "react-dnd": "npm:react-dnd@2.1.2",
+    "react-dnd-html5-backend": "npm:react-dnd-html5-backend@2.1.2",
     "react-dom": "npm:react-dom@0.14.7",
     "react-immutable-proptypes": "npm:react-immutable-proptypes@1.6.0",
     "react-motion": "npm:react-motion@0.4.2",
@@ -96,6 +98,12 @@ System.config({
     },
     "npm:core-util-is@1.0.2": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0"
+    },
+    "npm:dnd-core@2.0.1": {
+      "asap": "npm:asap@2.0.3",
+      "invariant": "npm:invariant@2.2.0",
+      "lodash": "npm:lodash@4.6.1",
+      "redux": "npm:redux@3.3.1"
     },
     "npm:domain-browser@1.1.7": {
       "events": "github:jspm/nodelibs-events@0.1.1",
@@ -184,7 +192,7 @@ System.config({
       "lodash._basecopy": "npm:lodash._basecopy@3.0.1",
       "lodash.keysin": "npm:lodash.keysin@3.0.8"
     },
-    "npm:lodash@4.5.0": {
+    "npm:lodash@4.6.1": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
@@ -242,6 +250,20 @@ System.config({
     "npm:react-addons-update@0.14.7": {
       "react": "npm:react@0.14.7"
     },
+    "npm:react-dnd-html5-backend@2.1.2": {
+      "lodash": "npm:lodash@4.6.1",
+      "process": "github:jspm/nodelibs-process@0.1.2",
+      "react-dnd": "npm:react-dnd@2.1.2"
+    },
+    "npm:react-dnd@2.1.2": {
+      "disposables": "npm:disposables@1.0.1",
+      "dnd-core": "npm:dnd-core@2.0.1",
+      "invariant": "npm:invariant@2.2.0",
+      "lodash": "npm:lodash@4.6.1",
+      "path": "github:jspm/nodelibs-path@0.1.0",
+      "process": "github:jspm/nodelibs-process@0.1.2",
+      "react": "npm:react@0.14.7"
+    },
     "npm:react-dom@0.14.7": {
       "react": "npm:react@0.14.7"
     },
@@ -257,7 +279,7 @@ System.config({
     "npm:react-redux@4.4.0": {
       "hoist-non-react-statics": "npm:hoist-non-react-statics@1.0.5",
       "invariant": "npm:invariant@2.2.0",
-      "lodash": "npm:lodash@4.5.0",
+      "lodash": "npm:lodash@4.6.1",
       "loose-envify": "npm:loose-envify@1.1.0",
       "process": "github:jspm/nodelibs-process@0.1.2",
       "react": "npm:react@0.14.7",
@@ -297,8 +319,8 @@ System.config({
       "flux-standard-action": "npm:flux-standard-action@0.6.0"
     },
     "npm:redux@3.3.1": {
-      "lodash": "npm:lodash@4.5.0",
-      "lodash-es": "npm:lodash-es@4.5.0",
+      "lodash": "npm:lodash@4.6.1",
+      "lodash-es": "npm:lodash-es@4.6.1",
       "loose-envify": "npm:loose-envify@1.1.0",
       "process": "github:jspm/nodelibs-process@0.1.2"
     },

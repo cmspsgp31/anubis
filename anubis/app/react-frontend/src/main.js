@@ -4,6 +4,7 @@ import 'intl';
 import 'intl/locale-data/jsonp/pt-BR';
 
 import React from 'react';
+import {PropTypes as RPropTypes} from 'react';
 import ReactDOM from 'react-dom';
 import Babel from 'babel';
 import _ from 'lodash';
@@ -41,6 +42,48 @@ function compile(code, vars, returnWhat) {
 	return eval(transformedCode);
 }
 
+class Main extends React.Component {
+	static propTypes = {
+		appData: RPropTypes.object,
+		searchComponent: RPropTypes.func,
+		store: RPropTypes.object,
+		zoomComponent: RPropTypes.func,
+		zoomComponentForSearch: RPropTypes.func,
+	}
+
+	render() {
+		const {
+			appData,
+			store,
+			zoomComponent,
+			zoomComponentForSearch,
+			searchComponent,
+		} = this.props;
+
+		return (
+			<Provider store={store}>
+				<Router history={browserHistory}>
+					<Route path={appData.baseURL} component={App}>
+						<Route
+							path={appData.detailsRoute}
+							components={{zoom: zoomComponent}}>
+						</Route>
+						<Route path={appData.searchRoute}
+							components={{list: searchComponent}}>
+						</Route>
+						<Route path={appData.searchAndDetailsRoute}
+							components={{
+								zoom: zoomComponentForSearch,
+								list: searchComponent
+							}}>
+						</Route>
+					</Route>
+				</Router>
+			</Provider>
+		);
+	}
+}
+
 
 window.addEventListener("DOMContentLoaded", () => {
 	injectTapEventPlugin();
@@ -74,9 +117,9 @@ window.addEventListener("DOMContentLoaded", () => {
 		"AppTheme");
 
 	let zoomComponent = (props) => <RecordZoom {...props}
+		alsoSearching={false}
 		key="zoomComponent"
 		templates={recordTemplates}
-		alsoSearching={false}
 		/>;
 
 	let searchComponent = (props) => <RecordList {...props}
@@ -87,31 +130,19 @@ window.addEventListener("DOMContentLoaded", () => {
 	let zoomComponentForSearch = (props) => <RecordZoom {...props}
 		key="zoomComponent"
 		templates={recordTemplates}
-		alsoSearching={true}
+		alsoSearching
 		/>;
 
 	let store = configureStore(appReducers, state);
 
 	ReactDOM.render(
-		<Provider store={store}>
-			<Router history={browserHistory}>
-				<Route path={appData.baseURL} component={App}>
-					<Route
-						path={appData.detailsRoute}
-						components={{zoom: zoomComponent}}>
-					</Route>
-					<Route path={appData.searchRoute}
-						components={{list: searchComponent}}>
-					</Route>
-					<Route path={appData.searchAndDetailsRoute}
-						components={{
-							zoom: zoomComponentForSearch,
-							list: searchComponent
-						}}>
-					</Route>
-				</Route>
-			</Router>
-		</Provider>
+		<Main
+			appData={appData}
+			searchComponent={searchComponent}
+			store={store}
+			zoomComponent={zoomComponent}
+			zoomComponentForSearch={zoomComponentForSearch}
+		/>
 	, document.querySelector("#app"));
 }, false);
 

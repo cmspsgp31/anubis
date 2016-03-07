@@ -1,16 +1,74 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import IPropTypes from 'react-immutable-proptypes';
+
 import {PropTypes as RPropTypes} from 'react';
 import {Paper} from 'material-ui';
 import {IconButton} from 'material-ui';
 import {ContentClear} from 'material-ui/lib/svg-icons';
+import {DragSource, DropTarget} from 'react-dnd';
+
+const tokenSource = {
+	beginDrag(props) {
+		return props.token;
+	},
+};
+
+export const tokenTarget = (getIndex) => ({
+	canDrop() {
+		return false;
+	},
+
+	hover(props, monitor, component) {
+		const draggedToken = monitor.getItem().get('index');
+		const overToken = getIndex(props);
+
+		const offset = monitor.getClientOffset();
+		const rect = ReactDOM.findDOMNode(component).getBoundingClientRect();
+
+		const diffLeft = Math.abs(rect.left - offset.x);
+		const diffRight = Math.abs(rect.right - offset.x);
+
+		let overOffset = 0;
+
+		if (diffLeft > diffRight) overOffset = 1;
+
+		props.onSort(draggedToken, overToken, overOffset);
+	},
+});
+
+export const TokenType = "__TOKEN__";
+
+export const makeDraggable = subcls => {
+	const makeSource = DragSource(TokenType, tokenSource, (c, m) => ({
+		dragSource: c.dragSource(),
+		isDragging: m.isDragging(),
+	}));
+
+	const boundTokenTarget = tokenTarget(props => props.token.get('index'));
+
+	const makeTarget = DropTarget(TokenType, boundTokenTarget, c => ({
+		dropTarget: c.dropTarget(),
+	}));
+
+	return makeTarget(makeSource(subcls));
+};
 
 export default class Token extends React.Component {
 	static propTypes = {
+		dragSource: RPropTypes.func,
+		dropTarget: RPropTypes.func,
 		index: RPropTypes.number,
+		isDragging: RPropTypes.bool,
 		onRemove: RPropTypes.func,
+		onSort: RPropTypes.func,
 		style: RPropTypes.object,
 		textElement: RPropTypes.func,
+		token: IPropTypes.contains({
+			key: RPropTypes.string.isRequired,
+			index: RPropTypes.number.isRequired,
+			args: IPropTypes.listOf(RPropTypes.string),
+		}),
 	}
 
 	static contextTypes = {
@@ -41,11 +99,9 @@ export default class Token extends React.Component {
 	}
 
 	get style() {
-		return Object.assign({}, this.baseStyle, this.props.style);
-	}
-
-	static expr() {
-		return null;
+		return Object.assign({}, this.baseStyle, this.props.style, {
+			opacity: (this.props.isDragging) ? 0.5 : 1,
+		});
 	}
 
 	baseIconButtonStyle = {
@@ -108,7 +164,7 @@ export default class Token extends React.Component {
 
 		contents = [contents, this.renderCloseButton()];
 
-		return (
+		return this.props.dragSource(this.props.dropTarget(
 			<div>
 				<Paper
 					ref={c => this.element = c}
@@ -118,7 +174,7 @@ export default class Token extends React.Component {
 					{contents}
 				</Paper>
 			</div>
-		);
+		));
 	}
 
 }

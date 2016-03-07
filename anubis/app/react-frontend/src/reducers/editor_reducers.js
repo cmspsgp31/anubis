@@ -1,5 +1,4 @@
 import TokenList from 'components/TokenField/token_list';
-import UnitToken from 'components/TokenField/unit_token';
 import _ from 'lodash';
 import I from 'immutable';
 
@@ -24,6 +23,17 @@ const createAction = (state, token) => {
 
 	return state.updateIn(['searchResults', 'position'], p =>
 		p + tokens.length);
+};
+
+const unitExpr = obj => {
+	let key = obj.get('key');
+	let values = obj.get('args')
+		.map(value => value.replace(/\$/g, "$$").replace(/"/g, '$"'))
+		.reduce((agg, value) => agg + `,"${value}"`, "");
+
+	if (obj.get('args').size == 0) values = ',""';
+
+	return `${key}${values}`;
 };
 
 export let Editor = {
@@ -81,7 +91,7 @@ export let Editor = {
 					return connectorMap[obj.get('key')];
 				}
 
-				return UnitToken.expr(obj);
+				return unitExpr(obj);
 			}).join("");
 
 			return state.setIn(['searchResults', 'textExpression'],
