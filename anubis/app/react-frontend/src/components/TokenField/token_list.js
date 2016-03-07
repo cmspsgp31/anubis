@@ -270,7 +270,9 @@ export default class TokenList extends React.Component {
 				onSearch: this.props.onSearch,
 				onSort: this.handleSort,
 				position: this.props.position,
-				ref: c => this.editorToken = c,
+				ref: c => this.editorToken = (c) ?
+					c.getDecoratedComponentInstance() :
+					null,
 				sortData: "__EDITOR__",
 				units: this.props.fieldsets,
 			}),
