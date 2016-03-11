@@ -62,6 +62,7 @@ export default class Token extends React.Component {
 		isDragging: RPropTypes.bool,
 		onRemove: RPropTypes.func,
 		onSort: RPropTypes.func,
+		setEditorValue: RPropTypes.func,
 		style: RPropTypes.object,
 		textElement: RPropTypes.func,
 		token: IPropTypes.contains({
@@ -75,10 +76,9 @@ export default class Token extends React.Component {
 		muiTheme: RPropTypes.object,
 	}
 
-	uppercaseStyle = {
-		fontWeight: 500,
-		textTransform: 'uppercase',
-	};
+	componentWillMount() {
+		this.props.setEditorValue("");
+	}
 
 	get baseStyle() {
 		let bgColor = this.context.muiTheme.rawTheme.palette.primary2Color;
@@ -119,6 +119,11 @@ export default class Token extends React.Component {
 		width: 18,
 		verticalAlign: "middle",
 	}
+
+	uppercaseStyle = {
+		fontWeight: 500,
+		textTransform: 'uppercase',
+	};
 
 	makeIconButton(icon, options={style: {}, iconStyle: {}, props: {},
 			iconProps: {}}) {

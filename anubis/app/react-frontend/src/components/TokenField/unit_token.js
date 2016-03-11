@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import IPropTypes from 'react-immutable-proptypes';
 import Intl from 'intl';
 
@@ -32,6 +33,29 @@ export default class UnitToken extends Token {
 		searchKey: RPropTypes.string,
 		values: IPropTypes.list,
 	});
+
+	constructor(props) {
+		super(props);
+
+		this.state = {grabFocus: false};
+		this.firstField = null;
+	}
+
+	componentWillMount() {
+		super.componentWillMount();
+
+		this.setState({grabFocus: true});
+	}
+
+	componentDidUpdate() {
+		if (this.state.grabFocus && (this.firstField != null)) {
+			this.setState({grabFocus: false});
+			this.firstField.focus();
+			console.log(this.firstField);
+			console.log(ReactDOM.findDOMNode(this.firstField));
+		}
+	}
+
 
 	get fieldsValues() {
 		return _.zip(this.props.fields, this.props.values);
@@ -79,6 +103,7 @@ export default class UnitToken extends Token {
 							iconStyle={{top: -14}}
 							labelStyle={insideStyle}
 							onChange={this.handleFieldChange(i)}
+							ref={c => (i == 0) ? this.firstField = c : null}
 							style={outsideStyle}
 							value={`${value}`}
 						>
@@ -103,6 +128,7 @@ export default class UnitToken extends Token {
 								inputStyle={insideStyle}
 								onChange={this.handleFieldChange(i)}
 								onEnterKeyDown={this.props.onSearch}
+								ref={c => (i == 0) ? this.firstField = c : null}
 								style={{...outsideStyle, width: "205px"}}
 								value={value}
 							/>
@@ -144,6 +170,7 @@ export default class UnitToken extends Token {
 							inputStyle={insideStyle}
 							onChange={this.handleFieldChange(i)}
 							onEnterKeyDown={this.props.onSearch}
+							ref={c => (i == 0) ? this.firstField = c : null}
 							style={{...outsideStyle, width: "auto"}}
 							value={value}
 						/>

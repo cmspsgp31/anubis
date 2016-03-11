@@ -159,8 +159,19 @@ export default class TokenList extends React.Component {
 	}
 
 	handleChange = ev => {
-		this.setState({editorValue: ev.target.value});
-		return this.props.onChange({target: {value: this.props.value}});
+		const effectiveValue = this.props.value + ev.target.value;
+
+		this.editorValue = ev.target.value;
+
+		return this.props.onChange({target: {value: effectiveValue}});
+	}
+
+	get editorValue() {
+		return this.state.editorValue;
+	}
+
+	set editorValue(value) {
+		this.setState({editorValue: value});
 	}
 
 	handleSort = (dragged, over, overOffset) => {
@@ -208,6 +219,7 @@ export default class TokenList extends React.Component {
 				onChange: this.props.modifyInnerFieldEditor,
 				onSearch: this.props.onSearch,
 				onSort: this.handleSort,
+				setEditorValue: v => this.editorValue = v,
 				textElement: this.props.textElement,
 				token: obj,
 			};
@@ -267,6 +279,7 @@ export default class TokenList extends React.Component {
 				insertToken: this.props.createTokenEditor,
 				isFocused: this.props.isFocused,
 				move: this.props.moveTokenEditor,
+				setEditorValue: v => this.editorValue = v,
 				onSearch: this.props.onSearch,
 				onSort: this.handleSort,
 				position: this.props.position,
@@ -275,6 +288,7 @@ export default class TokenList extends React.Component {
 					null,
 				sortData: "__EDITOR__",
 				units: this.props.fieldsets,
+				value: this.editorValue,
 			}),
 		});
 

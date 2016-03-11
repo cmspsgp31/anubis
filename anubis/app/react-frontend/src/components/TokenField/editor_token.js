@@ -1,8 +1,15 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
+import I from 'immutable';
+import Fuse from 'fuse.js';
 
 import {PropTypes as RPropTypes} from 'react';
 import IPropTypes from 'react-immutable-proptypes';
-import {IconMenu, MenuItem} from 'material-ui';
+import {IconMenu,
+	MenuItem,
+	Popover,
+	AutoComplete,
+	Menu} from 'material-ui';
 import {ContentLink, ContentAddBox} from 'material-ui/lib/svg-icons';
 import {DropTarget} from 'react-dnd';
 
@@ -36,10 +43,47 @@ export default class EditorToken extends Token {
 			required: RPropTypes.bool.isRequired,
 			ui_element: RPropTypes.string.isRequired,
 		}),
+		value: RPropTypes.string,
 	};
 
 	static contextTypes = {
 		muiTheme: RPropTypes.object,
+	}
+
+	constructor(props) {
+		super(props);
+
+		this.state = {
+			open: false,
+			completions: [],
+			anchor: null,
+			selected: null,
+		};
+
+		this._forceFocus = false;
+
+	}
+
+	componentWillMount() {
+		this.autocompleteOptions = this.generateAutocompleteOptions();
+	}
+
+	generateAutocompleteOptions() {
+		const {units} = this.props;
+
+		let source = units.map((obj, key) => ({
+			description: obj.get('description'),
+			key,
+		})).valueSeq().toList();
+
+		source = source.concat(this.connectors.map(([desc, key]) => ({
+			description: desc,
+			key,
+		})));
+
+		return new Fuse(source.toJS(), {
+			keys: ['description'],
+		});
 	}
 
 	renderCloseButton() {
@@ -47,15 +91,37 @@ export default class EditorToken extends Token {
 	}
 
 	handleBlur = ev => {
-		this.props.inputProps.onBlur(ev);
+		if (this.state.open || this._forceFocus) {
+			this.lead.focus();
+			this._forceFocus = false;
+		}
+		else this.props.inputProps.onBlur(ev);
 	}
 
 	handleChange = ev => {
+		const text = ev.target.value;
+		this._forceFocus = true;
+
+		if (text != "") {
+			const completions = this.autocompleteOptions.search(text);
+
+			if (!this.state.anchor) {
+				this.setState({anchor: ReactDOM.findDOMNode(this.lead)});
+			}
+
+			this.setState({open: true, completions});
+		}
+		else this.setState({open: false});
+
 		this.props.inputProps.onChange(ev);
 	}
 
+	handleCloseCompletions = () => {
+		this.setState({open: false});
+	}
+
 	handleFocus = ev => {
-		this.props.inputProps.onFocus(ev);
+		if (ev) this.props.inputProps.onFocus(ev);
 	}
 
 	handleKeyDown = ev => {
@@ -122,9 +188,21 @@ export default class EditorToken extends Token {
 				}
 				break;
 
+			case 27: // ESC
+				this.handleCloseCompletions();
+				break;
 
+			case 38: // down arrow
+				this.handleMoveCompletion(-1);
+				break;
 
+			case 40: // down arrow
+				this.handleMoveCompletion(1);
+				break;
 
+			case 9: // tab
+				this.handleAcceptCompletion(ev);
+				break;
 		}
 
 		this.props.inputProps.onKeyDown(ev);
@@ -142,6 +220,25 @@ export default class EditorToken extends Token {
 		}
 	}
 
+	handleMoveCompletion = (count) => {
+		let keys = this.state.completions.map(({key}) => key);
+
+		keys.splice(0, 0, null);
+
+		if (keys.length == 0) return;
+
+		let current = keys.indexOf(this.state.selected);
+
+		if (current == -1) current = 0;
+
+		let next = current + count;
+
+		if (next >= keys.length) next = 0;
+		else if (next < 0) next = keys.length + next;
+
+		this.setState({selected: keys[next]});
+	}
+
 	handleBackspace = () => {
 		if ((this.props.position > 0) && (this.lead.value.length == 0)) {
 			this.props.deleteToken(this.props.position - 1);
@@ -151,6 +248,22 @@ export default class EditorToken extends Token {
 	handleInsert = key => {
 		this.props.insertToken(key);
 	}
+
+	handleAcceptCompletion = ev => {
+		if (this.state.selected) {
+			this.props.insertToken(this.state.selected);
+			this.setState({open: false, selected: null});
+			ev.preventDefault();
+		}
+	}
+
+	connectors = [
+			["E", "__AND__", "/, &, *"],
+			["Ou", "__OR__", "+, |"],
+			["Não", "__NOT__", "!"],
+			["Abre parênteses", "__LPARENS__", "("],
+			["Fecha parênteses", "__RPARENS__", ")"],
+	];
 
 	render() {
 		let style = Object.assign({}, this.props.style, {
@@ -195,13 +308,7 @@ export default class EditorToken extends Token {
 			.toList()
 			.toJS();
 
-		let connectors = [
-			["E", "__AND__", "/, &, *"],
-			["Ou", "__OR__", "+, |"],
-			["Não", "__NOT__", "!"],
-			["Abre parênteses", "__LPARENS__", "("],
-			["Fecha parênteses", "__RPARENS__", ")"],
-		].map(([desc, key, sec]) => (
+		let connectors = this.connectors.map(([desc, key, sec]) => (
 			<MenuItem
 				key={key}
 				onTouchTap={() => this.props.insertToken(key)}
@@ -225,6 +332,29 @@ export default class EditorToken extends Token {
 					style={inputStyle}
 					value={this.props.value}
 				/>
+
+				<Popover
+					onRequestClose={this.handleCloseCompletions}
+					open={this.state.open}
+					anchorEl={this.state.anchor}
+					useLayerForClickAway={false}
+				>
+					<Menu
+						onEscKeyDown={this.handleCloseCompletions}
+						initiallyKeyboardFocused={false}
+						value={this.state.selected}
+					>
+						{this.state.completions.map(({description, key}) => (
+							<MenuItem
+								disableFocusRipple
+								onTouchTap={() => this.props.insertToken(key)}
+								key={key}
+								value={key}
+								primaryText={description}
+							/>
+						))}
+					</Menu>
+				</Popover>
 
 				<IconMenu
 					iconButtonElement={this.makeIconButton(ContentLink, {

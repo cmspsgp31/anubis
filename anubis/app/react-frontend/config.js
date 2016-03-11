@@ -20,6 +20,7 @@ System.config({
     "babel-polyfill": "npm:babel-polyfill@6.5.0",
     "babel-runtime": "npm:babel-runtime@5.8.35",
     "core-js": "npm:core-js@1.2.6",
+    "fuse.js": "npm:fuse.js@2.2.0",
     "immutable": "npm:immutable@3.7.6",
     "intl": "npm:intl@1.1.0",
     "lodash": "npm:lodash@4.6.1",
@@ -120,6 +121,9 @@ System.config({
     },
     "npm:flux-standard-action@0.6.0": {
       "lodash.isplainobject": "npm:lodash.isplainobject@3.2.0"
+    },
+    "npm:fuse.js@2.2.0": {
+      "systemjs-json": "github:systemjs/plugin-json@0.1.0"
     },
     "npm:history@2.0.0": {
       "child_process": "github:jspm/nodelibs-child_process@0.1.0",
