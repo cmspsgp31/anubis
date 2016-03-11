@@ -107,8 +107,7 @@ System.config({
       "redux": "npm:redux@3.3.1"
     },
     "npm:domain-browser@1.1.7": {
-      "events": "github:jspm/nodelibs-events@0.1.1",
-      "systemjs-json": "github:systemjs/plugin-json@0.1.0"
+      "events": "github:jspm/nodelibs-events@0.1.1"
     },
     "npm:fbjs@0.2.1": {
       "core-js": "npm:core-js@1.2.6",

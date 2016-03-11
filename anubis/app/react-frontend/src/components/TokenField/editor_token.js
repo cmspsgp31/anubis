@@ -68,6 +68,12 @@ export default class EditorToken extends Token {
 		this.autocompleteOptions = this.generateAutocompleteOptions();
 	}
 
+	componentDidUpdate(props) {
+		if (props.value != this.props.value) {
+			this.buildCompletions(this.props.value);
+		}
+	}
+
 	generateAutocompleteOptions() {
 		const {units} = this.props;
 
@@ -98,25 +104,37 @@ export default class EditorToken extends Token {
 		else this.props.inputProps.onBlur(ev);
 	}
 
-	handleChange = ev => {
-		const text = ev.target.value;
+	buildCompletions(text) {
+		let completions = [];
+
 		this._forceFocus = true;
 
 		if (text != "") {
-			const completions = this.autocompleteOptions.search(text);
+			completions = this.autocompleteOptions.search(text);
 
 			if (!this.state.anchor) {
 				this.setState({anchor: ReactDOM.findDOMNode(this.lead)});
 			}
-
-			this.setState({open: true, completions});
 		}
-		else this.setState({open: false});
+
+		if (completions.length > 0) {
+			let selected = completions[0].key;
+
+			this.setState({open: true, completions, selected});
+		}
+		else {
+			this.setState({open: false, selected: null, completions: []});
+		}
+	}
+
+	handleChange = ev => {
+		this.buildCompletions(ev.target.value);
 
 		this.props.inputProps.onChange(ev);
 	}
 
 	handleCloseCompletions = () => {
+		this._forceFocus = true;
 		this.setState({open: false});
 	}
 
@@ -201,7 +219,9 @@ export default class EditorToken extends Token {
 				break;
 
 			case 9: // tab
-				this.handleAcceptCompletion(ev);
+				if (!ev.shiftKey) {
+					this.handleAcceptCompletion(ev);
+				}
 				break;
 		}
 
@@ -222,8 +242,6 @@ export default class EditorToken extends Token {
 
 	handleMoveCompletion = (count) => {
 		let keys = this.state.completions.map(({key}) => key);
-
-		keys.splice(0, 0, null);
 
 		if (keys.length == 0) return;
 
@@ -334,9 +352,10 @@ export default class EditorToken extends Token {
 				/>
 
 				<Popover
+					anchorEl={this.state.anchor}
+					canAutoPosition={false}
 					onRequestClose={this.handleCloseCompletions}
 					open={this.state.open}
-					anchorEl={this.state.anchor}
 					useLayerForClickAway={false}
 				>
 					<Menu
@@ -346,7 +365,6 @@ export default class EditorToken extends Token {
 					>
 						{this.state.completions.map(({description, key}) => (
 							<MenuItem
-								disableFocusRipple
 								onTouchTap={() => this.props.insertToken(key)}
 								key={key}
 								value={key}

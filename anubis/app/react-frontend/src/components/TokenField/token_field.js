@@ -112,7 +112,8 @@ export default class TokenField extends React.Component {
 	handleSearch = ev => {
 		if (ev) ev.preventDefault();
 
-		let editorValue = this.textField.refs.input.state.editorValue;
+		let editorValue = (this.textField) &&
+			this.textField.refs.input.state.editorValue;
 
 		if (editorValue && (editorValue != "")) {
 			this.props.expandDefaultUnitEditor(editorValue);

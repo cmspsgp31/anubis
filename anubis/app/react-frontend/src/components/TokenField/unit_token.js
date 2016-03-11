@@ -2,12 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import IPropTypes from 'react-immutable-proptypes';
 import Intl from 'intl';
+import I from 'immutable';
+import _ from 'lodash';
 
 import {PropTypes as RPropTypes} from 'react';
 import {TextField, SelectField, MenuItem, DatePickerDialog} from 'material-ui';
 import {ActionDateRange} from 'material-ui/lib/svg-icons';
-
-import _ from 'lodash';
 
 import Token, {makeDraggable} from './token';
 
@@ -37,42 +37,93 @@ export default class UnitToken extends Token {
 	constructor(props) {
 		super(props);
 
-		this.state = {grabFocus: false};
+		this.state = {values: null, triggerSearch: false};
 		this.firstField = null;
+		this.grabFocus = false;
 	}
 
 	componentWillMount() {
 		super.componentWillMount();
 
-		this.setState({grabFocus: true});
+		this.updateState(this.props.values);
 	}
 
-	componentDidUpdate() {
-		if (this.state.grabFocus && (this.firstField != null)) {
-			this.setState({grabFocus: false});
-			this.firstField.focus();
-			console.log(this.firstField);
-			console.log(ReactDOM.findDOMNode(this.firstField));
+	componentDidMount() {
+		this.grabFocus = true;
+	}
+
+	componentDidUpdate(newProps) {
+		if (this.firstField && this.grabFocus) {
+			const node = ReactDOM.findDOMNode(this.firstField.refs.input);
+			setTimeout(() => node.focus(), 250);
+			this.firstField = null;
+			this.grabFocus = false;
+		}
+
+		if (!_.isEqual(newProps.values, this.props.values)) {
+			this.updateState(this.props.values);
+		}
+
+		if (this.state.triggerSearch) {
+			this.setState({triggerSearch: false});
+			this.props.onSearch();
 		}
 	}
 
-
-	get fieldsValues() {
-		return _.zip(this.props.fields, this.props.values);
+	updateState(values) {
+		if (!_.isEqual(values, this.state.values)) {
+			this.setState({values});
+		}
 	}
 
-	handleFieldChange = index => {
-		return (ev, _, value) => {
-			value = (ev.target.value == null) ? value : ev.target.value;
+	setIndexState(index, value) {
+		const values = I.fromJS(this.state.values);
 
-			let payload = {
-				tokenIndex: this.props.index,
-				fieldIndex: index,
-				value,
-			};
+		this.updateState(values.set(index, value).toArray());
+	}
 
-			this.props.onChange(payload);
-		};
+	updateGlobalState(fieldIndex, value) {
+		let payload = {tokenIndex: this.props.index, fieldIndex, value};
+
+		this.props.onChange(payload);
+	}
+
+	get fieldsValues() {
+		return _.zip(this.props.fields, this.state.values);
+	}
+
+	handleFieldBlur = index => () => {
+		this.updateGlobalState(index, this.state.values[index]);
+	}
+
+	handleFieldEnterKeyDown = index => () => {
+		this.updateGlobalState(index, this.state.values[index]);
+
+		this.setState({triggerSearch: true});
+	}
+
+	handleFieldChange = index => ev => {
+		const value = ev.target.value;
+
+		this.setIndexState(index, value);
+	};
+
+	handleSelectChange = index => (_, __, value) => {
+		this.setIndexState(index, value);
+
+		this.updateGlobalState(index, value);
+	}
+
+	handleDateAccept = index => date => {
+		date = new Intl.DateTimeFormat("pt-BR").format(date);
+
+		this.setIndexState(index, date);
+
+		this.updateGlobalState(index, date);
+	}
+
+	firstFieldRef = index => c => {
+		if (index == 0) this.firstField = c;
 	}
 
 	makeField = hideLabel => {
@@ -101,9 +152,9 @@ export default class UnitToken extends Token {
 						<SelectField
 							autoWidth
 							iconStyle={{top: -14}}
+							key={`field_${i}_${this.props.index}`}
 							labelStyle={insideStyle}
-							onChange={this.handleFieldChange(i)}
-							ref={c => (i == 0) ? this.firstField = c : null}
+							onChange={this.handleSelectChange(i)}
 							style={outsideStyle}
 							value={`${value}`}
 						>
@@ -126,9 +177,11 @@ export default class UnitToken extends Token {
 							<TextField
 								hintText={field.help_text}
 								inputStyle={insideStyle}
+								key={`field_${i}_${this.props.index}`}
+								onBlur={this.handleFieldBlur(i)}
 								onChange={this.handleFieldChange(i)}
-								onEnterKeyDown={this.props.onSearch}
-								ref={c => (i == 0) ? this.firstField = c : null}
+								onEnterKeyDown={this.handleFieldEnterKeyDown(i)}
+								ref={this.firstFieldRef(i)}
 								style={{...outsideStyle, width: "205px"}}
 								value={value}
 							/>
@@ -149,14 +202,7 @@ export default class UnitToken extends Token {
 								firstDayOfWeek={0}
 								locale="pt-BR"
 								maxDate={new Date()}
-								onAccept={date => {
-									date = new Intl.DateTimeFormat("pt-BR")
-										.format(date);
-
-									this.handleFieldChange(i)({
-										target: {value: date},
-									}, null, date);
-								}}
+								onAccept={this.handleDateAccept(i)}
 								ref={c => this.datePickers[i] = c}
 							/>
 						</div>
@@ -168,9 +214,11 @@ export default class UnitToken extends Token {
 						<TextField
 							hintText={field.help_text}
 							inputStyle={insideStyle}
+							key={`field_${i}_${this.props.index}`}
+							onBlur={this.handleFieldBlur(i)}
 							onChange={this.handleFieldChange(i)}
-							onEnterKeyDown={this.props.onSearch}
-							ref={c => (i == 0) ? this.firstField = c : null}
+							onEnterKeyDown={this.handleFieldEnterKeyDown(i)}
+							ref={this.firstFieldRef(i)}
 							style={{...outsideStyle, width: "auto"}}
 							value={value}
 						/>
