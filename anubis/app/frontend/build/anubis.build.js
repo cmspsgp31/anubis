@@ -3,11 +3,11 @@
 	, name: "anubis/main"
 	, out: "anubis.js"
 	, paths:
-		{ "jquery": "../lib/jquery.min"
-		, "ui": "../lib/jquery-ui.min"
-		, "backbone": "../lib/backbone-min"
-		, "swig": "../lib/swig.min"
-		, "underscore": "../lib/underscore-min"
+		{ "jquery": "../lib/jquery"
+		, "ui": "../lib/jquery-ui"
+		, "backbone": "../lib/backbone"
+		, "swig": "../lib/swig"
+		, "underscore": "../lib/underscore"
 		, "requireLib": "../lib/require"
 		}
 	, map:

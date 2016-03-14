@@ -33,7 +33,9 @@ executable libParseUrl.so
     main-is: ParseUrl.hs
     other-extensions: DeriveGeneric, OverloadedStrings
     ghc-options: -no-hs-main -fPIC -shared -dynamic -threaded
-    ld-options: -shared {library_path}
+    ld-options: -shared
+    extra-libraries: {library_path}
+    extra-lib-dirs: {extra_lib_path}
     build-depends:
         base >= 4.7
         , bytestring >= 0.10

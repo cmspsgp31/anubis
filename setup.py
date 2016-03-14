@@ -24,6 +24,7 @@ import os
 import shutil
 import sys
 import json
+import glob
 
 from setuptools import setup
 from setuptools.command.install import install
@@ -70,9 +71,29 @@ def find_ghc_runtime():
               .split(" ")[-1] \
               .strip("\n")
 
-    file_name = "libHSrts-ghc{}.so".format(version)
+    file_name = "HSrts-ghc{}".format(version)
 
-    return os.path.join(ghc_libraries, "rts", file_name)
+    path_options = glob.glob(os.path.join(ghc_libraries, "rts*"))
+
+    # extra_lib_path = None
+
+    extra_lib_path = path_options[0] + "/"
+
+    # for path in path_options:
+    #     full_name = "lib{}.so".format(file_name)
+
+    #     if os.path.isfile(os.path.join(path, file_name)):
+    #         extra_lib_path = path
+
+    #         if not extra_lib_path.endswith("/"):
+    #             extra_lib_path += "/"
+
+    #         break
+
+    if extra_lib_path is None:
+        raise EnvironmentError("Couldn't find GHC runtime to link against.")
+
+    return (extra_lib_path, file_name)
 
 class CompileHaskellMixin:
     def initialize_options(self):
@@ -102,13 +123,14 @@ class CompileHaskellMixin:
         working = os.path.join(package_dir, "parseurl")
         template_path = os.path.join(working, "parseurl.cabal.template")
         cabal_path = os.path.join(working, "parseurl.cabal")
-        library_path = find_ghc_runtime()
+        extra_lib_path, library_path = find_ghc_runtime()
 
         with open(template_path, "r") as template_fd:
             template_body = template_fd.read()
 
         with open(cabal_path, "w") as cabal_fd:
-            contents = template_body.format(library_path=library_path)
+            contents = template_body.format(library_path=library_path,
+                                            extra_lib_path=extra_lib_path)
             cabal_fd.write(contents)
 
 
@@ -202,7 +224,8 @@ class CompileReactFrontendMixin:
             self.compile_react_frontend(package_dir)
 
 
-class InstallAnubis(CompileFrontendMixin, CompileHaskellMixin, install):
+class InstallAnubis(CompileReactFrontendMixin, CompileFrontendMixin,
+                    CompileHaskellMixin, install):
     pass
 
 class DevelopAnubis(CompileReactFrontendMixin,
@@ -230,7 +253,8 @@ setup(
     packages=[
         "anubis",
         "anubis.app",
-        "anubis.app.templatetags"],
+        "anubis.app.templatetags",
+        "anubis.operations"],
     install_requires=[
         "Django >=1.8, <1.9",
         "djangorestframework <3",
@@ -243,7 +267,15 @@ setup(
         'anubis.app': [
             'frontend/*.coffee',
             'frontend/Cakefile',
+            'frontend/lib/*',
             'frontend/build/anubis.build.js',
+            'react-frontend/config.js',
+            'react-frontend/package.json',
+            'react-frontend/src/*.js',
+            'react-frontend/src/reducers/*.js',
+            'react-frontend/src/components/*.js',
+            'react-frontend/src/components/TokenField/*.js',
+            'react-frontend/components/**/*.js',
             'static/anubis/anubis.css',
             'templates/*.html']},
     cmdclass={
