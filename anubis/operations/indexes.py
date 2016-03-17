@@ -89,3 +89,18 @@ class AddTrigramIndex(AddCustomIndex):
     def describe(self):
         return "Add trigram index {} to table {}".format(self.index_name,
                                                          self.table_name)
+
+class AddGINTrigramIndex(AddCustomIndex):
+    reduces_to_sql = True
+    reversible = True
+
+    def __init__(self, model, field_name):
+        index_name = "{}_trgm_index".format(field_name)
+        sql = "gin ({} gin_trgm_ops)".format(field_name)
+
+        super().__init__(model, index_name, sql)
+
+    def describe(self):
+        return "Add GIN trigram index {} to table {}".format(self.index_name,
+                                                             self.table_name)
+

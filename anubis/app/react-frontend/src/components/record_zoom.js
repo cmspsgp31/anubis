@@ -82,7 +82,7 @@ export default class RecordZoom extends React.Component {
 		/*eslint-enable */
 
 		if (!this.props.hasDetails) {
-			this.fetchDetails(this.props.params)
+			this.fetchDetails(this.props.params);
 		}
 		else {
 			this.conditionalCache(this.props.params);
@@ -251,6 +251,7 @@ export default class RecordZoom extends React.Component {
 				modal={false}
 				onRequestClose={() => this._close()}
 				open={this.state.visible}
+				style={{zIndex: 10000}}
 				title={title}
 			>
 				{contents}

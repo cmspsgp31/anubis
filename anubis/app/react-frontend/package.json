@@ -30,6 +30,7 @@
       "react-redux": "npm:react-redux@^4",
       "react-router": "npm:react-router@^2",
       "react-router-redux": "npm:react-router-redux@^2",
+      "react-sticky": "npm:react-sticky@^4.0.1",
       "react-tap-event-plugin": "npm:react-tap-event-plugin@^0.2",
       "reduce-reducers": "npm:reduce-reducers@^0.1",
       "redux": "npm:redux@^3",

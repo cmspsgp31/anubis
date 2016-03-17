@@ -23,7 +23,7 @@
 """
 
 from anubis.operations.indexes import AddCustomIndex, AddCustomViewIndex, \
-    AddTrigramIndex
+    AddTrigramIndex, AddGINTrigramIndex
 
 from anubis.operations.constraints import AddConstraint, AddCheckConstraint, \
     AddStartBeforeEndConstraint, AddGistConstraint, \
@@ -40,6 +40,7 @@ from anubis.operations.triggers import AddTrigger, AddTableTrigger, \
 __all__ = ["AddCustomIndex",
            "AddCustomViewIndex",
            "AddTrigramIndex",
+           "AddGINTrigramIndex",
            "AddConstraint",
            "AddCheckConstraint",
            "AddStartBeforeEndConstraint",

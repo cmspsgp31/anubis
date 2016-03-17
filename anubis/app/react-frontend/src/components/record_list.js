@@ -11,6 +11,7 @@ import {NavigationArrowUpward, NavigationArrowDownward,
 import {Link} from 'react-router';
 import {routeActions} from 'react-router-redux';
 import {bindActionCreators} from 'redux';
+import {Sticky} from 'react-sticky';
 
 import Actions from 'actions';
 
@@ -416,41 +417,51 @@ export default class RecordList extends React.Component {
 
 			contents = (
 				<div style={{marginBottom: "56px"}}>
-					{models}
-					<Toolbar style={{
-							display: "flex",
-							justifyContent: "space-around",
-							alignItems: "stretch",
-							flexFlow: "row wrap",
-							height: "",
-							minHeight: "56px",
+					<Sticky
+						style={{
+							boxShadow: '0 10px 15px 0 rgba(0, 0, 0, 0.4)',
+							position: 'relative',
+							zIndex: 1500,
+							marginBottom: 10,
 						}}
 					>
-						{pagination}
-						{sorting}
-						<ToolbarGroup lastChild>
-							<RaisedButton
-								label="Recarregar"
-								onTouchTap={() => this._clearCache()}
-								primary
-							/>
-							<RaisedButton
-								label="Limpar"
-								onTouchTap={() => this.goToRoot()}
-								secondary
-								style={{marginLeft: "0px"}}
-							/>
-							<Link to={this.searchHtml({})}>
-								<IconButton style={{top: "3px"}}>
-									<SocialShare />
-								</IconButton>
-							</Link>
-						</ToolbarGroup>
-					</Toolbar>
+						{models}
+						<Toolbar style={{
+								display: "flex",
+								justifyContent: "space-around",
+								alignItems: "stretch",
+								flexFlow: "row wrap",
+								height: "",
+								minHeight: "56px",
+							}}
+						>
+							{pagination}
+							{sorting}
+							<ToolbarGroup lastChild>
+								<RaisedButton
+									label="Recarregar"
+									onTouchTap={() => this._clearCache()}
+									primary
+								/>
+								<RaisedButton
+									label="Limpar"
+									onTouchTap={() => this.goToRoot()}
+									secondary
+									style={{marginLeft: "0px"}}
+								/>
+								<Link to={this.searchHtml({})}>
+									<IconButton style={{top: "3px"}}>
+										<SocialShare />
+									</IconButton>
+								</Link>
+							</ToolbarGroup>
+						</Toolbar>
+					</Sticky>
 					<ul style={{
 						display: "flex",
 						flexFlow: "row wrap",
 						listStyle: "none",
+						paddingBottom: 10,
 					}}
 					>
 						{tiles}

@@ -23,6 +23,7 @@ export default class Header extends React.Component {
 		return (
 			<Toolbar
 				style={{
+					boxShadow: "0 -10px 15px 0 rgba(0,0,0,0.4)",
 					position: "fixed",
 					bottom: 0,
 					fontFamily: "'Roboto', sans-serif",

@@ -548,6 +548,30 @@ class StateViewMixin:
     user_serializer = _UserSerializer
 
     @classmethod
+    def autocomplete_model(cls, model, filter_, description=None):
+        model_name = model.__name__.lower()
+
+        def view(request, needle):
+            queryset = filter_.filter_queryset(model.objects.all(), [needle])
+
+            if description is None:
+                description = str
+
+            return Response({[record.id, description(record)]
+                             for record in queryset})
+
+        url_string = (r"^{api_prefix}/anubis_autocomplete/{model_name}/"
+                      r"(?P<needle>.*)").format(**{
+                          "api_prefix": cls.api_prefix,
+                          "model_name": model_name,
+                      })
+
+        url_name = "anubis_autocomplete_{model_name}" \
+            .format(model_name=model_name)
+
+        return url(url_string, view, name=url_name)
+
+    @classmethod
     def _is_multi_modeled(cls):
         return not isinstance(cls.model, type)
 
@@ -642,6 +666,7 @@ class StateViewMixin:
         self.is_multi_modeled = self._is_multi_modeled()
         self.is_sortable = self._is_sortable()
         self.boolean_expression = None
+        self.action_result = None
 
         self._sorting = {
             "by": None,
@@ -662,6 +687,13 @@ class StateViewMixin:
 
     def get(self, *args, **kwargs):
         self._prepare_attributes()
+
+        return super().get(*args, **kwargs)
+
+    def post(self, *args, **kwargs):
+        self._prepare_attributes()
+
+        self.perform_actions()
 
         return super().get(*args, **kwargs)
 
@@ -868,6 +900,9 @@ class StateViewMixin:
             "searchResults": self.get_search_results(),
             "details": self.get_details(),
         }
+
+        if self.action_result is not None:
+            anubis_state["action_result"] = self.action_result
 
         return anubis_state
 

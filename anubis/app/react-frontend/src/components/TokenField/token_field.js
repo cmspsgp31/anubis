@@ -83,7 +83,9 @@ export default class TokenField extends React.Component {
 	componentDidUpdate(prevProps) {
 		if (this.props.shouldSearch && !prevProps.shouldSearch) {
 			this.props.toggleSearchEditor();
-			this.props.goTo(this.searchHtml);
+			if (this.props.textExpression != "") {
+				this.props.goTo(this.searchHtml);
+			}
 		}
 	}
 

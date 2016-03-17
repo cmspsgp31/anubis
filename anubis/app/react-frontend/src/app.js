@@ -7,6 +7,7 @@ import {Paper, RaisedButton, Dialog, Snackbar} from 'material-ui';
 import {connect} from 'react-redux';
 import {Link} from 'react-router';
 import {bindActionCreators} from 'redux';
+import {StickyContainer} from 'react-sticky';
 
 import Actions from 'actions';
 import Header from 'components/header';
@@ -135,7 +136,9 @@ export default class App extends React.Component {
 
 				<TokenField params={this.props.params} />
 
-				{this.props.list}
+				<StickyContainer>
+					{this.props.list}
+				</StickyContainer>
 				{this.props.zoom}
 
 				{this.renderError()}

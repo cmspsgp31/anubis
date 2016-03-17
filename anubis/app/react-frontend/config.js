@@ -34,6 +34,7 @@ System.config({
     "react-redux": "npm:react-redux@4.4.0",
     "react-router": "npm:react-router@2.0.0",
     "react-router-redux": "npm:react-router-redux@2.1.0",
+    "react-sticky": "npm:react-sticky@4.0.1",
     "react-tap-event-plugin": "npm:react-tap-event-plugin@0.2.2",
     "reduce-reducers": "npm:reduce-reducers@0.1.2",
     "redux": "npm:redux@3.3.1",
@@ -295,6 +296,11 @@ System.config({
       "invariant": "npm:invariant@2.2.0",
       "process": "github:jspm/nodelibs-process@0.1.2",
       "warning": "npm:warning@2.1.0"
+    },
+    "npm:react-sticky@4.0.1": {
+      "process": "github:jspm/nodelibs-process@0.1.2",
+      "react": "npm:react@0.14.7",
+      "react-dom": "npm:react-dom@0.14.7"
     },
     "npm:react-tap-event-plugin@0.2.2": {
       "fbjs": "npm:fbjs@0.2.1",

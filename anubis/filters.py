@@ -239,8 +239,6 @@ class FullTextFilter(Filter):
 
         filtered = queryset.extra(where=[query_part], params=[arg])
 
-        print(filtered.query)
-
         return filtered
 
 
