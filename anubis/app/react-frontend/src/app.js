@@ -1,9 +1,11 @@
 import React from 'react';
 import I from 'immutable';
+import _ from 'lodash';
 import AppTheme from 'material-ui/lib/styles/raw-themes/light-raw-theme';
 import ThemeManager from 'material-ui/lib/styles/theme-manager';
 
-import {Paper, RaisedButton, Dialog, Snackbar} from 'material-ui';
+import {Paper, RaisedButton, Dialog, Snackbar,
+	CircularProgress} from 'material-ui';
 import {connect} from 'react-redux';
 import {Link} from 'react-router';
 import {bindActionCreators} from 'redux';
@@ -13,6 +15,7 @@ import Actions from 'actions';
 import Header from 'components/header';
 import Footer from 'components/footer';
 import TokenField from 'components/TokenField';
+import buildField from 'components/build_field';
 
 
 let getStateProps = state => ({
@@ -21,13 +24,22 @@ let getStateProps = state => ({
 	baseURL: state.getIn(['applicationData', 'baseURL']),
 	detailsHtml: state.getIn(['applicationData', 'detailsHtml']),
 	searchHtml: state.getIn(['applicationData', 'searchHtml']),
+	searchApi: state.getIn(['applicationData', 'searchApi']),
 	globalError: state.getIn(['applicationData', 'globalError']),
 	showErrorDetails: state.getIn(['applicationData', 'showErrorDetails']),
+	actions: state.getIn(['searchResults', 'actions']),
+	currentAction: state.getIn(['applicationData', 'currentAction'], null),
+	actionResult: state.getIn(['searchResults', 'actionResult']),
+	results: state.getIn(['searchResults', 'results']),
 });
 
 let getDispatchProps = dispatch => ({
 	clearGlobalError: bindActionCreators(Actions.clearGlobalError, dispatch),
 	showGlobalErrorDetails: bindActionCreators(Actions.showGlobalErrorDetails,
+		dispatch),
+	cancelServerAction: bindActionCreators(Actions.cancelServerAction,
+		dispatch),
+	submitServerAction: bindActionCreators(Actions.submitServerAction,
 		dispatch),
 });
 
@@ -35,6 +47,17 @@ let getDispatchProps = dispatch => ({
 export default class App extends React.Component {
 	static childContextTypes = {
 		muiTheme: React.PropTypes.object,
+	}
+
+	constructor(props) {
+		super(props);
+
+		this.state = {
+			dataSource: [],
+			waiting: false,
+		};
+
+		this.actionArgs = null;
 	}
 
 	getChildContext() {
@@ -55,6 +78,17 @@ export default class App extends React.Component {
 
 	searchHtml(model, page, sorting, expr) {
 		return eval("`" + this.props.searchHtml + "`");
+	}
+
+	get searchApi() {
+		/*eslint-disable no-unused-vars */
+		let model = this.props.params.model;
+		let expr = this.props.params.splat;
+		let page = this.props.params.page;
+		let sorting = this.props.params.sorting;
+		/*eslint-enable */
+
+		return eval("`" + this.props.searchApi + "`");
 	}
 
 	renderError() {
@@ -118,18 +152,149 @@ export default class App extends React.Component {
 		);
 	}
 
+	handleSubmitAction = () => {
+		if (!this.props.currentAction) return;
+		if (!this.actionArgs) return;
+
+		const actionData = this.props.actions.get(this.props.currentAction);
+		const fields = actionData.get('fields');
+
+		let args = new FormData();
+
+		const results = this.props.results.map(result => result.get('id'));
+
+		args.set('object_list', JSON.stringify(results.toArray()));
+		args.set('action_name', this.props.currentAction);
+
+		for (let key of actionData.get('fields').keys()) {
+			if (_.has(this.actionArgs, key)) {
+				args.set(key, this.actionArgs[key]);
+			}
+		}
+
+		this.props.submitServerAction(this.searchApi, args).then().then(() => {
+			this.setState({waiting: false});
+		});
+		this.setState({waiting: true});
+	}
+
+	renderAction() {
+		const open = !!this.props.currentAction;
+
+		let actionData = I.fromJS({});
+
+		if (open) {
+			actionData = this.props.actions.get(this.props.currentAction);
+
+			if (!this.actionArgs) {
+				this.actionArgs = {};
+			}
+		}
+		else {
+			this.actionArgs = null;
+		}
+
+		return (
+			<Dialog
+				modal={true}
+				onRequestClose={this.props.cancelServerAction}
+				open={open}
+				autoScrollBodyContent={true}
+				title={actionData.get('title', null)}
+				actions={
+					<div
+						style={{
+							display: "flex",
+							justifyContent: "space-between",
+							alignItems: "center",
+							padding: "6px",
+						}}
+					>
+						<RaisedButton
+							label={"Fechar"}
+							secondary
+							onTouchTap={this.props.cancelServerAction}
+						/>
+						{!this.props.actionResult && (
+							<RaisedButton
+								label="OK"
+								primary
+								onTouchTap={this.handleSubmitAction}
+							/>
+						)}
+					</div>
+				}
+			>
+				{this.state.waiting && (
+					<div style={{textAlign: "center"}}>
+						<CircularProgress mode="indeterminate"
+							size={2}
+						/>
+					</div>
+				) || (
+					<div>
+						{this.props.actionResult && (
+							<div>
+								{this.props.actionResult.get('success')
+								&& (
+									<div>
+										<p>Successo</p>
+										<p>{this.props.actionResult.
+											get('result')}
+										</p>
+									</div>
+								) || (
+									<div>
+										<p>Erro</p>
+										<p>{this.props.actionResult.
+											get('error')}
+										</p>
+									</div>
+								)}
+							</div>
+						) || (
+							<div>
+								<p>{actionData.get('description', null)}</p>
+								<p>{actionData.get('fields', I.Map())
+										.map((field, key) => (
+									buildField(field, {
+										onUpdateInput: searchText => {
+											let url = field
+												.get('autocomplete_url');
+											url += encodeURIComponent(searchText);
+
+											let completion = fetch(url, {
+												credentials: 'same-origin',
+											});
+
+											completion.then(r => r.json()
+													.then(json => {
+												this.setState({dataSource: json})
+											}));
+
+										},
+										onSelect: (_, which, dataSource) => {
+											this.actionArgs[key] = this.state
+												.dataSource[which][0];
+										},
+										onClearInput: () => {
+											this.setState({dataSource: []});
+										},
+										dataSource: this.state.dataSource.
+											map(([_, value]) => value),
+										key,
+									})
+								)).valueSeq().toArray()}</p>
+							</div>
+						)}
+					</div>
+				)}
+
+			</Dialog>
+		);
+	}
+
 	render() {
-		let searchS = s => this.searchHtml("sessoes", "1", "+realizacao", s);
-		let searchV = s => this.searchHtml("volumes", "1", "+ano", s);
-
-		let buttons = [
-			[searchS('data,"11/2015"'), "Novembro/15"],
-			[searchS('data,"11/2015"/texto_exato,"uber"'),
-				"Novembro/15 + Uber"],
-			[searchS('data,"12/1980"'), "Dezembro/1980"],
-			[searchS('!dados_sessao,"","1",""/data,"11/2015"/(texto_exato,"uber"+texto_exato,"táxi")'), "Pesquisa Complexa"],
-		];
-
 		return (
 			<div>
 				<Header />
@@ -142,6 +307,7 @@ export default class App extends React.Component {
 				{this.props.zoom}
 
 				{this.renderError()}
+				{this.renderAction()}
 
 				<Footer />
 

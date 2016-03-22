@@ -32,13 +32,16 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer
 from rest_framework.views import APIView
+from rest_framework.decorators import api_view
 
 from django.conf.urls import url
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.core.exceptions import ImproperlyConfigured
+from django.core.urlresolvers import reverse
 from django.http.response import HttpResponseForbidden
 from django.utils.translation import ugettext as _
+from django import forms
 
 from anubis.aggregators import QuerySetAggregator, TokenAggregator, \
     ListAggregator
@@ -548,17 +551,18 @@ class StateViewMixin:
     user_serializer = _UserSerializer
 
     @classmethod
-    def autocomplete_model(cls, model, filter_, description=None):
+    def autocomplete_model(cls, model, filter_, describe=None):
         model_name = model.__name__.lower()
 
+        if describe is None:
+            describe = str
+
+        @api_view(['GET'])
         def view(request, needle):
             queryset = filter_.filter_queryset(model.objects.all(), [needle])
 
-            if description is None:
-                description = str
-
-            return Response({[record.id, description(record)]
-                             for record in queryset})
+            return Response([[record.id, describe(record)]
+                             for record in queryset])
 
         url_string = (r"^{api_prefix}/anubis_autocomplete/{model_name}/"
                       r"(?P<needle>.*)").format(**{
@@ -570,6 +574,14 @@ class StateViewMixin:
             .format(model_name=model_name)
 
         return url(url_string, view, name=url_name)
+
+    @classmethod
+    def autocomplete_url(cls, app, model):
+        model_name = model.__name__.lower()
+        url_name = "{app}:anubis_autocomplete_{model_name}" \
+            .format(app=app, model_name=model_name)
+
+        return reverse(url_name, kwargs={'needle': ""})
 
     @classmethod
     def _is_multi_modeled(cls):
@@ -696,6 +708,67 @@ class StateViewMixin:
         self.perform_actions()
 
         return super().get(*args, **kwargs)
+
+    def perform_actions(self):
+        action_name = self.request.POST.get('action_name', None)
+        action = self.actions.get(action_name, None)
+
+        self.action_result = {
+            'success': False,
+            'result': None,
+            'error': None
+        }
+
+        if action is None:
+            self.action_result['error'] = "Action not found - {}" \
+                .format(action_name)
+            return
+
+        if 'permissions' in action.keys() and action['permissions'] is not None:
+            if not self.request.user.is_authenticated():
+                self.action_result['error'] = "Usuário não autenticado."
+                return
+
+            if not all([self.request.user.has_perm(p)
+                        for p in action['permissions']]):
+                self.action_result['error'] = ("Usuário não possui as "
+                                               "permissões necessárias.")
+                return
+
+        if self.is_multi_modeled and not self._model_key in action['models']:
+            self.action_result['error'] = ("Wrong model.")
+            return
+
+        form = forms.Form(self.request.POST)
+
+        form.fields['action_name'] = forms.CharField(required=True)
+        form.fields['object_list'] = forms.CharField(required=True)
+
+        for key, field in action['fields'].items():
+            form.fields[key] = field
+
+        if not form.is_valid():
+            self.action_result['error'] = form.errors
+            return
+
+        if not hasattr(self, 'action_{}'.format(action_name)):
+            self.action_result['error'] = "Wrong method."
+            return
+
+        method = getattr(self, 'action_{}'.format(action_name))
+
+        try:
+            success, result = method(form)
+        except RuntimeError as error:
+            self.action_result['error'] = error.args[0]
+            return
+
+        if success:
+            self.action_result['success'] = True
+            self.action_result['result'] = result
+        else:
+            self.action_result['error'] = result
+
 
     def _paginate_queryset(self, queryset):
         """A simplified paginator. It doesn't have to be as generic as Django's
@@ -901,9 +974,6 @@ class StateViewMixin:
             "details": self.get_details(),
         }
 
-        if self.action_result is not None:
-            anubis_state["action_result"] = self.action_result
-
         return anubis_state
 
     def get_details(self):
@@ -940,18 +1010,24 @@ class StateViewMixin:
         for i, unit in enumerate(expression):
             unit.update({"index": i})
 
-        return {
+
+        results = {
             "position": len(expression),
             "expression": expression,
             "textExpression": self.kwargs.get(self.expression_parameter, ""),
             "pagination": self.get_pagination(),
-            "actions": self.get_actions(),
+            "actions": self.get_actions() if visible else {},
             "visible": visible,
             "model": self._model_key,
             "results": self.object_list,
             "sorting": self.get_sorting(),
             "selection": []
         }
+
+        if self.action_result is not None:
+            results["actionResult"] = self.action_result
+
+        return results
 
     def get_pagination(self):
         if not self.is_paginated or self.boolean_expression is None:
@@ -985,7 +1061,28 @@ class StateViewMixin:
         }
 
     def get_actions(self):
-        return {}
+        if self.actions is None:
+            return {}
+
+        if self.user_serializer is None:
+            return {}
+
+        actions = {key: dict(a) for key, a in self.actions.items()
+                   if (not self.is_multi_modeled or
+                       self._model_key in a['models']) and (
+                           a.get('permissions', None) is None or
+                           self.request.user.is_authenticated() and all([
+                               self.request.user.has_perm(p)
+                               for p in a['permissions']])
+                       )
+                  }
+
+        for key in list(actions.keys()):
+            action = actions[key]
+            action['fields'] = {k: self.render_field(f)
+                                for k, f in action['fields'].items()}
+
+        return actions
 
     def get_sorting(self):
         if self.is_sortable:
@@ -1007,6 +1104,10 @@ class StateViewMixin:
 
     def get_final_response(self, original):
         return self.get_context_data()
+
+    def render_field(self, field):
+        return FieldSerializer(field).data
+
 
 
 
@@ -1281,9 +1382,6 @@ class AppViewMixin(StateViewMixin):
 
         }
 
-    def render_field(self, field):
-        return FieldSerializer(field).data
-
     def get_fieldsets(self):
         return {filter_name: {"description": filter_.description,
                               "fields": [self.render_field(filter_.fields[n]) \
@@ -1298,4 +1396,8 @@ class AppViewMixin(StateViewMixin):
         keys = self.get_filters().keys()
 
         return keys[0]
+
+
+
+
 

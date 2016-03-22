@@ -31,6 +31,31 @@ export default class Actions {
 
 	static clearGlobalError = createAction('CLEAR_GLOBAL_ERROR');
 
+	static startServerAction = createAction('START_ACTION');
+
+	static cancelServerAction = createAction('CANCEL_ACTION');
+
+	static submitServerAction = createAction('FETCH_SEARCH',
+		async (url, data) => {
+			let response = await fetch(url, {
+				credentials: 'same-origin',
+				method: 'POST',
+				body: data,
+				headers: new Headers({
+					'X-CSRFToken': document
+						.querySelector('meta[name="csrf-token"]')
+						.attributes.content.value,
+				}),
+			});
+
+			let json = await response.json();
+
+			if (response.status != 200) throw json;
+
+			return I.fromJS(json['searchResults']);
+
+		});
+
 	static enableEditor = createAction('ENABLE_EDITOR');
 
 	static disableEditor = createAction('DISABLE_EDITOR');

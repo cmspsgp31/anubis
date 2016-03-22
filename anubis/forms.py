@@ -29,6 +29,7 @@ class FieldSerializer(serializers.Serializer):
     choices = serializers.SerializerMethodField('get_choices')
     is_numeric = serializers.SerializerMethodField('get_is_numeric')
     initial = serializers.SerializerMethodField('get_initial')
+    autocomplete_url = serializers.SerializerMethodField('get_autocomplete_url')
 
     def get_help_text(self, obj):
         if "placeholder" in obj.widget.attrs.keys() and \
@@ -41,6 +42,8 @@ class FieldSerializer(serializers.Serializer):
     def get_ui_element(self, obj):
         if isinstance(obj, forms.DateField):
             return "DatePicker"
+        elif isinstance(obj, AutoCompleteField):
+            return "AutoComplete"
         elif isinstance(obj, forms.ChoiceField):
             return "SelectField"
         else:
@@ -49,10 +52,22 @@ class FieldSerializer(serializers.Serializer):
     def get_choices(self, obj):
         choices = None
 
-        if isinstance(obj, forms.ChoiceField):
+        if isinstance(obj, forms.ChoiceField) and \
+                not isinstance(obj, AutoCompleteField):
             choices = obj.choices
 
         return choices
+
+    def get_autocomplete_url(self, obj):
+        url = None
+
+        if isinstance(obj, AutoCompleteField):
+            url = obj.url
+
+        if callable(url):
+            url = url()
+
+        return url
 
     def get_is_numeric(self, obj):
         return isinstance(obj, (forms.IntegerField, forms.FloatField))
@@ -64,6 +79,20 @@ class FieldSerializer(serializers.Serializer):
 class FilterForm(forms.Form):
     pass
 
+class AutoCompleteField(forms.ChoiceField):
+    def __init__(self, url, model, **kwargs):
+        self.url = url
+        self.model = model
+        super().__init__(choices=[], **kwargs)
+
+    def valid_value(self, value):
+        "Check to see if the provided value is a valid choice"
+        try:
+            self.model.objects.get(pk=value)
+        except self.model.DoesNotExist:
+            return False
+        else:
+            return True
 
 class RangeForm(FilterForm):
     def __init__(self, *args, **kwargs):

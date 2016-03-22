@@ -36,6 +36,7 @@ export let Search = {
 			sorting: { by: null, ascending: true },
 			selection: [],
 		})),
+		'CANCEL_ACTION': state => state.remove('actionResult'),
 	},
 	keyPath: ["searchResults"],
 };

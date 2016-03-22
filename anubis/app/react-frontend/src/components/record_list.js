@@ -1,11 +1,12 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import _ from 'lodash';
 import {PropTypes as RPropTypes} from 'react';
 import IPropTypes from 'react-immutable-proptypes';
 
 import {connect} from 'react-redux';
 import {RaisedButton, Toolbar, ToolbarGroup, CircularProgress, DropDownMenu,
-	IconButton, MenuItem, Icons, Tabs, Tab} from 'material-ui';
+	IconButton, MenuItem, Icons, Tabs, Tab, Popover, Menu} from 'material-ui';
 import {NavigationArrowUpward, NavigationArrowDownward,
 	SocialShare} from 'material-ui/lib/svg-icons';
 import {Link} from 'react-router';
@@ -28,6 +29,7 @@ let getStateProps = state => {
 	let sorting = state.getIn(['searchResults', 'sorting']);
 	let pagination = state.getIn(['searchResults', 'pagination']);
 	let selection = state.getIn(['searchResults', 'sorting']);
+	let actions = state.getIn(['searchResults', 'actions']);
 	let cache = state.getIn(['cache', 'searchResults']);
 	let baseURL = state.getIn(['applicationData', 'baseURL']);
 	let sortingDefaults = state.getIn(['applicationData', 'sortingDefaults']);
@@ -36,7 +38,7 @@ let getStateProps = state => {
 
 	return {results, modelName, modelData, searchApi, searchHtml, isSearch,
 		searchAndDetailsHtml, sorting, pagination, selection, cache, baseURL,
-		searchResults, models, sortingDefaults, error};
+		searchResults, models, sortingDefaults, error, actions};
 };
 
 let getDispatchProps = dispatch => ({
@@ -49,11 +51,19 @@ let getDispatchProps = dispatch => ({
 	replaceWith: url => dispatch(routeActions.replace(url)),
 	enableEditor: bindActionCreators(Actions.enableEditor, dispatch),
 	disableEditor: bindActionCreators(Actions.disableEditor, dispatch),
+	startServerAction: bindActionCreators(Actions.startServerAction, dispatch),
+	cancelServerAction: bindActionCreators(Actions.cancelServerAction, dispatch),
 });
 
 @connect(getStateProps, getDispatchProps)
 export default class RecordList extends React.Component {
 	static propTypes = {
+		actions: IPropTypes.mapOf({
+			title: RPropTypes.string,
+			description: RPropTypes.string,
+			fields: IPropTypes.listOf(IPropTypes.map),
+			models: IPropTypes.listOf(RPropTypes.string),
+		}),
 		baseURL: RPropTypes.string,
 		cache: IPropTypes.map,
 		clearSearch: RPropTypes.func,
@@ -88,6 +98,15 @@ export default class RecordList extends React.Component {
 
 	static contextTypes = {
 		muiTheme: RPropTypes.object,
+	}
+
+	constructor(props) {
+		super(props);
+
+		this.state = {
+			showActions: false,
+			anchor: null,
+		};
 	}
 
 	componentWillMount() {
@@ -374,6 +393,51 @@ export default class RecordList extends React.Component {
 		);
 	}
 
+	getActionsMenu() {
+		if (this.props.actions.size == 0) return null;
+
+		return (
+			<ToolbarGroup>
+				<RaisedButton
+					label="Ações"
+					onTouchTap={() => this.setState({showActions: true})}
+					ref={c => {
+						if (!this.state.anchor) {
+							const elem = ReactDOM.findDOMNode(c);
+							this.setState({anchor: elem});
+						}
+					}}
+				/>
+				<Popover
+					anchorEl={this.state.anchor}
+					anchorOrigin={{
+						vertical: 'bottom',
+						horizontal: 'left',
+					}}
+					canAutoPosition={false}
+					onRequestClose={() => this.setState({showActions: false})}
+					open={this.state.showActions}
+				>
+					<Menu
+						onEscKeyDown={() => this.setState({showActions: false})}
+					>
+						{this.props.actions.map((action, key) =>
+							<MenuItem
+								onTouchTap={() => {
+									this.setState({showActions: false});
+									this.props.startServerAction(key);
+								}}
+								primaryText={action.get('title')}
+								key={key}
+							/>
+						).valueSeq().toArray()}
+					</Menu>
+				</Popover>
+
+			</ToolbarGroup>
+		);
+	}
+
 	render() {
 		let contents = (
 			<div style={{textAlign: "center"}}>
@@ -413,6 +477,7 @@ export default class RecordList extends React.Component {
 
 			let pagination = this.getPaginationElement();
 			let sorting = this.getSortingMenu();
+			let actions = this.getActionsMenu();
 			let models = this.getModelSwitcher();
 
 			contents = (
@@ -437,6 +502,7 @@ export default class RecordList extends React.Component {
 						>
 							{pagination}
 							{sorting}
+							{actions}
 							<ToolbarGroup lastChild>
 								<RaisedButton
 									label="Recarregar"
