@@ -7,7 +7,6 @@ import ThemeManager from 'material-ui/lib/styles/theme-manager';
 import {Paper, RaisedButton, Dialog, Snackbar,
 	CircularProgress} from 'material-ui';
 import {connect} from 'react-redux';
-import {Link} from 'react-router';
 import {bindActionCreators} from 'redux';
 import {StickyContainer} from 'react-sticky';
 
@@ -166,7 +165,7 @@ export default class App extends React.Component {
 		args.set('object_list', JSON.stringify(results.toArray()));
 		args.set('action_name', this.props.currentAction);
 
-		for (let key of actionData.get('fields').keys()) {
+		for (let key of fields.keys()) {
 			if (_.has(this.actionArgs, key)) {
 				args.set(key, this.actionArgs[key]);
 			}
@@ -194,13 +193,24 @@ export default class App extends React.Component {
 			this.actionArgs = null;
 		}
 
+		const description = actionData.get('description', null);
+		const fields = actionData.get('fields', I.Map());
+		const hasResult = !!this.props.actionResult;
+		const title = actionData.get('title', null);
+		const resultSuccess = (hasResult) ?
+			this.props.actionResult.get('success') : false;
+		const resultError = (hasResult) ?
+			this.props.actionResult.get('error') : null;
+		const result = (hasResult) ? this.props.actionResult.get('result') :
+			null;
+
 		return (
 			<Dialog
 				modal={true}
 				onRequestClose={this.props.cancelServerAction}
 				open={open}
 				autoScrollBodyContent={true}
-				title={actionData.get('title', null)}
+				title={title}
 				actions={
 					<div
 						style={{
@@ -215,7 +225,7 @@ export default class App extends React.Component {
 							secondary
 							onTouchTap={this.props.cancelServerAction}
 						/>
-						{!this.props.actionResult && (
+						{!hasResult && (
 							<RaisedButton
 								label="OK"
 								primary
@@ -233,35 +243,32 @@ export default class App extends React.Component {
 					</div>
 				) || (
 					<div>
-						{this.props.actionResult && (
+						{hasResult && (
 							<div>
-								{this.props.actionResult.get('success')
+								{resultSuccess
 								&& (
 									<div>
-										<p>Successo</p>
-										<p>{this.props.actionResult.
-											get('result')}
+										<p>{"Successo"}</p>
+										<p>{result}
 										</p>
 									</div>
 								) || (
 									<div>
-										<p>Erro</p>
-										<p>{this.props.actionResult.
-											get('error')}
-										</p>
+										<p>{"Erro"}</p>
+										<p>{resultError}</p>
 									</div>
 								)}
 							</div>
 						) || (
 							<div>
-								<p>{actionData.get('description', null)}</p>
-								<p>{actionData.get('fields', I.Map())
-										.map((field, key) => (
+								<p>{description}</p>
+								<p>{fields.map((field, key) => (
 									buildField(field, {
 										onUpdateInput: searchText => {
 											let url = field
 												.get('autocomplete_url');
-											url += encodeURIComponent(searchText);
+											url += encodeURIComponent(
+												searchText);
 
 											let completion = fetch(url, {
 												credentials: 'same-origin',
@@ -269,11 +276,13 @@ export default class App extends React.Component {
 
 											completion.then(r => r.json()
 													.then(json => {
-												this.setState({dataSource: json})
+												this.setState({
+													dataSource: json,
+												});
 											}));
 
 										},
-										onSelect: (_, which, dataSource) => {
+										onSelect: (_, which) => {
 											this.actionArgs[key] = this.state
 												.dataSource[which][0];
 										},

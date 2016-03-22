@@ -1,6 +1,6 @@
-# Copyright (C) 2014, Ugo Pozo 2014, Câmara Municipal de São Paulo
+# Copyright (C) 2016, Ugo Pozo 2016, Câmara Municipal de São Paulo
 
-# __init__.py - consolidação dos módulos contidos em anubis.
+# apps.py - configurações do aplicativo Anubis.
 
 # Este arquivo é parte do software Anubis.
 
@@ -17,4 +17,12 @@
 # Você deve ter recebido uma cópia da Licença Pública Geral GNU junto com este
 # programa. Se não, consulte <http://www.gnu.org/licenses/>.
 
-default_app_config = "anubis.app.apps.AnubisConfig"
+
+from django.apps import AppConfig
+
+class AnubisConfig(AppConfig):
+    name = 'anubis.app'
+    label = 'anubis'
+    verbose_name = 'Anubis'
+
+

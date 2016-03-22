@@ -31,10 +31,12 @@ from rest_framework.exceptions import NotAcceptable
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer
-from rest_framework.views import APIView
+from rest_framework.views import APIView, \
+    exception_handler as rest_exception_handler
 from rest_framework.decorators import api_view
 
 from django.conf.urls import url
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.core.exceptions import ImproperlyConfigured
@@ -1275,7 +1277,7 @@ class AppViewMixin(StateViewMixin):
         )
 
         react_search_html = "{}/{}/{}{}{}{}".format(
-            self.base_url,
+            self.base_url if not self.base_url == "/" else "",
             self.search_slug,
             "${model}/" if self.is_multi_modeled else "",
             "${page}/" if self.is_paginated else "",
@@ -1284,7 +1286,7 @@ class AppViewMixin(StateViewMixin):
         )
 
         react_search_api = "{}/{}/{}/{}{}{}{}".format(
-            self.base_url,
+            self.base_url if not self.base_url == "/" else "",
             self.api_prefix,
             self.search_slug,
             "${model}/" if self.is_multi_modeled else "",
@@ -1300,14 +1302,14 @@ class AppViewMixin(StateViewMixin):
         )
 
         react_details_html = "{}/{}/{}{}".format(
-            self.base_url,
+            self.base_url if not self.base_url == "/" else "",
             self.details_slug,
             "${model}/" if self.is_multi_modeled else "",
             "${id}"
         )
 
         react_details_api = "{}/{}/{}/{}{}".format(
-            self.base_url,
+            self.base_url if not self.base_url == "/" else "",
             self.api_prefix,
             self.details_slug,
             "${model}/" if self.is_multi_modeled else "",
@@ -1325,7 +1327,7 @@ class AppViewMixin(StateViewMixin):
         )
 
         react_search_and_details_html = "{}/{}/{}{}/{}/{}{}{}".format(
-            self.base_url,
+            self.base_url if not self.base_url == "/" else "",
             self.details_slug,
             "${model}/" if self.is_multi_modeled else "",
             "${id}",
@@ -1336,7 +1338,7 @@ class AppViewMixin(StateViewMixin):
         )
 
         react_search_and_details_api = "{}/{}/{}/{}{}/{}/{}{}{}".format(
-            self.base_url,
+            self.base_url if not self.base_url == "/" else "",
             self.api_prefix,
             self.details_slug,
             "${model}/" if self.is_multi_modeled else "",
@@ -1397,7 +1399,32 @@ class AppViewMixin(StateViewMixin):
 
         return keys[0]
 
+def exception_handler(exc):
+    response = rest_exception_handler(exc)
 
+    if response is None:
+        if hasattr(exc, "name") and callable(exc.name):
+            name = exc.name()
+        else:
+            name = exc.__class__.__name__
+
+        response = {
+            "detail": str(exc),
+            "name": name
+        }
+
+        if settings.DEBUG:
+            import traceback
+
+            response['traceback'] = traceback.format_tb(exc.__traceback__)
+
+        response = Response(response)
+    else:
+        response.data["name"] = exc.__class__.__name__
+
+    response.status_code = 500
+
+    return response
 
 
 
