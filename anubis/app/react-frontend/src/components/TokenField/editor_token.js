@@ -1,6 +1,5 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import I from 'immutable';
 import Fuse from 'fuse.js';
 
 import {PropTypes as RPropTypes} from 'react';
@@ -8,7 +7,6 @@ import IPropTypes from 'react-immutable-proptypes';
 import {IconMenu,
 	MenuItem,
 	Popover,
-	AutoComplete,
 	Menu} from 'material-ui';
 import {ContentLink, ContentAddBox} from 'material-ui/lib/svg-icons';
 import {DropTarget} from 'react-dnd';
@@ -23,6 +21,7 @@ export default class EditorToken extends Token {
 		deleteToken: RPropTypes.func,
 		disabled: RPropTypes.bool,
 		dropTarget: RPropTypes.func,
+		expandDefaultUnit: RPropTypes.func,
 		expressionSize: RPropTypes.number,
 		inputProps: RPropTypes.shape({
 			onBlur: RPropTypes.func.isRequired,
@@ -159,27 +158,27 @@ export default class EditorToken extends Token {
 			case 191: // Numpad star
 			case 111: // Forward slash
 			case 106: // Forward slash
-				this.handleInsert("__AND__");
+				this.handleConnector("__AND__");
 				ev.preventDefault();
 				break;
 
 			case 55: // mainpad 7
 			case 56: // mainpad 8
 				if (ev.shiftKey) {
-					this.handleInsert("__AND__");
+					this.handleConnector("__AND__");
 					ev.preventDefault();
 				}
 				break;
 
 			case 107: // numpad +
-				this.handleInsert("__OR__");
+				this.handleConnector("__OR__");
 				ev.preventDefault();
 				break;
 
 			case 187: // equal
 			case 220: // backslash
 				if (ev.shiftKey) {
-					this.handleInsert("__OR__");
+					this.handleConnector("__OR__");
 					ev.preventDefault();
 				}
 				break;
@@ -187,21 +186,21 @@ export default class EditorToken extends Token {
 			case 49: // 1
 			case 54: // 6
 				if (ev.shiftKey) {
-					this.handleInsert("__NOT__");
+					this.handleConnector("__NOT__");
 					ev.preventDefault();
 				}
 				break;
 
 			case 57: // 9
 				if (ev.shiftKey) {
-					this.handleInsert("__LPARENS__");
+					this.handleConnector("__LPARENS__");
 					ev.preventDefault();
 				}
 				break;
 
 			case 48: // 0
 				if (ev.shiftKey) {
-					this.handleInsert("__RPARENS__");
+					this.handleConnector("__RPARENS__");
 					ev.preventDefault();
 				}
 				break;
@@ -261,6 +260,14 @@ export default class EditorToken extends Token {
 		if ((this.props.position > 0) && (this.lead.value.length == 0)) {
 			this.props.deleteToken(this.props.position - 1);
 		}
+	}
+
+	handleConnector = key => {
+		if (this.lead.value.length > 0) {
+			this.props.expandDefaultUnit(this.lead.value);
+		}
+
+		this.handleInsert(key);
 	}
 
 	handleInsert = key => {

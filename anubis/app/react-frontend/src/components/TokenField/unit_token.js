@@ -39,7 +39,7 @@ export default class UnitToken extends Token {
 
 		this.state = {values: null, triggerSearch: false};
 		this.firstField = null;
-		this.grabFocus = false;
+		this.grabFocus = null;
 	}
 
 	componentWillMount() {
@@ -49,7 +49,9 @@ export default class UnitToken extends Token {
 	}
 
 	componentDidMount() {
-		this.grabFocus = true;
+		if (this.grabFocus === null) {
+			this.grabFocus = true;
+		}
 	}
 
 	componentDidUpdate(newProps) {

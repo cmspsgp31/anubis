@@ -19,6 +19,7 @@ export default class TokenList extends React.Component {
 		createTokenEditor: RPropTypes.func,
 		defaultFilter: RPropTypes.string,
 		deleteTokenEditor: RPropTypes.func,
+		expandDefaultUnitEditor: RPropTypes.func,
 		expression: IPropTypes.listOf(
 			IPropTypes.contains({
 				key: RPropTypes.string.isRequired,
@@ -277,6 +278,7 @@ export default class TokenList extends React.Component {
 				expressionSize: this.props.expression.size,
 				inputProps: this.inputProps,
 				insertToken: this.props.createTokenEditor,
+				expandDefaultUnit: this.props.expandDefaultUnitEditor,
 				isFocused: this.props.isFocused,
 				move: this.props.moveTokenEditor,
 				setEditorValue: v => this.editorValue = v,

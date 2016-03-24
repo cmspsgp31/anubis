@@ -34,8 +34,6 @@ const getStateProps = state => ({
 const getDispatchProps = dispatch => ({
 	buildTextExprEditor: bindActionCreators(Actions.buildTextExprEditor,
 		dispatch),
-	expandDefaultUnitEditor: bindActionCreators(Actions.expandDefaultUnitEditor,
-		dispatch),
 	goTo: url => dispatch(routeActions.push(url)),
 	toggleSearchEditor: bindActionCreators(Actions.toggleSearchEditor,
 		dispatch),
@@ -47,6 +45,8 @@ const getDispatchProps = dispatch => ({
 			dispatch),
 		deleteTokenEditor: bindActionCreators(Actions.deleteTokenEditor,
 			dispatch),
+		expandDefaultUnitEditor: bindActionCreators(
+			Actions.expandDefaultUnitEditor, dispatch),
 		reorderTokensEditor: bindActionCreators(Actions.reorderTokensEditor,
 			dispatch),
 	},
@@ -58,7 +58,6 @@ export default class TokenField extends React.Component {
 	static propTypes = {
 		buildTextExprEditor: RPropTypes.func,
 		defaultModel: RPropTypes.string,
-		expandDefaultUnitEditor: RPropTypes.func,
 		goTo: RPropTypes.func,
 		modelName: RPropTypes.string,
 		models: IPropTypes.mapOf({
@@ -76,8 +75,8 @@ export default class TokenField extends React.Component {
 		sortingDefaults: IPropTypes.map,
 		textExpression: RPropTypes.string,
 		toggleSearchEditor: RPropTypes.func,
-		tokenListDispatchProps: IPropTypes.map,
-		tokenListStateProps: IPropTypes.map,
+		tokenListDispatchProps: RPropTypes.object,
+		tokenListStateProps: RPropTypes.object,
 	}
 
 	componentDidUpdate(prevProps) {
@@ -118,7 +117,8 @@ export default class TokenField extends React.Component {
 			this.textField.refs.input.state.editorValue;
 
 		if (editorValue && (editorValue != "")) {
-			this.props.expandDefaultUnitEditor(editorValue);
+			this.props.tokenListDispatchProps
+				.expandDefaultUnitEditor(editorValue);
 
 			this.textField.refs.input.editorToken.lead.value = "";
 			this.textField.refs.input.setState({editorValue: ""});
@@ -168,8 +168,8 @@ export default class TokenField extends React.Component {
 							isFocused={this.isFocused}
 							onSearch={this.handleSearch}
 							onUpdate={this.handleUpdate}
-							textElement={() => this.textField}
 							ref="input"
+							textElement={() => this.textField}
 							value={this.props.textExpression}
 						/>
 					</TextField>
