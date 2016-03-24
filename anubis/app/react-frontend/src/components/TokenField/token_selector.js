@@ -90,6 +90,10 @@ export default class TokenSelector extends React.Component {
 		}
 	}
 
+	handleClick = ev => {
+		this.props.onSearch(ev);
+	}
+
 
 	renderFAB() {
 		let isExpanded = this.state.expandFAB;
@@ -162,7 +166,7 @@ export default class TokenSelector extends React.Component {
 		);
 	}
 
-	render() {
+	renderExpandable() {
 		/*eslint-disable react/jsx-key*/
 		let icons = [
 			['add_button', <ContentAdd />],
@@ -217,6 +221,16 @@ export default class TokenSelector extends React.Component {
 					</div>
 				}
 			</TransitionMotion>
+		);
+	}
+
+	render() {
+		return (
+			<div style={this.style}>
+				<FloatingActionButton onTouchTap={this.handleClick}>
+					<ActionSearch />
+				</FloatingActionButton>
+			</div>
 		);
 	}
 }
