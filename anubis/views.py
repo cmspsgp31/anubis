@@ -30,7 +30,7 @@ from functools import reduce
 from rest_framework.exceptions import NotAcceptable
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
-from rest_framework.serializers import ModelSerializer
+from rest_framework import serializers as rest_serializers
 from rest_framework.views import APIView, \
     exception_handler as rest_exception_handler
 from rest_framework.decorators import api_view
@@ -544,11 +544,25 @@ class StateViewMixin:
     sorting_parameter = "sorted_by"
     sorting_default = None
 
+    sidebar_links = []
+    sidebar_links_title = "More links"
 
-    class _UserSerializer(ModelSerializer):
+
+
+    class _UserSerializer(rest_serializers.ModelSerializer):
+        profile_link = rest_serializers.SerializerMethodField(
+            'get_profile_link'
+        )
+
         class Meta:
             model = User
-            fields = ('username', 'first_name', 'last_name', 'email')
+            fields = ('username', 'first_name', 'last_name', 'email',
+                      'profile_link')
+
+        def get_profile_link(self, obj):
+            return reverse('admin:auth_user_change', args=[obj.id])
+
+
 
     user_serializer = _UserSerializer
 
@@ -1227,7 +1241,7 @@ class AppViewMixin(StateViewMixin):
             return None
 
         return self.user_serializer(self.request.user).data \
-            if self.request.user.is_authenticated() else None
+            if self.request.user.is_authenticated() else {}
 
     def get_templates(self):
         from django.template.loader import get_template
@@ -1381,6 +1395,15 @@ class AppViewMixin(StateViewMixin):
             "defaultFilter": self.get_default_filter(),
 
             "sortingDefaults": sorting_default,
+
+            "sidebarLinks": {
+                "list": self.sidebar_links,
+                "title": self.sidebar_links_title,
+                "admin": reverse('admin:index'),
+                "password": reverse('admin:password_change'),
+                "login": reverse('admin:login'),
+                "logout": reverse('admin:logout'),
+            },
 
         }
 

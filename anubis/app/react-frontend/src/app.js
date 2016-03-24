@@ -1,11 +1,12 @@
-import React from 'react';
+import React, {PropTypes as RPropTypes} from 'react';
 import I from 'immutable';
+import IPropTypes from 'react-immutable-proptypes';
 import _ from 'lodash';
 import AppTheme from 'material-ui/lib/styles/raw-themes/light-raw-theme';
 import ThemeManager from 'material-ui/lib/styles/theme-manager';
 
-import {Paper, RaisedButton, Dialog, Snackbar,
-	CircularProgress} from 'material-ui';
+import {Paper, RaisedButton, Dialog, Snackbar, ListItem, Card, Divider,
+	CircularProgress, LeftNav, CardMedia, CardTitle, List} from 'material-ui';
 import {connect} from 'react-redux';
 import {bindActionCreators} from 'redux';
 import {StickyContainer} from 'react-sticky';
@@ -18,6 +19,7 @@ import buildField from 'components/build_field';
 
 
 let getStateProps = state => ({
+	appTitle: state.getIn(['applicationData', 'title']),
 	appTheme: state.getIn(['templates', 'appTheme']),
 	routing: state.get('routing'),
 	baseURL: state.getIn(['applicationData', 'baseURL']),
@@ -30,6 +32,8 @@ let getStateProps = state => ({
 	currentAction: state.getIn(['applicationData', 'currentAction'], null),
 	actionResult: state.getIn(['searchResults', 'actionResult']),
 	results: state.getIn(['searchResults', 'results']),
+	sidebarLinks: state.getIn(['applicationData', 'sidebarLinks']),
+	user: state.get('user'),
 });
 
 let getDispatchProps = dispatch => ({
@@ -44,6 +48,24 @@ let getDispatchProps = dispatch => ({
 
 @connect(getStateProps, getDispatchProps)
 export default class App extends React.Component {
+	static propTypes = {
+		appTitle: RPropTypes.string,
+		sidebarLinks: IPropTypes.contains({
+			admin: RPropTypes.string,
+			list: IPropTypes.list,
+			login: RPropTypes.string,
+			logout: RPropTypes.string,
+			title: RPropTypes.string,
+		}),
+		user: IPropTypes.contains({
+			email: RPropTypes.string,
+			first_name: RPropTypes.string,
+			last_name: RPropTypes.string,
+			profile_link: RPropTypes.string,
+			username: RPropTypes.string,
+		}),
+	}
+
 	static childContextTypes = {
 		muiTheme: React.PropTypes.object,
 	}
@@ -54,6 +76,7 @@ export default class App extends React.Component {
 		this.state = {
 			dataSource: [],
 			waiting: false,
+			showNav: false,
 		};
 
 		this.actionArgs = null;
@@ -303,10 +326,148 @@ export default class App extends React.Component {
 		);
 	}
 
+	handleToggleNav = () => {
+		this.setState({showNav: !this.state.showNav});
+	}
+
+	renderUserInfo() {
+		let userShow;
+
+		const firstName = this.props.user.get('first_name', "");
+
+		if (firstName != "") {
+			const lastName = this.props.user.get('last_name', "");
+			userShow = `${firstName} ${lastName}`;
+		}
+		else {
+			userShow = `${this.props.user.get('username')}`;
+		}
+
+		const userEmail = this.props.user.get('email');
+
+		return (
+			<ListItem
+				nestedItems={[
+					<a
+						href={this.props.sidebarLinks.get('admin')}
+						key={`admin`}
+						style={{textDecoration: 'none'}}
+						target="_blank"
+					>
+						<ListItem
+							primaryText={`Administração`}
+							style={{paddingLeft: 36}}
+						/>
+					</a>,
+					<a
+						href={this.props.user.get('profile_link')}
+						key={`profile`}
+						style={{textDecoration: 'none'}}
+						target="_blank"
+					>
+						<ListItem
+							primaryText={`Perfil`}
+							style={{paddingLeft: 36}}
+						/>
+					</a>,
+					<a
+						href={this.props.sidebarLinks.get('password')}
+						key={`password`}
+						style={{textDecoration: 'none'}}
+						target="_blank"
+					>
+						<ListItem
+							primaryText={`Alterar senha`}
+							style={{paddingLeft: 36}}
+						/>
+					</a>,
+					<Divider
+						key="sep"
+						style={{marginLeft: 36}}
+					/>,
+					<a
+						href={this.props.sidebarLinks.get('logout')}
+						key={`logout`}
+						style={{textDecoration: 'none'}}
+						target="_blank"
+					>
+						<ListItem
+							primaryText={`Sair`}
+							style={{paddingLeft: 36}}
+						/>
+					</a>,
+				]}
+				primaryText={userShow}
+				secondaryText={userEmail}
+			/>
+		);
+	}
+
+	renderLogin() {
+		return (
+			<a
+				href={this.props.sidebarLinks.get('login')}
+				style={{textDecoration: 'none'}}
+				target="_blank"
+			>
+				<ListItem
+					primaryText={`Entrar`}
+				/>
+			</a>
+		);
+	}
+
+	renderNoUser() {
+		return (
+			<ListItem primaryText="Anubis" />
+		);
+	}
+
 	render() {
+		let navHeader;
+
+		if (I.is(this.props.user, I.Map())) {
+			navHeader = this.renderLogin();
+		}
+		else if (this.props.user === null) {
+			navHeader = this.renderNoUser();
+		}
+		else {
+			navHeader = this.renderUserInfo();
+		}
+
 		return (
 			<div>
-				<Header />
+				<Header
+					onRequestToggle={this.handleToggleNav}
+				/>
+
+				<LeftNav
+					docked={false}
+					onRequestChange={this.handleToggleNav}
+					open={this.state.showNav}
+				>
+					<List
+						style={{
+							paddingTop: 48,
+						}}
+					>
+						{navHeader}
+					</List>
+					<Divider />
+					<List subheader={this.props.sidebarLinks.get('title')}>
+						{this.props.sidebarLinks.get('list').map(([t, l]) => (
+							<a
+								href={l}
+								key={l}
+								style={{textDecoration: 'none'}}
+								target="_blank"
+							>
+								<ListItem primaryText={t} />
+							</a>
+						)).toJS()}
+					</List>
+				</LeftNav>
 
 				<TokenField params={this.props.params} />
 
