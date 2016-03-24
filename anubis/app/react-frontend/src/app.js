@@ -50,6 +50,9 @@ let getDispatchProps = dispatch => ({
 export default class App extends React.Component {
 	static propTypes = {
 		appTitle: RPropTypes.string,
+		location: IPropTypes.contains({
+			pathname: RPropTypes.string,
+		}),
 		sidebarLinks: IPropTypes.contains({
 			admin: RPropTypes.string,
 			list: IPropTypes.list,
@@ -345,6 +348,10 @@ export default class App extends React.Component {
 
 		const userEmail = this.props.user.get('email');
 
+		const location = this.props.location.pathname;
+		const logoutLink = `${this.props.sidebarLinks.get('logout')}?` +
+			`next=` + encodeURIComponent(location);
+
 		return (
 			<ListItem
 				nestedItems={[
@@ -386,10 +393,9 @@ export default class App extends React.Component {
 						style={{marginLeft: 36}}
 					/>,
 					<a
-						href={this.props.sidebarLinks.get('logout')}
+						href={logoutLink}
 						key={`logout`}
 						style={{textDecoration: 'none'}}
-						target="_blank"
 					>
 						<ListItem
 							primaryText={`Sair`}
@@ -404,11 +410,14 @@ export default class App extends React.Component {
 	}
 
 	renderLogin() {
+		const location = this.props.location.pathname;
+		const loginLink = `${this.props.sidebarLinks.get('login')}?next=` +
+			encodeURIComponent(location);
+
 		return (
 			<a
-				href={this.props.sidebarLinks.get('login')}
+				href={loginLink}
 				style={{textDecoration: 'none'}}
-				target="_blank"
 			>
 				<ListItem
 					primaryText={`Entrar`}
@@ -446,6 +455,8 @@ export default class App extends React.Component {
 					docked={false}
 					onRequestChange={this.handleToggleNav}
 					open={this.state.showNav}
+					overlayStyle={{zIndex: 9500}}
+					style={{zIndex: 9510}}
 				>
 					<List
 						style={{
