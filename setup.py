@@ -249,7 +249,7 @@ class DevelopAnubis(CompileReactFrontendMixin,
 
 setup(
     name="anubis",
-    version="0.2-alpha",
+    version="1.0a0",
     packages=[
         "anubis",
         "anubis.app",
