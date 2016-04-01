@@ -229,7 +229,6 @@ class InstallAnubis(CompileReactFrontendMixin, CompileFrontendMixin,
     pass
 
 class DevelopAnubis(CompileReactFrontendMixin,
-                    CompileFrontendMixin.debug(),
                     CompileHaskellMixin,
                     develop):
     user_options = develop.user_options + [

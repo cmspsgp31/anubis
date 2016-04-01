@@ -713,10 +713,10 @@ class StateViewMixin:
             self._model_lookup = {'_default': self.model}
             self._model_key = "_default"
 
-    def get(self, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         self._prepare_attributes()
 
-        return super().get(*args, **kwargs)
+        return super().get(request, *args, **kwargs)
 
     def post(self, *args, **kwargs):
         self._prepare_attributes()

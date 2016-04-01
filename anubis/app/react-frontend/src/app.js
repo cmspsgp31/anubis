@@ -119,44 +119,62 @@ export default class App extends React.Component {
 	renderError() {
 		let error = this.props.globalError;
 
-		let showErrorDialog = !!error && this.props.showErrorDetails;
-		let showErrorSnackbar = !!error && !this.props.showErrorDetails;
+		const showErrorDialog = !!error && this.props.showErrorDetails;
+		const showErrorSnackbar = !!error && !this.props.showErrorDetails;
 
-		if (!error) error = I.fromJS({traceback: []});
+		if (!error) error = I.Map();
+
+		const traceback = error.get('traceback', null);
 
 		return (
 			<div>
 				<Dialog
-					title={error.get('name')}
-					modal={true}
-					open={showErrorDialog}
-					autoScrollBodyContent={true}
 					actions={
 						<RaisedButton
 							label="Fechar"
-							primary={true}
 							onTouchTap={() => this.props.clearGlobalError()}
-						/>}
+							primary
+						/>
+					}
+					autoScrollBodyContent
+					modal
+					open={showErrorDialog}
+					title={error.get('name')}
 				>
 					<p style={{marginBottom: "20px"}}>{error.get('detail')}</p>
 
-					<h4 style={{marginBottom: "20px"}}>Detalhes:</h4>
+					{traceback && (
+						<div>
+							<h4 style={{marginBottom: "20px"}}>
+								{`Detalhes:`}
+							</h4>
 
-					<Paper zDepth={1} style={{
-						padding: "20px",
-						color: this.theme.flatButton.textColor,
-						backgroundColor: this.theme.toolbar.backgroundColor
-					}}>
-						<code style={{
-							whiteSpace: "pre-wrap",
-							fontFamily: "'Roboto Mono', monospace",
-							fontSize: "12pt"
-						}}>
-							{error.get('traceback').map((line, i) => {
-								return <span key={`line_${i}`}>{line}</span>;
-							}).toJS()}
-						</code>
-					</Paper>
+							<Paper
+								style={{
+									padding: "20px",
+									color: this.theme.flatButton.textColor,
+									backgroundColor: this.theme.toolbar.
+										backgroundColor,
+								}}
+								zDepth={1}
+							>
+								<code
+									style={{
+										whiteSpace: "pre-wrap",
+										fontFamily: "'Roboto Mono', monospace",
+										fontSize: "12pt",
+									}}
+								>
+									{traceback.map((line, i) => (
+										<span key={`line_${i}`}>
+											{line}
+										</span>
+									)).toJS()}
+								</code>
+							</Paper>
+						</div>
+					)}
+
 				</Dialog>
 
 				<Snackbar

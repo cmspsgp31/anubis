@@ -20,6 +20,7 @@
 
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 {-# OPTIONS -fno-warn-unused-do-bind #-}
+{-# OPTIONS_GHC -Wall #-}
 
 module ParseUrl where
 
