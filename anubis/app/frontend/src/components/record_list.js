@@ -45,7 +45,7 @@ const getStateProps = state => {
     const searchApi = state.getIn(['applicationData', 'searchApi']);
     const searchHtml = state.getIn(['applicationData', 'searchHtml']);
     const searchAndDetailsHtml = state.getIn(['applicationData',
-                                           'searchAndDetailsHtml']);
+                                              'searchAndDetailsHtml']);
     const isSearch = state.getIn(['searchResults', 'visible']);
     const sorting = state.getIn(['searchResults', 'sorting']);
     const pagination = state.getIn(['searchResults', 'pagination']);
@@ -58,8 +58,8 @@ const getStateProps = state => {
     const error = state.getIn(['searchResults', 'error']);
 
     return {results, modelName, modelData, searchApi, searchHtml, isSearch,
-    searchAndDetailsHtml, sorting, pagination, selection, cache, baseURL,
-    searchResults, models, sortingDefaults, error, actions};
+            searchAndDetailsHtml, sorting, pagination, selection, cache,
+            baseURL, searchResults, models, sortingDefaults, error, actions};
 };
 
 const getDispatchProps = dispatch => ({
@@ -318,7 +318,7 @@ export default class RecordList extends React.Component {
         if (!this.props.sorting.get('available')) return null;
 
         const available = this.props.sorting.getIn(['available',
-                                                 this.props.modelName]);
+                                                    this.props.modelName]);
         const current = this.props.sorting.getIn(['current', 'by']);
         const currentAsc = this.props.sorting.getIn(['current', 'ascending']);
 
@@ -557,12 +557,13 @@ export default class RecordList extends React.Component {
                             </ToolbarGroup>
                         </Toolbar>
                     </Sticky>
-                    <ul style={{
-                        display: "flex",
-                        flexFlow: "row wrap",
-                        listStyle: "none",
-                        paddingBottom: 10,
-                    }}
+                    <ul
+                        style={{
+                            display: "flex",
+                            flexFlow: "row wrap",
+                            listStyle: "none",
+                            paddingBottom: 10,
+                        }}
                     >
                         {tiles}
                     </ul>
