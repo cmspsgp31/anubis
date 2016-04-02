@@ -2,24 +2,37 @@ import TokenList from 'components/TokenField/token_list';
 import _ from 'lodash';
 import I from 'immutable';
 
-const createAction = (state, token) => {
-	let position = state.getIn(['searchResults', 'position']);
-	let expression = state.getIn(['searchResults', 'expression']);
+const getNextID = state => {
+	const currentID = state.getIn(['tokenEditor', 'counter']);
 
-	let prevToken = (position > 0) ?
+	return [currentID, state.setIn(['tokenEditor', 'counter'], currentID + 1)];
+};
+
+const createAction = (state, token) => {
+	const position = state.getIn(['searchResults', 'position']);
+	const expression = state.getIn(['searchResults', 'expression']);
+
+	const prevToken = (position > 0) ?
 		expression.get(position - 1) :
 		null;
 
-	let nextToken = (position < expression.size) ?
+	const nextToken = (position < expression.size) ?
 		expression.get(position) :
 		null;
 
 	let tokens = TokenList.connectToken(token, prevToken, nextToken);
 
-	state = tokens.reverse().reduce((state, token) =>
-		state.updateIn(['searchResults', 'expression'], expr =>
+	state = tokens.reverse().reduce((state, token) => {
+		let id;
+
+		[id, state] = getNextID(state);
+
+		token = token.set('index', id);
+
+		return state.updateIn(['searchResults', 'expression'], expr => (
 			expr.insert(position, token)
-		), state);
+		));
+	}, state);
 
 	return state.updateIn(['searchResults', 'position'], p =>
 		p + tokens.length);

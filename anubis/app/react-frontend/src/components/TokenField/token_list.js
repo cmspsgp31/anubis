@@ -54,7 +54,6 @@ export default class TokenList extends React.Component {
 	static buildNewToken(key, meta) {
 		let token = I.fromJS({
 			key,
-			index: Date.now(),
 		});
 
 		if (meta) {
@@ -92,14 +91,12 @@ export default class TokenList extends React.Component {
 		if (isCreatedUnitToken && prevRequiresConnector) {
 			tokens.splice(0, 0, I.fromJS({
 				key: "__AND__",
-				index: Date.now() + Math.floor(Math.random() * 100 + 10),
 			}));
 		}
 
 		if (isCreatedUnitToken && nextRequiresConnector) {
 			tokens.splice(tokens.length, 0, I.fromJS({
 				key: "__AND__",
-				index: Date.now() + Math.floor(Math.random() * 100 + 111),
 			}));
 		}
 

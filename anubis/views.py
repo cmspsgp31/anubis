@@ -1279,6 +1279,7 @@ class AppViewMixin(StateViewMixin):
             "canSearch": True,
             "shouldSearch": False,
             "fieldsets": self.get_fieldsets(),
+            "counter": 1000000000,
         }
 
     def get_application_data(self):
