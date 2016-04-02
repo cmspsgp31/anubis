@@ -144,6 +144,8 @@ window.addEventListener("DOMContentLoaded", () => {
 			zoomComponentForSearch={zoomComponentForSearch}
 		/>
 	, document.querySelector("#app"));
+
+	window.HistoryWrapper = browserHistory;
 }, false);
 
 
