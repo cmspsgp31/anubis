@@ -156,8 +156,7 @@ class CompileFrontendMixin:
         super().initialize_options()
 
     def compile_frontend(self, package_dir):
-        working = os.path.join(package_dir, "app", "frontend")
-        build = os.path.join(working, "build")
+        working = os.path.join(package_dir, "frontend")
 
         jspm_cmd = ("node_modules/.bin/jspm "
                     "bundle-sfx main build/"
@@ -220,10 +219,6 @@ setup(
     },
     package_data={
         'anubis': [
-            'parseurl/*.hs',
-            'parseurl/*.template',
-            'parseurl/LICENSE'],
-        'anubis.app': [
             'frontend/config.js',
             'frontend/package.json',
             'frontend/src/*.js',
@@ -231,6 +226,10 @@ setup(
             'frontend/src/components/*.js',
             'frontend/src/components/TokenField/*.js',
             'frontend/components/**/*.js',
+            'parseurl/*.hs',
+            'parseurl/*.template',
+            'parseurl/LICENSE'],
+        'anubis.app': [
             'static/anubis/.gitignore',
             'templates/*.js']},
     cmdclass={
