@@ -150,13 +150,6 @@ class CompileHaskellMixin:
             self.compile_url_parser(package_dir)
 
 class CompileFrontendMixin:
-    command = "cake build"
-
-    @classmethod
-    def debug(cls):
-        cls.command = "cake debug"
-        return cls
-
     def initialize_options(self):
         self.force_frontend = False
 
@@ -164,42 +157,14 @@ class CompileFrontendMixin:
 
     def compile_frontend(self, package_dir):
         working = os.path.join(package_dir, "app", "frontend")
-
-        shell(self.command, cwd=working)
-
-        src = os.path.join(working, "build", "anubis.js")
-        dst = os.path.join(package_dir, "app", "static", "anubis",
-                           "anubis-legacy.js")
-
-        shutil.copy(src, dst)
-
-    def run(self):
-        super().run()
-
-        target_path = self.install_lib if self.install_lib is not None \
-            else os.path.abspath(self.setup_path)
-
-        package_dir = os.path.join(target_path, "anubis")
-        final_product = os.path.join(package_dir, "app", "static", "anubis",
-                                     "anubis-legacy.js")
-
-        should_compile = not os.path.isfile(final_product) or \
-            self.force_frontend
-
-        if should_compile:
-            self.compile_frontend(package_dir)
-
-class CompileReactFrontendMixin:
-    def initialize_options(self):
-        self.force_react_frontend = False
-
-        super().initialize_options()
-
-    def compile_react_frontend(self, package_dir):
-        working = os.path.join(package_dir, "app", "react-frontend")
         build = os.path.join(working, "build")
 
+        jspm_cmd = ("node_modules/.bin/jspm "
+                    "bundle-sfx main build/"
+                    "anubis.js {}").format(self.frontend_options)
+
         shell("npm install", cwd=working)
+        shell(jspm_cmd, cwd=working)
 
         src = os.path.join(working, "build", "anubis.js")
         dst = os.path.join(package_dir, "app", "static", "anubis",
@@ -218,65 +183,56 @@ class CompileReactFrontendMixin:
                                      "anubis.js")
 
         should_compile = not os.path.isfile(final_product) or \
-            self.force_react_frontend
+            self.force_frontend
 
         if should_compile:
-            self.compile_react_frontend(package_dir)
+            self.compile_frontend(package_dir)
 
 
-class InstallAnubis(CompileReactFrontendMixin, CompileFrontendMixin,
-                    CompileHaskellMixin, install):
-    pass
+class InstallAnubis(CompileFrontendMixin, CompileHaskellMixin, install):
+    frontend_options = "--minify --skip-source-maps"
 
-class DevelopAnubis(CompileReactFrontendMixin,
-                    CompileHaskellMixin,
-                    develop):
+class DevelopAnubis(CompileFrontendMixin, CompileHaskellMixin, develop):
+    frontend_options = ""
+
     user_options = develop.user_options + [
         ("force-frontend", None, "Forces rebuilding the frontend application."),
-        ("force-react-frontend", None, ("Forces rebuilding the frontend "
-                                        "application, using the React "
-                                        "library.")),
         ("force-parselib", None, "Forces rebuilding the parser library."),
     ]
 
     boolean_options = develop.boolean_options + ['force-frontend',
-                                                 'force-parselib',
-                                                 'force-react-frontend']
-
-
-
+                                                 'force-parselib']
 
 setup(
     name="anubis",
-    version="1.0a0",
+    version="1.0a1",
     packages=[
         "anubis",
         "anubis.app",
-        "anubis.app.templatetags",
+        "anubis.views",
         "anubis.operations"],
     install_requires=[
         "Django >=1.8, <1.9",
         "djangorestframework <3",
         "psycopg2"],
+    extras_require={
+        'caching': ['redis']
+    },
     package_data={
         'anubis': [
             'parseurl/*.hs',
             'parseurl/*.template',
             'parseurl/LICENSE'],
         'anubis.app': [
-            'frontend/*.coffee',
-            'frontend/Cakefile',
-            'frontend/lib/*',
-            'frontend/build/anubis.build.js',
-            'react-frontend/config.js',
-            'react-frontend/package.json',
-            'react-frontend/src/*.js',
-            'react-frontend/src/reducers/*.js',
-            'react-frontend/src/components/*.js',
-            'react-frontend/src/components/TokenField/*.js',
-            'react-frontend/components/**/*.js',
-            'static/anubis/anubis.css',
-            'templates/*.html']},
+            'frontend/config.js',
+            'frontend/package.json',
+            'frontend/src/*.js',
+            'frontend/src/reducers/*.js',
+            'frontend/src/components/*.js',
+            'frontend/src/components/TokenField/*.js',
+            'frontend/components/**/*.js',
+            'static/anubis/.gitignore',
+            'templates/*.js']},
     cmdclass={
         'install': InstallAnubis,
         'develop': DevelopAnubis
