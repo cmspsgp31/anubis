@@ -203,6 +203,7 @@ export default class EditorToken extends Token {
                 break;
 
             case 187: // equal
+            case 61: // Firefox equal?
             case 220: // backslash
                 if (ev.shiftKey) {
                     this.handleConnector("__OR__");
@@ -374,6 +375,9 @@ export default class EditorToken extends Token {
 
         return this.props.dropTarget(
             <div
+                onTouchTap={ev => (this.lead) && (ev.target == this.wrapper) &&
+                    this.lead.focus()}
+                ref={c => this.wrapper = c}
                 style={style}
             >
                 <input

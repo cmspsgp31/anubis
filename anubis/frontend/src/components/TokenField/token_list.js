@@ -20,6 +20,7 @@
 
 
 import React from 'react';
+import ReactDOM from 'react-dom';
 import I from 'immutable';
 import IPropTypes from 'react-immutable-proptypes';
 import _ from 'lodash';
@@ -313,7 +314,9 @@ export default class TokenList extends React.Component {
         return (
             <div
                 onTouchTap={ev => {
-                    if (ev.target == this.mainEditingArea.element) {
+                    const elem = ReactDOM.findDOMNode(this.mainEditingArea);
+
+                    if (ev.target == elem) {
                         this.props.focus();
                     }
                 }}
