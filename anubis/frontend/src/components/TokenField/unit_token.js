@@ -205,7 +205,7 @@ export default class UnitToken extends Token {
                                 onChange={this.handleFieldChange(i)}
                                 onEnterKeyDown={this.handleFieldEnterKeyDown(i)}
                                 ref={this.firstFieldRef(i)}
-                                style={{...outsideStyle, width: "205px"}}
+                                style={{...outsideStyle, width: 210}}
                                 value={value}
                             />
                             {this.makeIconButton(ActionDateRange, {

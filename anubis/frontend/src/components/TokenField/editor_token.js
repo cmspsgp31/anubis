@@ -117,7 +117,7 @@ export default class EditorToken extends Token {
 
     handleBlur = ev => {
         if (this.state.open || this._forceFocus) {
-            this.lead.focus();
+            setTimeout(() => this.lead.focus(), 0);
             this._forceFocus = false;
         }
         else this.props.inputProps.onBlur(ev);
@@ -125,6 +125,7 @@ export default class EditorToken extends Token {
 
     buildCompletions(text) {
         let completions = [];
+        const newState = {};
 
         this._forceFocus = true;
 
@@ -132,18 +133,24 @@ export default class EditorToken extends Token {
             completions = this.autocompleteOptions.search(text);
 
             if (!this.state.anchor) {
-                this.setState({anchor: ReactDOM.findDOMNode(this.lead)});
+                newState.anchor = ReactDOM.findDOMNode(this.lead);
             }
         }
 
         if (completions.length > 0) {
             const selected = completions[0].key;
 
-            this.setState({open: true, completions, selected});
+            newState.open = true;
+            newState.completions = completions;
+            newState.selected = selected;
         }
         else {
-            this.setState({open: false, selected: null, completions: []});
+            newState.open = false;
+            newState.selected = null;
+            newState.completions = [];
         }
+
+        this.setState(newState);
     }
 
     handleChange = ev => {
@@ -322,6 +329,7 @@ export default class EditorToken extends Token {
         });
 
         let inputStyle = Object.assign({}, this.props.style, {
+            backgroundColor: "white",
             border: "0px",
             width: "100%",
             height: 16,
@@ -393,6 +401,7 @@ export default class EditorToken extends Token {
                     >
                         {this.state.completions.map(({description, key}) => (
                             <MenuItem
+                                disableFocusRipple
                                 key={key}
                                 onTouchTap={() => this.props.insertToken(key)}
                                 primaryText={description}

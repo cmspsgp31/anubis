@@ -62,35 +62,100 @@
         "always"
       ],
       "prefer-const": [
-          "warn",
-          {"destructuring": "all"}
+        "warn",
+        {
+          "destructuring": "all"
+        }
       ],
-      "no-unused-vars": [ "error", {
+      "no-unused-vars": [
+        "error",
+        {
           "args": "none",
           "varsIgnorePattern": "^_"
-      }],
+        }
+      ],
       "no-const-assign": "error",
       "no-var": "error",
-      "array-bracket-spacing": ["warn", "never"],
-      "block-spacing": ["warn", "always"],
-      "brace-style": ["warn", "stroustrup", { "allowSingleLine": false }],
-      "comma-spacing": ["warn", {"before": false, "after": true}],
-      "computed-property-spacing": ["warn", "never"],
-      "key-spacing": ["warn", {
+      "array-bracket-spacing": [
+        "warn",
+        "never"
+      ],
+      "block-spacing": [
+        "warn",
+        "always"
+      ],
+      "brace-style": [
+        "warn",
+        "stroustrup",
+        {
+          "allowSingleLine": false
+        }
+      ],
+      "comma-spacing": [
+        "warn",
+        {
+          "before": false,
+          "after": true
+        }
+      ],
+      "computed-property-spacing": [
+        "warn",
+        "never"
+      ],
+      "key-spacing": [
+        "warn",
+        {
           "beforeColon": false,
           "afterColon": true
-      }],
+        }
+      ],
       "keyword-spacing": "warn",
-      "semi-spacing": ["warn", {"before": false, "after": true}],
-      "arrow-spacing": ["warn", { "before": true, "after": true }],
-      "generator-star-spacing": ["warn", {"before": false, "after": true}],
-      "template-curly-spacing": ["warn", "never"],
-      "yield-star-spacing": ["warn", "after"],
-      "indent": ["warn", 4, {
+      "semi-spacing": [
+        "warn",
+        {
+          "before": false,
+          "after": true
+        }
+      ],
+      "arrow-spacing": [
+        "warn",
+        {
+          "before": true,
+          "after": true
+        }
+      ],
+      "generator-star-spacing": [
+        "warn",
+        {
+          "before": false,
+          "after": true
+        }
+      ],
+      "template-curly-spacing": [
+        "warn",
+        "never"
+      ],
+      "yield-star-spacing": [
+        "warn",
+        "after"
+      ],
+      "indent": [
+        "warn",
+        4,
+        {
           "SwitchCase": 1,
-          "VariableDeclarator": {"var": 2, "let": 2, "const": 3}
-      }],
-      "max-len": ["warn", 80, 4],
+          "VariableDeclarator": {
+            "var": 2,
+            "let": 2,
+            "const": 3
+          }
+        }
+      ],
+      "max-len": [
+        "warn",
+        80,
+        4
+      ],
       "react/display-name": 0,
       "react/forbid-prop-types": 0,
       "react/jsx-boolean-value": 1,
