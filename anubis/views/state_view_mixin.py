@@ -299,6 +299,7 @@ class StateViewMixin:
         self.is_sortable = self._is_sortable()
         self.boolean_expression = None
         self.action_result = None
+        self.pagination_data = None
 
         self._sorting = {
             "by": None,
@@ -431,16 +432,18 @@ class StateViewMixin:
                 whole of Anubis' state.
         """
 
-        self.object_list = self.filter_queryset(self.get_queryset())
+        return Response(self.get_full_state())
 
-        context = self.get_context_data() # Changes self.object_list
-        state = context["anubis_state"]
+    def get_full_state(self):
+        self.object_list = self.get_queryset()
+        state = self.get_state()
 
-        serializer = self.get_serializer(self.object_list, many=True)
+        return state
 
-        state["searchResults"]["results"] = serializer.data
+    def get_serialized_queryset(self, queryset):
+        serializer = self.get_serializer(queryset, many=True)
 
-        return Response(context["anubis_state"])
+        return serializer.data
 
     def get_queryset(self):
         original = super().get_queryset()
@@ -451,6 +454,7 @@ class StateViewMixin:
             queryset = original.none()
 
         queryset = self.sort_queryset(queryset)
+        queryset = self.paginate_queryset(queryset)
 
         return queryset
 
@@ -477,17 +481,38 @@ class StateViewMixin:
 
         return getattr(self, sort_method)(queryset, ascending)
 
-    def get_context_data(self, **kwargs):
-        anubis_state = self.get_full_state()
+    def paginate_queryset(self, queryset):
+        if not self.is_paginated or self.boolean_expression is None:
+            return queryset
 
-        try:
-            context = super().get_context_data(**kwargs)
-        except AttributeError:
-            context = {}
+        page = self._paginate_queryset(queryset)
+        current_page = self.kwargs[self.page_parameter]
 
-        context["anubis_state"] = anubis_state
+        def get_from_and_to(page_number):
+            from_ = (page_number - 1) * self.objects_per_page + 1
+            to_ = min(page_number * self.objects_per_page,
+                      page.paginator.count)
 
-        return context
+            if page.paginator.count == 0:
+                from_ = 0
+
+            return (page_number, from_, to_)
+
+        all_pages = [get_from_and_to(num) for num in page.paginator.page_range]
+
+        self.pagination_data = {
+            "currentPage": current_page,
+            "allPages": all_pages,
+            "recordCount": page.paginator.count,
+            "nextPageNumber": page.next_page_number() \
+                if page.has_next() else None,
+            "previousPageNumber": page.previous_page_number() \
+                if page.has_previous() else None,
+        }
+
+        return page.object_list
+
+
 
     def get_serializer_class(self):
         search_serializer, _ = self.serializers
@@ -588,7 +613,7 @@ class StateViewMixin:
 
         return self.boolean_expression.traverse(aggregator)
 
-    def get_full_state(self):
+    def get_state(self):
         anubis_state = {
             "searchResults": self.get_search_results(),
             "details": self.get_details(),
@@ -639,7 +664,7 @@ class StateViewMixin:
             "actions": self.get_actions() if visible else {},
             "visible": visible,
             "model": self._model_key,
-            "results": self.object_list,
+            "results": self.get_serialized_queryset(self.object_list),
             "sorting": self.get_sorting(),
             "selection": []
         }
@@ -650,35 +675,7 @@ class StateViewMixin:
         return results
 
     def get_pagination(self):
-        if not self.is_paginated or self.boolean_expression is None:
-            return None
-
-        page = self._paginate_queryset(self.object_list)
-        current_page = self.kwargs[self.page_parameter]
-
-        self.object_list = page.object_list
-
-        def get_from_and_to(page_number):
-            from_ = (page_number - 1) * self.objects_per_page + 1
-            to_ = min(page_number * self.objects_per_page,
-                      page.paginator.count)
-
-            if page.paginator.count == 0:
-                from_ = 0
-
-            return (page_number, from_, to_)
-
-        all_pages = [get_from_and_to(num) for num in page.paginator.page_range]
-
-        return {
-            "currentPage": current_page,
-            "allPages": all_pages,
-            "recordCount": page.paginator.count,
-            "nextPageNumber": page.next_page_number() \
-                if page.has_next() else None,
-            "previousPageNumber": page.previous_page_number() \
-                if page.has_previous() else None,
-        }
+        return self.pagination_data
 
     def get_actions(self):
         if self.actions is None:

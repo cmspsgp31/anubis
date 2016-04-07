@@ -18,12 +18,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+"""
+Exports views from submodules.
+"""
+
 from .state_view_mixin import StateViewMixin
 from .app_view_mixin import AppViewMixin
-from .caching import NoCacheMixin
+from .caching import NoCacheMixin, CachedSearchMixin
 from .utils import exception_handler
 
 __all__ = ['StateViewMixin',
            'AppViewMixin',
            'NoCacheMixin',
+           'CachedSearchMixin',
            'exception_handler']

@@ -30,6 +30,7 @@ from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext as _
 
 from .state_view_mixin import StateViewMixin
+from .caching import CachedSearchMixin
 
 class AppViewMixin(StateViewMixin):
     record_zoom = "record_zoom"
@@ -94,8 +95,15 @@ class AppViewMixin(StateViewMixin):
 
         return url(s_and_d_url, cls.as_view(**kwargs), name=name)
 
-    def get_full_state(self):
-        base_state = dict(super().get_full_state())
+    def get(self, request, *args, **kwargs):
+        self._prepare_attributes()
+
+        context = self.get_context_data()
+
+        return self.render_to_response(context)
+
+    def get_state(self):
+        base_state = dict(super().get_state())
 
         base_state.update({
             "tokenEditor": self.get_token_state(),
@@ -118,14 +126,13 @@ class AppViewMixin(StateViewMixin):
         }
 
     def get_context_data(self, **kwargs):
+        if not hasattr(self, 'object_list'):
+            self.object_list = []
+
         context = dict(super().get_context_data(**kwargs))
-        state = context["anubis_state"]
+        full_state = self.get_full_state()
 
-        serializer = self.get_serializer(self.object_list, many=True)
-
-        state["searchResults"]["results"] = serializer.data
-
-        context["anubis_state"] = JSONRenderer().render(state)
+        context["anubis_state"] = JSONRenderer().render(full_state)
 
         return context
 
@@ -322,7 +329,4 @@ class AppViewMixin(StateViewMixin):
         keys = self.get_filters().keys()
 
         return keys[0]
-
-
-
 
