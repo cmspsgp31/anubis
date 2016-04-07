@@ -1,22 +1,23 @@
-# Copyright (C) 2014, Ugo Pozo
-#               2014, Câmara Municipal de São Paulo
+# Copyright © 2014-16, Ugo Pozo
+#             2014-16, Câmara Municipal de São Paulo
 
-# aggregators.py - Agregadores de expressões booleanas.
+# aggregators.py - aggregators for boolean expressions.
 
-# Este arquivo é parte do software Anubis.
+# This file is part of Anubis.
 
-# Anubis é um software livre: você pode redistribuí-lo e/ou modificá-lo
-# sob os termos da Licença Pública Geral GNU (GNU General Public License),
-# tal como é publicada pela Free Software Foundation, na versão 3 da
-# licença, ou (sua decisão) qualquer versão posterior.
+# Anubis is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 
-# Anubis é distribuído na esperança de que seja útil, mas SEM NENHUMA
-# GARANTIA; nem mesmo a garantia implícita de VALOR COMERCIAL ou ADEQUAÇÃO
-# PARA UM PROPÓSITO EM PARTICULAR. Veja a Licença Pública Geral GNU para
-# mais detalhes.
+# Anubis is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
-# Você deve ter recebido uma cópia da Licença Pública Geral GNU junto com
-# este programa. Se não, consulte <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 from anubis.url import Boolean
 
@@ -97,6 +98,32 @@ class QuerySetAggregator(Aggregator):
 
     def handle_impossible_case(self):
         return self.base_queryset
+
+class CachedQuerySetAggregator(QuerySetAggregator):
+    def __init__(self, cache, base_queryset, allowed_filters):
+        super().__init__(base_queryset, allowed_filters)
+
+        self.cache = cache
+
+    def make_cache_key(self, expr):
+        model_name = self.base_queryset.model._meta.model_name
+        keys = [model_name, expr["field"]] + expr["args"]
+        keys = [k.replace(":", r"\:") for k in keys]
+
+        return ":".join(keys)
+
+    def handle_base_expression(self, base_expression):
+        unit_key = self.make_cache_key(base_expression)
+
+        cached_value = self.cache.get(unit_key, None)
+
+        if cached_value is None:
+            queryset = super().handle_base_expression(base_expression)
+            self.cache.set(unit_key, queryset.values_list("id", flat=True))
+        else:
+            queryset = self.base_queryset.filter(id__in=cached_value)
+
+        return queryset
 
 class ListAggregator(Aggregator):
     not_token = {

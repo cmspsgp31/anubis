@@ -20,6 +20,8 @@
 
 from django.core.cache import caches
 
+from anubis.aggregators import CachedQuerySetAggregator
+
 class NoCacheMixin:
     def get(self, *args, **kwargs):
         response = super().get(*args, **kwargs)
@@ -95,6 +97,24 @@ class CachedSearchMixin:
             state = dict(cached_value)
 
         return state
+
+class CachedUnitMixin:
+    """Caches individual units.
+    """
+
+    unit_cache = None
+
+    def get_queryset_filter(self, queryset):
+        if self.unit_cache is None:
+            return super().get_queryset_filter(queryset)
+
+        cache = caches[self.unit_cache]
+
+        aggregator = CachedQuerySetAggregator(cache, queryset,
+                                              self.get_filters())
+
+        return self.boolean_expression.traverse(aggregator)
+
 
 
 

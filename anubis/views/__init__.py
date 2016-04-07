@@ -24,11 +24,12 @@ Exports views from submodules.
 
 from .state_view_mixin import StateViewMixin
 from .app_view_mixin import AppViewMixin
-from .caching import NoCacheMixin, CachedSearchMixin
+from .caching import NoCacheMixin, CachedSearchMixin, CachedUnitMixin
 from .utils import exception_handler
 
 __all__ = ['StateViewMixin',
            'AppViewMixin',
            'NoCacheMixin',
            'CachedSearchMixin',
+           'CachedUnitMixin',
            'exception_handler']
