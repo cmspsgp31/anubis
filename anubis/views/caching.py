@@ -52,7 +52,9 @@ class CachedSearchMixin:
         super()._prepare_attributes()
 
         self.is_cacheable = self.is_cacheable \
-            and self.boolean_expression is not None
+            and self.boolean_expression is not None \
+            and not self.request.user.is_authenticated() # never cache auth'ed
+                                                         # results
 
         if not self.is_cacheable:
             return

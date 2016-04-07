@@ -204,7 +204,7 @@ class DevelopAnubis(CompileFrontendMixin, CompileHaskellMixin, develop):
 
 setup(
     name="anubis",
-    version="1.0a2",
+    version="1.0a3",
     packages=[
         "anubis",
         "anubis.app",
