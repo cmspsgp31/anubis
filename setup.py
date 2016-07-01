@@ -158,12 +158,10 @@ class CompileFrontendMixin:
     def compile_frontend(self, package_dir):
         working = os.path.join(package_dir, "frontend")
 
-        jspm_cmd = ("node_modules/.bin/jspm "
-                    "bundle-sfx main build/"
-                    "anubis.js {}").format(self.frontend_options)
+        env = dict(os.environ, NODE_ENV=self.frontend_env)
 
         shell("npm install", cwd=working)
-        shell(jspm_cmd, cwd=working)
+        shell("node_modules/.bin/webpack", cwd=working, env=env)
 
         src = os.path.join(working, "build", "anubis.js")
         dst = os.path.join(package_dir, "app", "static", "anubis",
@@ -189,10 +187,10 @@ class CompileFrontendMixin:
 
 
 class InstallAnubis(CompileFrontendMixin, CompileHaskellMixin, install):
-    frontend_options = "--minify --skip-source-maps"
+    frontend_env = "production"
 
 class DevelopAnubis(CompileFrontendMixin, CompileHaskellMixin, develop):
-    frontend_options = ""
+    frontend_env = "development"
 
     user_options = develop.user_options + [
         ("force-frontend", None, "Forces rebuilding the frontend application."),
@@ -204,7 +202,7 @@ class DevelopAnubis(CompileFrontendMixin, CompileHaskellMixin, develop):
 
 setup(
     name="anubis",
-    version="1.0a4",
+    version="1.0a5",
     packages=[
         "anubis",
         "anubis.app",

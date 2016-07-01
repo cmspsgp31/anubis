@@ -19,7 +19,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import 'babel/polyfill';
+import 'babel-polyfill';
 import 'whatwg-fetch';
 import 'intl';
 import 'intl/locale-data/jsonp/pt-BR';
@@ -27,7 +27,6 @@ import 'intl/locale-data/jsonp/pt-BR';
 import React from 'react';
 import {PropTypes as RPropTypes} from 'react';
 import ReactDOM from 'react-dom';
-import Babel from 'babel';
 import _ from 'lodash';
 import injectTapEventPlugin from "react-tap-event-plugin";
 
@@ -48,20 +47,20 @@ import {Link} from 'react-router';
 /* eslint-enable no-unused-vars */
 
 const compile = (code, vars, returnWhat) => {
-    const [globals, args] = _.reduce(vars,
-                                     ([globals, args], global, arg) => [
-                                         _.concat(globals, global),
-                                         _.concat(args, arg),
-                                     ],
-                                     [[], []]
-                                    );
+    const __COMPILE_MODULES = vars;
+    const [names, references] = _.reduce(_.keys(vars),
+                                    ([names, references], name) => [
+                                        _.concat(names, name),
+                                        _.concat(references,
+                                            `__COMPILE_MODULES['${name}']`),
+                                    ],
+                                    [[], []]
+                                );
 
-    const transform = Babel.transform(code, {stage: 0});
-
-    const transformedCode = `(function (${_.join(args, ", ")}) {
-        ${transform.code}
+    const transformedCode = `(function (${_.join(names, ", ")}) {
+        ${code}
         return ${returnWhat};
-    })(${_.join(globals, ", ")})`;
+    })(${_.join(references, ", ")})`;
 
     return eval(transformedCode);
 };
@@ -120,16 +119,16 @@ window.addEventListener("DOMContentLoaded", () => {
     const appData = state.applicationData;
 
     const templateVars = {
-        React: "React",
-        MUI: "MaterialUI",
-        Icons: "Icons",
-        Link: "Link",
-        _: "_",
+        React: require('react'),
+        MUI: require('material-ui'),
+        Icons: require('material-ui/lib/svg-icons'),
+        Link: require('react-router')["Link"],
+        _: require('lodash'),
     };
 
     const themeVars = {
-        Colors: "MaterialUI.Styles.Colors",
-        ColorManipulator: "MaterialUI.Utils.ColorManipulator",
+        Colors: require('material-ui')['Styles']['Colors'],
+        ColorManipulator: require('material-ui')['Utils']['ColorManipulator'],
     };
 
     const recordTemplates = _.mapValues(
