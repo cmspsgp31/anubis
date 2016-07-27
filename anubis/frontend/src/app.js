@@ -69,6 +69,7 @@ const getDispatchProps = dispatch => ({
 @connect(getStateProps, getDispatchProps)
 export default class App extends React.Component {
     static propTypes = {
+        appTheme: IPropTypes.map,
         appTitle: RPropTypes.string,
         location: IPropTypes.contains({
             pathname: RPropTypes.string,

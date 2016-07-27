@@ -1,23 +1,22 @@
-# Copyright (C) 2014, Ugo Pozo
-#               2014, Câmara Municipal de São Paulo
+# Copyright © 2014-16, Ugo Pozo
+#             2014-16, Câmara Municipal de São Paulo
 
-# setup.py - descrição do procedimento de instalação
+# setup.py - installation procedure
 
-# Este arquivo é parte do software Anubis.
+# This file is part of Anubis.
 
-# Anubis é um software livre: você pode redistribuí-lo e/ou modificá-lo
-# sob os termos da Licença Pública Geral GNU (GNU General Public License),
-# tal como é publicada pela Free Software Foundation, na versão 3 da
-# licença, ou (sua decisão) qualquer versão posterior.
+# Anubis is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 
-# Anubis é distribuído na esperança de que seja útil, mas SEM NENHUMA
-# GARANTIA; nem mesmo a garantia implícita de VALOR COMERCIAL ou ADEQUAÇÃO
-# PARA UM PROPÓSITO EM PARTICULAR. Veja a Licença Pública Geral GNU para
-# mais detalhes.
+# Anubis is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
-# Você deve ter recebido uma cópia da Licença Pública Geral GNU junto com
-# este programa. Se não, consulte <http://www.gnu.org/licenses/>.
-
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import subprocess
 import os
@@ -217,19 +216,18 @@ setup(
     },
     package_data={
         'anubis': [
-            'frontend/config.js',
+            'frontend/webpack.config.js',
             'frontend/package.json',
             'frontend/src/*.js',
             'frontend/src/reducers/*.js',
             'frontend/src/components/*.js',
             'frontend/src/components/TokenField/*.js',
-            'frontend/components/**/*.js',
             'parseurl/*.hs',
             'parseurl/*.template',
             'parseurl/LICENSE'],
         'anubis.app': [
             'static/anubis/.gitignore',
-            'templates/*.js']},
+            'templates/*.jsx']},
     cmdclass={
         'install': InstallAnubis,
         'develop': DevelopAnubis
