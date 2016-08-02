@@ -205,8 +205,11 @@ setup(
     packages=[
         "anubis",
         "anubis.app",
+        "anubis.app.management",
+        "anubis.app.management.commands",
         "anubis.views",
-        "anubis.operations"],
+        "anubis.operations",
+    ],
     install_requires=[
         "Django >=1.8, <1.9",
         "djangorestframework <3",
