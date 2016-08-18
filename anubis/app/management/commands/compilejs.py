@@ -109,8 +109,8 @@ class Command(BaseCommand):
 
             shell('pwd', cwd=working_path)
 
-            shell(("./node_modules/.bin/babel -o {} --presets {} --plugins {}"
-                   " {}").format(target, presets, plugins, source),
+            shell(("./node_modules/.bin/babel -o {} --presets {} --plugins {} "
+                   "--compact true {}").format(target, presets, plugins, source),
                   cwd=working_path,
                   env=dict(os.environ, NODE_PATH=node_path))
 

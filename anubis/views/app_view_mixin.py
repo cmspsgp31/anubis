@@ -140,7 +140,7 @@ class AppViewMixin(StateViewMixin):
         return {key: {"names": (model._meta.verbose_name.title(),
                                 model._meta.verbose_name_plural.title()),
                       "order": self._model_order.index(key)
-                      }
+                     }
                 for key, model in self._model_lookup.items()}
 
     def get_user_data(self):

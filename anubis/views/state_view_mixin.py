@@ -151,6 +151,8 @@ class StateViewMixin:
     sidebar_links = []
     sidebar_links_title = "More links"
 
+    actions = None
+
 
 
     class _UserSerializer(rest_serializers.ModelSerializer):
