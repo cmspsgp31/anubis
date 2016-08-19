@@ -22,14 +22,14 @@ from django import forms
 from rest_framework import serializers
 
 class FieldSerializer(serializers.Serializer):
-    ui_element = serializers.SerializerMethodField('get_ui_element')
+    ui_element = serializers.SerializerMethodField()
     required = serializers.BooleanField()
     label = serializers.CharField()
-    help_text = serializers.SerializerMethodField('get_help_text')
-    choices = serializers.SerializerMethodField('get_choices')
-    is_numeric = serializers.SerializerMethodField('get_is_numeric')
-    initial = serializers.SerializerMethodField('get_initial')
-    autocomplete_url = serializers.SerializerMethodField('get_autocomplete_url')
+    help_text = serializers.SerializerMethodField()
+    choices = serializers.SerializerMethodField()
+    is_numeric = serializers.SerializerMethodField()
+    initial = serializers.SerializerMethodField()
+    autocomplete_url = serializers.SerializerMethodField()
 
     def get_help_text(self, obj):
         if "placeholder" in obj.widget.attrs.keys() and \

@@ -487,20 +487,25 @@ export default class RecordList extends React.Component {
             let Item = this.props.templates[this.props.modelName];
 
             let tiles = this.props.results.map(record => {
-                let link = this.searchAndDetailsHtml(record.get('id'));
-                let id = record.get('id');
+                const id = record.get('id', null);
+                const link = (id) ? this.searchAndDetailsHtml(id) : null;
+                const groupName = (!id) ? record.get('__groupName') : null;
 
                 return (
                     <li
-                        key={`li_${id}`}
+                        key={`li_${id || groupName}`}
                         style={{
                             minWidth: "200px",
                             margin: "10px",
                             flexGrow: "1",
                         }}
                     >
-                        <Item key={id}
+                        <Item
+                            groupName={groupName}
+                            id_={id}
+                            key={id || groupName}
                             link={link}
+                            makeLink={this.searchAndDetailsHtml.bind(this)}
                             record={record}
                         />
                     </li>

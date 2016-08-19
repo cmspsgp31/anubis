@@ -23,8 +23,8 @@ from rest_framework.response import Response
 
 from django.conf import settings
 
-def exception_handler(exc):
-    response = rest_exception_handler(exc)
+def exception_handler(exc, context):
+    response = rest_exception_handler(exc, context)
 
     if response is None:
         if hasattr(exc, "name") and callable(exc.name):

@@ -23,9 +23,13 @@ This module contains the StateViewMixin, a mixin designed for creating API views
 that perform searches on the database.
 """
 
+from collections import OrderedDict
+from functools import reduce
+
 from rest_framework.response import Response
 from rest_framework import serializers as rest_serializers
 from rest_framework.decorators import api_view
+from rest_framework.renderers import JSONRenderer
 
 from django.conf.urls import url
 from django.contrib.auth.models import User
@@ -153,6 +157,7 @@ class StateViewMixin:
 
     actions = None
 
+    group_by = None
 
 
     class _UserSerializer(rest_serializers.ModelSerializer):
@@ -443,12 +448,59 @@ class StateViewMixin:
         return state
 
     def get_serialized_queryset(self, queryset):
-        serializer = self.get_serializer(queryset, many=True)
+        if self.group_by is None:
+            return self.get_serializer(queryset, many=True).data
 
-        return serializer.data
+        groupers = [getattr(self, "group_by_{}".format(g), None)
+                    for g in self.group_by]
+
+        group_count = len(groupers)
+
+        if None in groupers:
+            return self.get_serializer(queryset, many=True).data
+
+        data = OrderedDict()
+
+        for obj in queryset:
+            groups = [grouper(obj) for grouper in groupers]
+
+            branch = data
+
+            for i, group in enumerate(groups):
+                if i == group_count - 1:
+                    leaf = branch.setdefault(group, [])
+                else:
+                    branch = branch.setdefault(group, OrderedDict())
+
+            leaf.append(obj)
+
+        data, _ = self._tree_serialize(data, 0)
+
+        return data
+
+    def _tree_serialize(self, node, depth):
+        if isinstance(node, OrderedDict):
+            serialized_node = []
+
+            for group, subgroup in node.items():
+                subgroup, leaf = self._tree_serialize(subgroup, depth + 1)
+
+                serialized_node.append({
+                    "__groupName": group,
+                    "__leaf": leaf,
+                    "__depth": depth,
+                    "__items": subgroup
+                })
+
+            return serialized_node, False
+        else:
+            return self.get_serializer(node, many=True).data, True
 
     def get_queryset(self):
-        original = super().get_queryset()
+        try:
+            original = super().get_queryset()
+        except AssertionError:
+            original = self.model.objects.all()
 
         if self.boolean_expression is not None:
             queryset = self.get_queryset_filter(original)
