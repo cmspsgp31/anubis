@@ -161,9 +161,7 @@ class StateViewMixin:
 
 
     class _UserSerializer(rest_serializers.ModelSerializer):
-        profile_link = rest_serializers.SerializerMethodField(
-            'get_profile_link'
-        )
+        profile_link = rest_serializers.SerializerMethodField()
 
         class Meta:
             model = User
