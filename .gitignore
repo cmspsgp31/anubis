@@ -1,8 +1,6 @@
 __pycache__
-.cabal-sandbox
 *.egg-info
 a.out
 *.so
-cabal.sandbox.config
-dist
 anubis/app/frontend/build
+.stack-work

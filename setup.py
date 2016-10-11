@@ -54,84 +54,19 @@ def shell_output(*args, **kwargs):
     else:
         return out
 
-def find_ghc_runtime():
-    bin_info = shell_output("ghc --info")
-
-    info = json.loads(bin_info
-                      .strip()
-                      .decode("utf-8")
-                      .replace("(", "[")
-                      .replace(")", "]"))
-
-    ghc_libraries = dict(info)["LibDir"].strip("\n")
-
-    version = shell_output("ghc --version") \
-              .decode("utf-8") \
-              .split(" ")[-1] \
-              .strip("\n")
-
-    file_name = "HSrts-ghc{}".format(version)
-
-    path_options = glob.glob(os.path.join(ghc_libraries, "rts*"))
-
-    # extra_lib_path = None
-
-    extra_lib_path = path_options[0] + "/"
-
-    # for path in path_options:
-    #     full_name = "lib{}.so".format(file_name)
-
-    #     if os.path.isfile(os.path.join(path, file_name)):
-    #         extra_lib_path = path
-
-    #         if not extra_lib_path.endswith("/"):
-    #             extra_lib_path += "/"
-
-    #         break
-
-    if extra_lib_path is None:
-        raise EnvironmentError("Couldn't find GHC runtime to link against.")
-
-    return (extra_lib_path, file_name)
-
 class CompileHaskellMixin:
     def initialize_options(self):
         self.force_parselib = False
 
         super().initialize_options()
 
-    def compile_url_parser(self, package_dir):
+    def compile_url_parser(self, package_dir, clean_beforehand):
         working = os.path.join(package_dir, "parseurl")
 
-        self.make_cabal_file(package_dir)
+        if clean_beforehand:
+            shell("stack clean", cwd=working)
 
-        shell("cabal sandbox init", cwd=working)
-        shell("cabal update", cwd=working)
-        shell("cabal install --dependencies-only --enable-shared", cwd=working)
-        shell("cabal configure --enable-shared", cwd=working)
-        shell("cabal install", cwd=working)
-
-        src = os.path.join(working, ".cabal-sandbox", "bin",
-                           "libParseUrl.so")
-        dst = os.path.join(package_dir, "libParseUrl.so")
-
-        shutil.copy(src, dst)
-
-
-    def make_cabal_file(self, package_dir):
-        working = os.path.join(package_dir, "parseurl")
-        template_path = os.path.join(working, "parseurl.cabal.template")
-        cabal_path = os.path.join(working, "parseurl.cabal")
-        extra_lib_path, library_path = find_ghc_runtime()
-
-        with open(template_path, "r") as template_fd:
-            template_body = template_fd.read()
-
-        with open(cabal_path, "w") as cabal_fd:
-            contents = template_body.format(library_path=library_path,
-                                            extra_lib_path=extra_lib_path)
-            cabal_fd.write(contents)
-
+        shell("stack install", cwd=working)
 
     def run(self):
         super().run()
@@ -142,11 +77,12 @@ class CompileHaskellMixin:
         package_dir = os.path.join(target_path, "anubis")
         final_product = os.path.join(package_dir, "libParseUrl.so")
 
-        should_compile = not os.path.isfile(final_product) or \
-            self.force_parselib
+        final_product_exists = os.path.isfile(final_product)
+
+        should_compile = not final_product_exists or self.force_parselib
 
         if should_compile:
-            self.compile_url_parser(package_dir)
+            self.compile_url_parser(package_dir, final_product_exists)
 
 class CompileFrontendMixin:
     def initialize_options(self):
@@ -225,9 +161,12 @@ setup(
             'frontend/src/reducers/*.js',
             'frontend/src/components/*.js',
             'frontend/src/components/TokenField/*.js',
-            'parseurl/*.hs',
-            'parseurl/*.template',
-            'parseurl/LICENSE'],
+            'parseurl/LICENSE',
+            'parseurl/stack.yaml',
+            'parseurl/parseurl.cabal',
+            'parseurl/Setup.hs',
+            'parseurl/src/*.hs',
+        ],
         'anubis.app': [
             'static/anubis/.gitignore',
             'templates/*.jsx']},

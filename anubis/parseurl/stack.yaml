@@ -1,0 +1,6 @@
+resolver: lts-7.3
+packages:
+- '.'
+flags: {}
+local-bin-path: ..
+extra-package-dbs: []
