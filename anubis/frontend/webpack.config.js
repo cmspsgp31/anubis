@@ -29,7 +29,7 @@ module.exports = {
     context: path.join(__dirname, './src'),
     entry: { js: './main.js' },
     output: {
-        path: path.join(__dirname, './build'),
+        path: path.join(__dirname, '../app/static/anubis'),
         filename: 'anubis.js',
     },
     module: {
@@ -46,7 +46,7 @@ module.exports = {
         ],
     },
     resolve: {
-        extensions: ['', '.js', '.jsx'],
+        extensions: ['.js', '.jsx'],
         modules: [
             path.resolve('./src'),
             'node_modules',

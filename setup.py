@@ -98,12 +98,6 @@ class CompileFrontendMixin:
         shell("npm install", cwd=working)
         shell("node_modules/.bin/webpack", cwd=working, env=env)
 
-        src = os.path.join(working, "build", "anubis.js")
-        dst = os.path.join(package_dir, "app", "static", "anubis",
-                           "anubis.js")
-
-        shutil.copy(src, dst)
-
     def run(self):
         super().run()
 

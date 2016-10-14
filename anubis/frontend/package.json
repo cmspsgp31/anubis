@@ -15,7 +15,7 @@
     "babel-plugin-transform-runtime": "^6",
     "babel-preset-es2015-native-modules": "^6",
     "babel-preset-react": "^6",
-    "webpack": "^2.1.0-beta.14"
+    "webpack": "^2.1.0-beta.25"
   },
   "dependencies": {
     "babel-cli": "^6.10.1",
