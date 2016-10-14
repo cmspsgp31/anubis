@@ -124,6 +124,8 @@ window.addEventListener("DOMContentLoaded", () => {
         Icons: require('material-ui/lib/svg-icons'),
         Link: require('react-router')["Link"],
         _: require('lodash'),
+        I: require('immutable'),
+        Colors: require('material-ui')['Styles']['Colors'],
     };
 
     const themeVars = {
