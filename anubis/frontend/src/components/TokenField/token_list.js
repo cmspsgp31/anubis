@@ -60,7 +60,6 @@ export default class TokenList extends React.Component {
         onBlur: RPropTypes.func.isRequired,
         onChange: RPropTypes.func.isRequired,
         onFocus: RPropTypes.func.isRequired,
-        onKeyDown: RPropTypes.func.isRequired,
         onSearch: RPropTypes.func.isRequired,
         onUpdate: RPropTypes.func,
         position: RPropTypes.number,
@@ -169,9 +168,9 @@ export default class TokenList extends React.Component {
     }
 
     get inputProps() {
-        const {onBlur,  onFocus, onKeyDown} = this.props;
+        const {onBlur, onFocus} = this.props;
 
-        return {onBlur, onChange: this.handleChange, onFocus, onKeyDown};
+        return {onBlur, onChange: this.handleChange, onFocus};
     }
 
     handleChange = ev => {

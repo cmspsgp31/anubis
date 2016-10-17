@@ -135,14 +135,14 @@ export default class TokenField extends React.Component {
         if (ev) ev.preventDefault();
 
         const editorValue = (this.textField) &&
-            this.textField.refs.input.state.editorValue;
+            this.textField.input.state.editorValue;
 
         if (editorValue && (editorValue != "")) {
             this.props.tokenListDispatchProps
                 .expandDefaultUnitEditor(editorValue);
 
-            this.textField.refs.input.editorToken.lead.value = "";
-            this.textField.refs.input.setState({editorValue: ""});
+            this.textField.input.editorToken.lead.value = "";
+            this.textField.input.setState({editorValue: ""});
 
             this.props.buildTextExprEditor();
         }
@@ -173,7 +173,6 @@ export default class TokenField extends React.Component {
                     <TextField
                         floatingLabelText="Digite aqui sua pesquisa"
                         multiLine
-                        onEnterKeyDown={this.handleSearch}
                         ref={c => this.textField = c}
                         style={{
                             width: "100%",
@@ -189,7 +188,6 @@ export default class TokenField extends React.Component {
                             isFocused={this.isFocused}
                             onSearch={this.handleSearch}
                             onUpdate={this.handleUpdate}
-                            ref="input"
                             textElement={() => this.textField}
                             value={this.props.textExpression}
                         />

@@ -22,11 +22,11 @@ import React, {PropTypes as RPropTypes} from 'react';
 import I from 'immutable';
 import IPropTypes from 'react-immutable-proptypes';
 import _ from 'lodash';
-import AppTheme from 'material-ui/lib/styles/raw-themes/light-raw-theme';
-import ThemeManager from 'material-ui/lib/styles/theme-manager';
+import AppTheme from 'material-ui/styles/baseThemes/lightBaseTheme';
+import getMuiTheme from 'material-ui/styles/getMuiTheme';
 
 import {Paper, RaisedButton, Dialog, Snackbar, ListItem, Divider,
-    CircularProgress, LeftNav, List} from 'material-ui';
+    CircularProgress, Drawer, List} from 'material-ui';
 import {connect} from 'react-redux';
 import {bindActionCreators} from 'redux';
 import {StickyContainer} from 'react-sticky';
@@ -114,8 +114,8 @@ export default class App extends React.Component {
 
     get theme() {
         return (this.props.appTheme) ?
-            ThemeManager.getMuiTheme(this.props.appTheme.toJS()) :
-            ThemeManager.getMuiTheme(AppTheme);
+            getMuiTheme(this.props.appTheme.toJS()) :
+            getMuiTheme(AppTheme);
     }
 
     detailsHtml(model, id) {
@@ -157,10 +157,12 @@ export default class App extends React.Component {
                             primary
                         />
                     }
+                    actionsContainerStyle={{borderTop: 'none'}}
                     autoScrollBodyContent
                     modal
                     open={showErrorDialog}
                     title={error.get('name')}
+                    titleStyle={{borderBottom: 'none'}}
                 >
                     <p style={{marginBottom: "20px"}}>{error.get('detail')}</p>
 
@@ -294,16 +296,19 @@ export default class App extends React.Component {
                         )}
                     </div>
                 }
+                actionsContainerStyle={{borderTop: 'none'}}
                 autoScrollBodyContent
                 modal
                 onRequestClose={this.props.cancelServerAction}
                 open={open}
                 title={title}
+                titleStyle={{borderBottom: 'none'}}
             >
                 {this.state.waiting && (
                     <div style={{textAlign: "center"}}>
-                        <CircularProgress mode="indeterminate"
-                            size={2}
+                        <CircularProgress
+                            size={80}
+                            thickness={7}
                         />
                     </div>
                 ) || (
@@ -491,12 +496,12 @@ export default class App extends React.Component {
                     onRequestToggle={this.handleToggleNav}
                 />
 
-                <LeftNav
+                <Drawer
+                    containerStyle={{zIndex: 9510}}
                     docked={false}
                     onRequestChange={this.handleToggleNav}
                     open={this.state.showNav}
                     overlayStyle={{zIndex: 9500}}
-                    style={{zIndex: 9510}}
                 >
                     <List
                         style={{
@@ -518,7 +523,7 @@ export default class App extends React.Component {
                             </a>
                         )).toJS()}
                     </List>
-                </LeftNav>
+                </Drawer>
 
                 <TokenField params={this.props.params} />
 

@@ -27,8 +27,9 @@ import I from 'immutable';
 import _ from 'lodash';
 
 import {PropTypes as RPropTypes} from 'react';
-import {TextField, SelectField, MenuItem, DatePickerDialog} from 'material-ui';
-import {ActionDateRange} from 'material-ui/lib/svg-icons';
+import {TextField, SelectField, MenuItem} from 'material-ui';
+import DatePickerDialog from 'material-ui/DatePicker/DatePickerDialog';
+import {ActionDateRange} from 'material-ui/svg-icons';
 
 import Token, {makeDraggable} from './token';
 
@@ -77,7 +78,7 @@ export default class UnitToken extends Token {
 
     componentDidUpdate(newProps) {
         if (this.firstField && this.grabFocus) {
-            const node = ReactDOM.findDOMNode(this.firstField.refs.input);
+            const node = ReactDOM.findDOMNode(this.firstField.input);
             setTimeout(() => node.focus(), 250);
             this.firstField = null;
             this.grabFocus = false;
@@ -119,7 +120,16 @@ export default class UnitToken extends Token {
         this.updateGlobalState(index, this.state.values[index]);
     }
 
-    handleFieldEnterKeyDown = index => () => {
+    handleFieldKeyDown = index => (ev) => {
+        switch (ev.which) {
+            case 13: // Enter
+                this.handleFieldEnterKeyDown(index);
+                break;
+        }
+
+    }
+
+    handleFieldEnterKeyDown = index => {
         this.updateGlobalState(index, this.state.values[index]);
 
         this.setState({triggerSearch: true});
@@ -203,7 +213,7 @@ export default class UnitToken extends Token {
                                 key={`field_${i}_${this.props.index}`}
                                 onBlur={this.handleFieldBlur(i)}
                                 onChange={this.handleFieldChange(i)}
-                                onEnterKeyDown={this.handleFieldEnterKeyDown(i)}
+                                onKeyDown={this.handleFieldKeyDown(i)}
                                 ref={this.firstFieldRef(i)}
                                 style={{...outsideStyle, width: 210}}
                                 value={value}
@@ -240,7 +250,7 @@ export default class UnitToken extends Token {
                             key={`field_${i}_${this.props.index}`}
                             onBlur={this.handleFieldBlur(i)}
                             onChange={this.handleFieldChange(i)}
-                            onEnterKeyDown={this.handleFieldEnterKeyDown(i)}
+                            onKeyDown={this.handleFieldKeyDown(i)}
                             ref={this.firstFieldRef(i)}
                             style={{...outsideStyle, width: "auto"}}
                             value={value}

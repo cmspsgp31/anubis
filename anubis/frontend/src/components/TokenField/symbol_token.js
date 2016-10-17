@@ -21,7 +21,7 @@
 
 import React from 'react';
 
-import {Styles} from 'material-ui';
+import * as Colors from 'material-ui/styles/colors';
 
 import Token, {makeDraggable} from './token';
 
@@ -49,35 +49,35 @@ class SymbolToken extends Token {
 class AndToken extends SymbolToken {
     repr = "E";
 
-    color = Styles.Colors.cyan600;
+    color = Colors.cyan600;
 }
 
 @makeDraggable
 class OrToken extends SymbolToken {
     repr = "OU";
 
-    color = Styles.Colors.teal400;
+    color = Colors.teal400;
 }
 
 @makeDraggable
 class NotToken extends SymbolToken {
     repr = "NÃO";
 
-    color = Styles.Colors.red400;
+    color = Colors.red400;
 }
 
 @makeDraggable
 class LeftParensToken extends SymbolToken {
     repr = "(";
 
-    color = Styles.Colors.orange800;
+    color = Colors.orange800;
 }
 
 @makeDraggable
 class RightParensToken extends SymbolToken {
     repr = ")";
 
-    color = Styles.Colors.orange800;
+    color = Colors.orange800;
 }
 
 export default {

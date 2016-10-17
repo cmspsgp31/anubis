@@ -213,8 +213,8 @@ export default class RecordZoom extends React.Component {
         let contents = (
             <div style={{textAlign: "center"}}>
                 <CircularProgress
-                    mode="indeterminate"
-                    size={2}
+                    size={80}
+                    thickness={7}
                 />
             </div>
         );
@@ -266,14 +266,17 @@ export default class RecordZoom extends React.Component {
 
         return (
             <Dialog
-            actions={makeActions(actions)}
-            autoScrollBodyContent
-            key="zoomDialog"
-            modal={false}
-            onRequestClose={() => this._close()}
-            open={this.state.visible}
-            style={{zIndex: 10000}}
-            title={title}
+                actions={makeActions(actions)}
+                actionsContainerStyle={{borderTop: 'none'}}
+                autoScrollBodyContent
+                bodyStyle={{padding: '24px'}}
+                key="zoomDialog"
+                modal={false}
+                onRequestClose={() => this._close()}
+                open={this.state.visible}
+                style={{zIndex: 10000}}
+                title={title}
+                titleStyle={{borderBottom: 'none'}}
             >
                 {contents}
             </Dialog>

@@ -47,6 +47,7 @@ export default class Header extends React.Component {
                     boxShadow: "0 -10px 15px 0 rgba(0,0,0,0.4)",
                     position: "fixed",
                     bottom: 0,
+                    width: "100%",
                     fontFamily: "'Roboto', sans-serif",
                 }}
             >

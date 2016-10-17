@@ -28,7 +28,7 @@ import {IconMenu,
     MenuItem,
     Popover,
     Menu} from 'material-ui';
-import {ContentLink, ContentAddBox} from 'material-ui/lib/svg-icons';
+import {ContentLink, ContentAddBox} from 'material-ui/svg-icons';
 import {DropTarget} from 'react-dnd';
 
 import Token, {tokenTarget, TokenType} from './token';
@@ -47,7 +47,6 @@ export default class EditorToken extends Token {
             onBlur: RPropTypes.func.isRequired,
             onChange: RPropTypes.func.isRequired,
             onFocus: RPropTypes.func.isRequired,
-            onKeyDown: RPropTypes.func.isRequired,
         }).isRequired,
         insertToken: RPropTypes.func,
         isFocused: RPropTypes.func,
@@ -250,9 +249,12 @@ export default class EditorToken extends Token {
                     this.handleAcceptCompletion(ev);
                 }
                 break;
+
+            case 13: // Enter
+                this.props.onSearch(ev);
+                break;
         }
 
-        this.props.inputProps.onKeyDown(ev);
     }
 
     handleMoveBack = () => {

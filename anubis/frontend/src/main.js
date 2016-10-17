@@ -42,7 +42,7 @@ import {appReducers} from 'reducers/reducer';
 
 /* eslint-disable no-unused-vars */
 import MaterialUI from 'material-ui';
-import * as Icons from 'material-ui/lib/svg-icons';
+import * as Icons from 'material-ui/svg-icons';
 import {Link} from 'react-router';
 /* eslint-enable no-unused-vars */
 
@@ -121,16 +121,16 @@ window.addEventListener("DOMContentLoaded", () => {
     const templateVars = {
         React: require('react'),
         MUI: require('material-ui'),
-        Icons: require('material-ui/lib/svg-icons'),
+        Icons: require('material-ui/svg-icons'),
         Link: require('react-router')["Link"],
         _: require('lodash'),
         I: require('immutable'),
-        Colors: require('material-ui')['Styles']['Colors'],
+        Colors: require('material-ui/styles/colors'),
     };
 
     const themeVars = {
-        Colors: require('material-ui')['Styles']['Colors'],
-        ColorManipulator: require('material-ui')['Utils']['ColorManipulator'],
+        Colors: require('material-ui/styles/colors'),
+        ColorManipulator: require('material-ui/utils/colorManipulator'),
     };
 
     const recordTemplates = _.mapValues(

@@ -25,7 +25,7 @@ import IPropTypes from 'react-immutable-proptypes';
 import {PropTypes as RPropTypes} from 'react';
 import {Paper} from 'material-ui';
 import {IconButton} from 'material-ui';
-import {ContentClear} from 'material-ui/lib/svg-icons';
+import {ContentClear} from 'material-ui/svg-icons';
 import {DragSource, DropTarget} from 'react-dnd';
 
 const tokenSource = {

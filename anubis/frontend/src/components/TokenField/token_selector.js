@@ -28,7 +28,7 @@ import {
     ActionSearch,
     NavigationClose,
     ContentAdd,
-} from 'material-ui/lib/svg-icons';
+} from 'material-ui/svg-icons';
 
 import {PropTypes as RPropTypes} from 'react';
 

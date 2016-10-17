@@ -27,9 +27,9 @@ import IPropTypes from 'react-immutable-proptypes';
 
 import {connect} from 'react-redux';
 import {RaisedButton, Toolbar, ToolbarGroup, CircularProgress, DropDownMenu,
-    IconButton, MenuItem, Icons, Tabs, Tab, Popover, Menu} from 'material-ui';
-import {NavigationArrowUpward, NavigationArrowDownward,
-    SocialShare} from 'material-ui/lib/svg-icons';
+    IconButton, MenuItem, Tabs, Tab, Popover, Menu} from 'material-ui';
+import {NavigationArrowUpward, NavigationArrowDownward, NavigationChevronLeft,
+    NavigationChevronRight, SocialShare} from 'material-ui/svg-icons';
 import {Link} from 'react-router';
 import {routeActions} from 'react-router-redux';
 import {bindActionCreators} from 'redux';
@@ -279,7 +279,7 @@ export default class RecordList extends React.Component {
                     onTouchTap={() => this.goTo({page: prevPage})}
                     style={{float: "left", top: "3px"}}
                 >
-                    <Icons.NavigationChevronLeft />
+                    <NavigationChevronLeft />
                 </IconButton>
                 <DropDownMenu
                     disabled={total == 0}
@@ -308,7 +308,7 @@ export default class RecordList extends React.Component {
                     onTouchTap={() => this.goTo({page: nextPage})}
                     style={{float: "left", top: "3px"}}
                 >
-                    <Icons.NavigationChevronRight />
+                    <NavigationChevronRight />
                 </IconButton>
             </ToolbarGroup>
         );
@@ -474,8 +474,8 @@ export default class RecordList extends React.Component {
         let contents = (
             <div style={{textAlign: "center"}}>
                 <CircularProgress
-                    mode="indeterminate"
-                    size={2}
+                    size={80}
+                    thickness={7}
                 />
             </div>
         );

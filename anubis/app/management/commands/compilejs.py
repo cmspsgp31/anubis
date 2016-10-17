@@ -68,7 +68,7 @@ class Command(BaseCommand):
 
     default_extensions = ['.jsx', '.es6']
 
-    presets = ['es2015-native-modules',
+    presets = ['es2015',
                'react',
                'stage-0']
 
