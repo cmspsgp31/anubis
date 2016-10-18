@@ -490,8 +490,6 @@ export default class RecordList extends React.Component {
                 const id = record.get('id', null);
                 const link = (id) ? this.searchAndDetailsHtml(id) : null;
                 const groupName = (!id) ? record.get('__groupName') : null;
-                const flexGrow = (Item.getFlexGrow) ? Item.getFlexGrow(record) :
-                    "1";
                 const extraStyle = (Item.getExtraStyle) ?
                     Item.getExtraStyle(record) :
                     {};
@@ -502,13 +500,10 @@ export default class RecordList extends React.Component {
                         style={{
                             minWidth: "200px",
                             margin: "10px",
-                            flexGrow: flexGrow,
                             ...extraStyle,
                         }}
                     >
                         <Item
-                            completeResults={Item.requestCompleteResults &&
-                                this.props.results}
                             goTo={this.props.goTo}
                             groupName={groupName}
                             id_={id}

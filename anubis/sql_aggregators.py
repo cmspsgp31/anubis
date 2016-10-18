@@ -63,7 +63,3 @@ class ProcedureOrderingAnnotation(RawSQL):
 ProcedureAggregate = ProcedureOrderingAnnotation
 # backwards compatibility
 
-def test():
-    from bases_cmsp.eventos.models import Evento
-
-    print(str(Evento.objects.order_by_procedure("agg_test", "id", "dia").distinct().query))

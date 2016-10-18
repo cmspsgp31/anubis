@@ -95,7 +95,11 @@ class CompileFrontendMixin:
 
         env = dict(os.environ, NODE_ENV=self.frontend_env)
 
-        shell("npm install", cwd=working)
+        if shutil.which("yarn") is not None:
+            shell("yarn", cwd=working)
+        else:
+            shell("npm install", cwd=working)
+
         shell("node_modules/.bin/webpack", cwd=working, env=env)
 
     def run(self):
