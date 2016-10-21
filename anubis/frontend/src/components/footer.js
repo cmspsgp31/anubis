@@ -49,6 +49,7 @@ export default class Header extends React.Component {
                     bottom: 0,
                     width: "100%",
                     fontFamily: "'Roboto', sans-serif",
+                    zIndex: 1500,
                 }}
             >
                 <ToolbarGroup>

@@ -128,6 +128,7 @@ window.addEventListener("DOMContentLoaded", () => {
         I: require('immutable'),
         Colors: require('material-ui/styles/colors'),
         Sticky: require('react-sticky').Sticky,
+        StickyContainer: require('react-sticky').StickyContainer,
     };
 
     const themeVars = {
