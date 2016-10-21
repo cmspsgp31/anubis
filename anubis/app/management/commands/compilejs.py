@@ -94,12 +94,13 @@ class Command(BaseCommand):
                      if os.path.splitext(fname)[1] in extensions]
 
         working_path = os.path.join(*[os.path.dirname(anubis.__file__),
-                                   "frontend"])
+                                      "frontend"])
 
         node_path = os.path.join(working_path, "node_modules")
 
         presets = ",".join(self.presets)
         plugins = ",".join(self.plugins)
+        options = "-s inline" if settings.DEBUG else "--minified"
 
         for source in jsx_files:
             root, _ = os.path.splitext(source)
@@ -110,7 +111,8 @@ class Command(BaseCommand):
             shell('pwd', cwd=working_path)
 
             shell(("./node_modules/.bin/babel -o {} --presets {} --plugins {} "
-                   "--compact true {}").format(target, presets, plugins, source),
+                   "--compact true {} {}").format(target, presets, plugins,
+                                                  options, source),
                   cwd=working_path,
                   env=dict(os.environ, NODE_PATH=node_path))
 
