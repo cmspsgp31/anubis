@@ -33,7 +33,7 @@ import {NavigationArrowUpward, NavigationArrowDownward, NavigationChevronLeft,
 import {Link} from 'react-router';
 import {routeActions} from 'react-router-redux';
 import {bindActionCreators} from 'redux';
-import {Sticky} from 'react-sticky';
+import {Sticky, StickyContainer} from 'react-sticky';
 
 import Actions from 'actions';
 
@@ -566,16 +566,18 @@ export default class RecordList extends React.Component {
                             </ToolbarGroup>
                         </Toolbar>
                     </Sticky>
-                    <ul
-                        style={{
-                            display: "flex",
-                            flexFlow: "row wrap",
-                            listStyle: "none",
-                            paddingBottom: 10,
-                        }}
-                    >
-                        {tiles}
-                    </ul>
+                    <StickyContainer>
+                        <ul
+                            style={{
+                                display: "flex",
+                                flexFlow: "row wrap",
+                                listStyle: "none",
+                                paddingBottom: 10,
+                            }}
+                        >
+                            {tiles}
+                        </ul>
+                    </StickyContainer>
                 </div>
             );
         }

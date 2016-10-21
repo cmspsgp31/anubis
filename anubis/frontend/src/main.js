@@ -120,12 +120,14 @@ window.addEventListener("DOMContentLoaded", () => {
 
     const templateVars = {
         React: require('react'),
+        ReactDOM: require('react-dom'),
         MUI: require('material-ui'),
         Icons: require('material-ui/svg-icons'),
         Link: require('react-router')["Link"],
         _: require('lodash'),
         I: require('immutable'),
         Colors: require('material-ui/styles/colors'),
+        Sticky: require('react-sticky').Sticky,
     };
 
     const themeVars = {
