@@ -81,7 +81,7 @@ export default class TokenField extends React.Component {
         defaultModel: RPropTypes.string,
         goTo: RPropTypes.func,
         modelName: RPropTypes.string,
-        models: IPropTypes.mapOf({
+        models: IPropTypes.mapContains({
             names: IPropTypes.listOf(RPropTypes.string),
             order: RPropTypes.number,
         }),

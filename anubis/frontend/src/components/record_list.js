@@ -80,7 +80,7 @@ const getDispatchProps = dispatch => ({
 @connect(getStateProps, getDispatchProps)
 export default class RecordList extends React.Component {
     static propTypes = {
-        actions: IPropTypes.mapOf({
+        actions: IPropTypes.mapContains({
             title: RPropTypes.string,
             description: RPropTypes.string,
             fields: IPropTypes.listOf(IPropTypes.map),
@@ -399,12 +399,12 @@ export default class RecordList extends React.Component {
         if (this.props.models.size < 2) return null;
 
         const models = this.props.models
-        .map((model, key) => model.set("key", key))
-        .toList()
-        .sortBy(model => model.get('order'))
-        .toJS();
+            .map((model, key) => model.set("key", key))
+            .toList()
+            .sortBy(model => model.get('order'))
+            .toJS();
 
-        let selectedModel = this.props.modelName || models[0].key;
+        const selectedModel = this.props.modelName || models[0].key;
 
         return (
             <Tabs

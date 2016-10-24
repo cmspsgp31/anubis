@@ -115,7 +115,7 @@ class Main extends React.Component {
 
 window.addEventListener("DOMContentLoaded", () => {
     injectTapEventPlugin();
-    const state = window.__AnubisState;
+    const state = window.__ANUBIS_STATE__;
     const appData = state.applicationData;
 
     const templateVars = {

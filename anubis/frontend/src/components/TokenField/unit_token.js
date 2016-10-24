@@ -21,7 +21,6 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import IPropTypes from 'react-immutable-proptypes';
 import Intl from 'intl';
 import I from 'immutable';
 import _ from 'lodash';
@@ -37,11 +36,9 @@ import Token, {makeDraggable} from './token';
 export default class UnitToken extends Token {
     static propTypes = Object.assign({}, Token.propTypes, {
         description: RPropTypes.string,
-        fields: IPropTypes.listOf(
-            IPropTypes.contains({
-                choices: IPropTypes.listOf(
-                    IPropTypes.contains({2: RPropTypes.any.isRequired}),
-                ),
+        fields: RPropTypes.arrayOf(
+            RPropTypes.shape({
+                choices: RPropTypes.array,
                 help_text: RPropTypes.string,
                 is_numeric: RPropTypes.bool,
                 label: RPropTypes.string,
@@ -53,7 +50,7 @@ export default class UnitToken extends Token {
         onChange: RPropTypes.func,
         onSearch: RPropTypes.func,
         searchKey: RPropTypes.string,
-        values: IPropTypes.list,
+        values: RPropTypes.array,
     });
 
     constructor(props) {
@@ -211,6 +208,7 @@ export default class UnitToken extends Token {
                                 hintText={field.help_text}
                                 inputStyle={insideStyle}
                                 key={`field_${i}_${this.props.index}`}
+                                name={`input_field_${i}_${this.props.index}`}
                                 onBlur={this.handleFieldBlur(i)}
                                 onChange={this.handleFieldChange(i)}
                                 onKeyDown={this.handleFieldKeyDown(i)}
@@ -248,6 +246,7 @@ export default class UnitToken extends Token {
                             hintText={field.help_text}
                             inputStyle={insideStyle}
                             key={`field_${i}_${this.props.index}`}
+                            name={`input_field_${i}_${this.props.index}`}
                             onBlur={this.handleFieldBlur(i)}
                             onChange={this.handleFieldChange(i)}
                             onKeyDown={this.handleFieldKeyDown(i)}

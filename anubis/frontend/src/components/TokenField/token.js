@@ -162,6 +162,7 @@ export default class Token extends React.Component {
         const iconProps = Object.assign({}, {
             style: iconStyle,
             color: this.style.color,
+            key: "__CLOSE_ICON__",
         }, options.iconProps);
 
         return React.createElement(IconButton, props, [

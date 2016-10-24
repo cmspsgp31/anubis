@@ -53,13 +53,18 @@ export default class EditorToken extends Token {
         move: RPropTypes.func,
         onSearch: RPropTypes.func,
         position: RPropTypes.number,
-        units: IPropTypes.mapOf({
-            choices: IPropTypes.list,
-            help_text: RPropTypes.string,
-            is_numeric: RPropTypes.bool.isRequired,
-            label: RPropTypes.string,
-            required: RPropTypes.bool.isRequired,
-            ui_element: RPropTypes.string.isRequired,
+        units: IPropTypes.mapContains({
+            description: RPropTypes.string,
+            fields: IPropTypes.listOf(
+                IPropTypes.mapContains({
+                    choices: IPropTypes.list,
+                    help_text: RPropTypes.string,
+                    is_numeric: RPropTypes.bool.isRequired,
+                    label: RPropTypes.string,
+                    required: RPropTypes.bool.isRequired,
+                    ui_element: RPropTypes.string.isRequired,
+                }),
+            ),
         }),
         value: RPropTypes.string,
     };

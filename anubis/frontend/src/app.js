@@ -26,7 +26,7 @@ import AppTheme from 'material-ui/styles/baseThemes/lightBaseTheme';
 import getMuiTheme from 'material-ui/styles/getMuiTheme';
 
 import {Paper, RaisedButton, Dialog, Snackbar, ListItem, Divider,
-    CircularProgress, Drawer, List} from 'material-ui';
+    CircularProgress, Drawer, List, Subheader} from 'material-ui';
 import {connect} from 'react-redux';
 import {bindActionCreators} from 'redux';
 import {StickyContainer} from 'react-sticky';
@@ -71,7 +71,7 @@ export default class App extends React.Component {
     static propTypes = {
         appTheme: IPropTypes.map,
         appTitle: RPropTypes.string,
-        location: IPropTypes.contains({
+        location: RPropTypes.shape({
             pathname: RPropTypes.string,
         }),
         sidebarLinks: IPropTypes.contains({
@@ -91,7 +91,7 @@ export default class App extends React.Component {
     }
 
     static childContextTypes = {
-        muiTheme: React.PropTypes.object,
+        muiTheme: RPropTypes.object,
     }
 
     constructor(props) {
@@ -397,57 +397,57 @@ export default class App extends React.Component {
         const logoutLink = `${this.props.sidebarLinks.get('logout')}?` +
             `next=` + encodeURIComponent(location);
 
+        let menuItems = [
+            {
+                text: 'Administração',
+                href: this.props.sidebarLinks.get('admin'),
+            },
+            {
+                text: 'Perfil',
+                href: this.props.user.get('profile_link'),
+            },
+            {
+                text: 'Alterar senha',
+                href: this.props.sidebarLinks.get('password'),
+            },
+            {
+                sep: true,
+            },
+            {
+                text: 'Sair',
+                href: logoutLink,
+                noBlank: true,
+            },
+        ];
+
+        menuItems = menuItems.map((item, i) => {
+            if (item.sep) {
+                return (
+                    <ListItem
+                            key={`item_${i}`}
+                    >
+                        <Divider
+                            style={{marginLeft: 36}}
+                        />
+                    </ListItem>
+                );
+            }
+
+            return (
+                <ListItem
+                    href={item.href}
+                    key={`item_${i}`}
+                    style={{paddingLeft: 36}}
+                    target={(item.noBlank) ? '' : '_blank'}
+                >
+                    {item.text}
+                </ListItem>
+            );
+        });
+
         return (
             <ListItem
-                nestedItems={[
-                    <a
-                        href={this.props.sidebarLinks.get('admin')}
-                        key={`admin`}
-                        style={{textDecoration: 'none'}}
-                        target="_blank"
-                    >
-                        <ListItem
-                            primaryText={`Administração`}
-                            style={{paddingLeft: 36}}
-                        />
-                    </a>,
-                    <a
-                        href={this.props.user.get('profile_link')}
-                        key={`profile`}
-                        style={{textDecoration: 'none'}}
-                        target="_blank"
-                    >
-                        <ListItem
-                            primaryText={`Perfil`}
-                            style={{paddingLeft: 36}}
-                        />
-                    </a>,
-                    <a
-                        href={this.props.sidebarLinks.get('password')}
-                        key={`password`}
-                        style={{textDecoration: 'none'}}
-                        target="_blank"
-                    >
-                        <ListItem
-                            primaryText={`Alterar senha`}
-                            style={{paddingLeft: 36}}
-                        />
-                    </a>,
-                    <Divider
-                        key="sep"
-                        style={{marginLeft: 36}}
-                    />,
-                    <a
-                        href={logoutLink}
-                        key={`logout`}
-                        style={{textDecoration: 'none'}}
-                    >
-                        <ListItem
-                            primaryText={`Sair`}
-                            style={{paddingLeft: 36}}
-                        />
-                    </a>,
-                ]}
+                nestedItems={menuItems}
                 primaryText={userShow}
                 secondaryText={userEmail}
             />
@@ -460,14 +460,10 @@ export default class App extends React.Component {
             encodeURIComponent(location);
 
         return (
-            <a
+            <ListItem
                 href={loginLink}
-                style={{textDecoration: 'none'}}
-            >
-                <ListItem
-                    primaryText={`Entrar`}
-                />
-            </a>
+                primaryText={`Entrar`}
+            />
         );
     }
 
@@ -511,16 +507,18 @@ export default class App extends React.Component {
                         {navHeader}
                     </List>
                     <Divider />
-                    <List subheader={this.props.sidebarLinks.get('title')}>
+                    <List>
                         {this.props.sidebarLinks.get('list').map(([t, l]) => (
-                            <a
+                            <ListItem
+                                primaryText={t}
                                 href={l}
                                 key={l}
-                                style={{textDecoration: 'none'}}
                                 target="_blank"
-                            >
-                                <ListItem primaryText={t} />
-                            </a>
+                            />
+                        )).unshift((
+                            <Subheader key={`__SUBHEADER`}>
+                                {this.props.sidebarLinks.get('title')}
+                            </Subheader>
                         )).toJS()}
                     </List>
                 </Drawer>
