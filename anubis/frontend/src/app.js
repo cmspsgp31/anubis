@@ -54,6 +54,7 @@ const getStateProps = state => ({
     results: state.getIn(['searchResults', 'results']),
     sidebarLinks: state.getIn(['applicationData', 'sidebarLinks']),
     user: state.get('user'),
+    modelName: state.getIn(['searchResults', 'model']),
 });
 
 const getDispatchProps = dispatch => ({
@@ -71,9 +72,11 @@ export default class App extends React.Component {
     static propTypes = {
         appTheme: IPropTypes.map,
         appTitle: RPropTypes.string,
+        extra: RPropTypes.object,
         location: RPropTypes.shape({
             pathname: RPropTypes.string,
         }),
+        modelName: RPropTypes.string.isRequired,
         sidebarLinks: IPropTypes.contains({
             admin: RPropTypes.string,
             list: IPropTypes.list,
@@ -522,6 +525,8 @@ export default class App extends React.Component {
                         )).toJS()}
                     </List>
                 </Drawer>
+
+                {this.props.extra}
 
                 <TokenField params={this.props.params} />
 

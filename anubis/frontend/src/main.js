@@ -18,6 +18,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+/* eslint-disable react/no-multi-comp */
 
 import 'babel-polyfill';
 import 'whatwg-fetch';
@@ -31,12 +32,13 @@ import _ from 'lodash';
 import injectTapEventPlugin from "react-tap-event-plugin";
 
 import {Provider} from 'react-redux';
-import {Router, Route, browserHistory} from 'react-router';
+import {Router, IndexRoute, Route, browserHistory} from 'react-router';
 
 import App from 'app';
 import configureStore from 'configureStore';
 import RecordList from 'components/record_list';
 import RecordZoom from 'components/record_zoom';
+import ExtraComponent from 'components/extra_component';
 
 import {appReducers} from 'reducers/reducer';
 
@@ -67,16 +69,18 @@ const compile = (code, vars, returnWhat) => {
 
 class Main extends React.Component {
     static propTypes = {
-        appData: RPropTypes.object,
-        searchComponent: RPropTypes.func,
-        store: RPropTypes.object,
-        zoomComponent: RPropTypes.func,
-        zoomComponentForSearch: RPropTypes.func,
+        appData: RPropTypes.object.isRequired,
+        extraComponent: RPropTypes.func,
+        searchComponent: RPropTypes.func.isRequired,
+        store: RPropTypes.object.isRequired,
+        zoomComponent: RPropTypes.func.isRequired,
+        zoomComponentForSearch: RPropTypes.func.isRequired,
     }
 
     render() {
         const {
             appData,
+            extraComponent,
             store,
             zoomComponent,
             zoomComponentForSearch,
@@ -90,16 +94,24 @@ class Main extends React.Component {
                         component={App}
                         path={appData.baseURL}
                     >
+                        <IndexRoute components={{extra: extraComponent}} />
                         <Route
-                            components={{zoom: zoomComponent}}
+                            components={{
+                                extra: extraComponent,
+                                zoom: zoomComponent,
+                            }}
                             path={appData.detailsRoute}
                         />
                         <Route
-                            components={{list: searchComponent}}
+                            components={{
+                                extra: extraComponent,
+                                list: searchComponent,
+                            }}
                             path={appData.searchRoute}
                         />
                         <Route
                             components={{
+                                extra: extraComponent,
                                 zoom: zoomComponentForSearch,
                                 list: searchComponent,
                             }}
@@ -129,6 +141,7 @@ window.addEventListener("DOMContentLoaded", () => {
         Colors: require('material-ui/styles/colors'),
         Sticky: require('react-sticky').Sticky,
         StickyContainer: require('react-sticky').StickyContainer,
+        Intl: require('intl'),
     };
 
     const themeVars = {
@@ -146,10 +159,27 @@ window.addEventListener("DOMContentLoaded", () => {
         template => compile(template, templateVars, "RecordList")
     );
 
+    let extraComponent = null;
+
+    if (state.templates.extraControl) {
+        const extraTemplates = _.mapValues(
+            state.templates.extraControl,
+            template => compile(template, templateVars, "ExtraControl")
+        );
+
+        extraComponent = (props) => (
+            <ExtraComponent
+                {...props}
+                templates={extraTemplates}
+            />
+        );
+
+    }
+
     state.templates.appTheme = compile(state.templates.appTheme, themeVars,
         "AppTheme");
 
-    let zoomComponent = (props) => (
+    const zoomComponent = (props) => (
         <RecordZoom
             {...props}
             alsoSearching={false}
@@ -158,7 +188,7 @@ window.addEventListener("DOMContentLoaded", () => {
         />
     );
 
-    let searchComponent = (props) => (
+    const searchComponent = (props) => (
         <RecordList
             {...props}
             key="searchComponent"
@@ -166,7 +196,7 @@ window.addEventListener("DOMContentLoaded", () => {
         />
     );
 
-    let zoomComponentForSearch = (props) => (
+    const zoomComponentForSearch = (props) => (
         <RecordZoom
             {...props}
             alsoSearching
@@ -175,11 +205,12 @@ window.addEventListener("DOMContentLoaded", () => {
         />
     );
 
-    let store = configureStore(appReducers, state);
+    const store = configureStore(appReducers, state);
 
     ReactDOM.render(
         <Main
             appData={appData}
+            extraComponent={extraComponent}
             searchComponent={searchComponent}
             store={store}
             zoomComponent={zoomComponent}

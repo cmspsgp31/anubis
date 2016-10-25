@@ -36,6 +36,7 @@ class AppViewMixin(StateViewMixin):
     record_zoom = "record_zoom"
     record_list = "record_list"
     app_theme = "app_theme"
+    extra_control = None
 
     @classmethod
     def url_search(cls, app_prefix=None, **kwargs):
@@ -156,26 +157,45 @@ class AppViewMixin(StateViewMixin):
         def render(template):
             return get_template("{}.js".format(template)).render()
 
+        extra_control = None
+
         if self.is_multi_modeled:
             if hasattr(self.record_zoom, "items"):
                 record_zoom = {model: render(template) for model, template
                                in self.record_zoom.items()}
             else:
-                record_zoom = {model: render(self.record_zoom)
+                rendered = render(self.record_zoom)
+                record_zoom = {model: rendered
                                for model in self._model_lookup.keys()}
 
             if hasattr(self.record_list, "items"):
                 record_list = {model: render(template) for model, template
                                in self.record_list.items()}
             else:
-                record_list = {model: render(self.record_list)
+                rendered = render(self.record_list)
+                record_list = {model: rendered
                                for model in self._model_lookup.keys()}
+
+            if self.extra_control is not None:
+                if hasattr(self.extra_control, "items"):
+                    extra_control = {model: render(template)
+                                     for model, template
+                                     in self.extra_control.items()}
+                else:
+                    rendered = render(self.extra_control)
+                    extra_control = {model: rendered
+                                     for model in self._model_lookup.keys()}
 
         else:
             record_zoom = {"_default": render(self.record_zoom)}
             record_list = {"_default": render(self.record_list)}
 
+            if self.extra_control is not None:
+                extra_control = {"_default": render(self.extra_control)}
+
+
         return {
+            "extraControl": extra_control,
             "record": record_zoom,
             "search": record_list,
             "appTheme": render(self.app_theme)

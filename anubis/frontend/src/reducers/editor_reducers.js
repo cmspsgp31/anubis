@@ -101,6 +101,15 @@ export const Editor = {
 
             return createAction(state, token);
         },
+        'CREATE_TOKEN_EDITOR_WITH_INITIAL': (state, action) => {
+            const key = action.payload.key;
+            const meta = state.getIn(['tokenEditor', 'fieldsets', key]);
+            const args = I.List(action.payload.args).map(value => `${value}`);
+            const token = TokenList.buildNewToken(key, meta)
+                .set('args', args);
+
+            return createAction(state, token);
+        },
         'SET_TEXT_EXPRESSION_EDITOR': (state, action) => state.setIn([
             'searchResults',
             'textExpression',

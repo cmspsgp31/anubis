@@ -88,6 +88,10 @@ export default class Actions {
 
     static createTokenEditor = createAction('CREATE_TOKEN_EDITOR');
 
+    static createTokenEditorWithInitial = createAction(
+        'CREATE_TOKEN_EDITOR_WITH_INITIAL'
+    );
+
     static deleteTokenEditor = createAction('DELETE_TOKEN_EDITOR');
 
     static setTextExpressionEditor = createAction('SET_TEXT_EXPRESSION_EDITOR');
