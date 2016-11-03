@@ -169,7 +169,7 @@ class ElasticQuerySet(ProcedureQuerySet):
                 highlights.setdefault(field, {})
 
         if timeout is not None:
-            timeout = {"timeout": timeout,
+            timeout = {"request_timeout": timeout,
                        "scroll": timeout
                        }
         else:
