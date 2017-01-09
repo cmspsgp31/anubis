@@ -39,7 +39,7 @@
     "react-router": "^2",
     "react-router-redux": "^2",
     "react-sticky": "^5",
-    "react-tap-event-plugin": "^1",
+    "react-tap-event-plugin": "^2",
     "reduce-reducers": "^0.1",
     "redux": "^3",
     "redux-actions": "^0.12",
