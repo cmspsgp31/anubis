@@ -302,7 +302,7 @@ class AppViewMixin(StateViewMixin):
 
         return {
             "title": "Anubis Search Interface",
-            "footer": ("© 2016, Câmara Municipal de São Paulo, "
+            "footer": ("© 2016-17, Câmara Municipal de São Paulo, "
                        "Secretaria de Documentação, "
                        "Equipe de Documentação do Legislativo."),
             "baseURL": self.base_url,
