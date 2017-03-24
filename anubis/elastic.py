@@ -158,10 +158,11 @@ class ElasticQuerySet(ProcedureQuerySet):
         body = dict(body)
         should_highlight = "highlight" in self.model._elastic.keys()
 
-        body.setdefault("fields", []).append("_id")
+        body.setdefault("stored_fields", []).append("_id")
 
         if should_highlight:
-            body["fields"].append("highlight")
+            # this will fail!
+            body["stored_fields"].append("highlight")
             highlights = body.setdefault("highlight", {}) \
                 .setdefault("fields", {})
 
@@ -223,7 +224,7 @@ class ElasticFilter(Filter):
         return {}
 
     def default_body(self):
-        return {"fields": ["_id"]}
+        return {"stored_fields": ["_id"]}
 
     def should_import_results(self):
         return True
