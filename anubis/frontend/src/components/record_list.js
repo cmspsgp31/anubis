@@ -20,6 +20,7 @@
 
 
 import React from 'react';
+import I from 'immutable';
 import ReactDOM from 'react-dom';
 import _ from 'lodash';
 import {PropTypes as RPropTypes} from 'react';
@@ -49,7 +50,7 @@ const getStateProps = state => {
     const isSearch = state.getIn(['searchResults', 'visible']);
     const sorting = state.getIn(['searchResults', 'sorting']);
     const pagination = state.getIn(['searchResults', 'pagination']);
-    const selection = state.getIn(['searchResults', 'sorting']);
+    const selection = state.getIn(['searchResults', 'selection']);
     const actions = state.getIn(['searchResults', 'actions']);
     const cache = state.getIn(['cache', 'searchResults']);
     const baseURL = state.getIn(['applicationData', 'baseURL']);
@@ -75,6 +76,8 @@ const getDispatchProps = dispatch => ({
     startServerAction: bindActionCreators(Actions.startServerAction, dispatch),
     cancelServerAction: bindActionCreators(Actions.cancelServerAction,
                                            dispatch),
+    toggleSelectionSearch: bindActionCreators(Actions.toggleSelectionSearch,
+                                              dispatch),
 });
 
 @connect(getStateProps, getDispatchProps)
@@ -112,25 +115,23 @@ export default class RecordList extends React.Component {
         searchApi: RPropTypes.string,
         searchHtml: RPropTypes.string,
         searchResults: IPropTypes.map,
+        selection: IPropTypes.listOf(RPropTypes.string),
         setGlobalError: RPropTypes.func,
         sorting: IPropTypes.map,
         sortingDefaults: IPropTypes.map,
         startServerAction: RPropTypes.func,
         templates: RPropTypes.object,
+        toggleSelectionSearch: RPropTypes.func,
     }
 
     static contextTypes = {
         muiTheme: RPropTypes.object,
     }
 
-    constructor(props) {
-        super(props);
-
-        this.state = {
-            showActions: false,
-            anchor: null,
-        };
-    }
+    state = {
+        showActions: false,
+        anchor: null,
+    };
 
     componentWillMount() {
         this.props.enableEditor();
@@ -494,6 +495,13 @@ export default class RecordList extends React.Component {
                     Item.getExtraStyle(record) :
                     {};
 
+                const handleToggleSelect = () => {
+                    this.props.toggleSelectionSearch({ids: I.List([`${id}`])});
+                };
+
+                const isSelected = (id) ? this.props.selection.toSet()
+                    .has(`${id}`) : false;
+
                 return (
                     <li
                         key={`li_${id || groupName}`}
@@ -507,10 +515,12 @@ export default class RecordList extends React.Component {
                             goTo={this.props.goTo}
                             groupName={groupName}
                             id_={id}
+                            isSelected={isSelected}
                             key={id || groupName}
                             link={link}
                             makeLink={this.searchAndDetailsHtml.bind(this)}
                             record={record}
+                            onSelect={handleToggleSelect}
                         />
                     </li>
                 );

@@ -45,6 +45,8 @@ export default class Actions {
 
     static clearSearchCache = createAction('CLEAR_SEARCH_CACHE');
 
+    static toggleSelectionSearch = createAction('TOGGLE_SELECTION_SEARCH');
+
     static setGlobalError = createAction('SET_GLOBAL_ERROR');
 
     static showGlobalErrorDetails = createAction('SHOW_GLOBAL_ERROR_DETAILS');

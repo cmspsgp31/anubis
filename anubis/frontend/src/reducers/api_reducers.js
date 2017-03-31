@@ -58,6 +58,9 @@ export const Search = {
             selection: [],
         })),
         'CANCEL_ACTION': state => state.remove('actionResult'),
+        'TOGGLE_SELECTION_SEARCH': (state, {payload: {ids}}) => state
+            .update('selection', s => ids.reduce((sel, id) => (sel.has(id) ?
+                sel.delete(id) : sel.add(id)), s.toSet()).toList()),
     },
     keyPath: ["searchResults"],
 };
