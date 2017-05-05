@@ -160,7 +160,7 @@ export default class UnitToken extends Token {
         return ([field, value], i) => {
             let input = null;
 
-            let insideStyle = {
+            const insideStyle = {
                 color: this.style.color,
                 top: "-10px",
                 height: "auto",
@@ -168,7 +168,7 @@ export default class UnitToken extends Token {
                 userSelect: "all",
             };
 
-            let outsideStyle = {
+            const outsideStyle = {
                 display: "inline-block",
                 fontSize: 14,
                 margin: 0,
@@ -181,11 +181,20 @@ export default class UnitToken extends Token {
                     input = (
                         <SelectField
                             autoWidth
-                            iconStyle={{top: -14}}
+                            iconStyle={{
+                                top: -17,
+                                height: 24,
+                                width: 24,
+                                padding: 0,
+                            }}
                             key={`field_${i}_${this.props.index}`}
-                            labelStyle={insideStyle}
+                            labelStyle={{
+                                ...insideStyle,
+                                top: -14,
+                                paddingRight: 28,
+                            }}
                             onChange={this.handleSelectChange(i)}
-                            style={outsideStyle}
+                            style={{...outsideStyle, top: 17}}
                             value={`${value}`}
                         >
                             {field.choices.map(([choice, text]) => (
@@ -277,7 +286,7 @@ export default class UnitToken extends Token {
 
     renderContents() {
         const hideLabel = this.props.fields.length == 1;
-        let description = (hideLabel) ?
+        const description = (hideLabel) ?
             this.props.fields[0].label :
             this.props.description;
 
