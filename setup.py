@@ -149,7 +149,7 @@ setup(
         "djangorestframework",
         "psycopg2"],
     extras_require={
-        'caching': ['redis']
+        'caching': ['redis', 'django-redis']
     },
     package_data={
         'anubis': [

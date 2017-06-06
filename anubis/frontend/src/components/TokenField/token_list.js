@@ -334,12 +334,12 @@ export default class TokenList extends React.Component {
                     paddingBottom: "10px",
                 }}
             >
-                {Array.from(styles.map(s =>
+                {styles.map(s =>
                     React.cloneElement(s.data, {
                         // style: s.style,
                         key: s.key,
                     })
-                ))}
+                )}
             </div>
         );
 
