@@ -35,7 +35,7 @@ def shell(*args, **kwargs):
                   close_fds=False)
     proc = subprocess.Popen(*args, **kwargs)
     try:
-        proc.communicate(timeout=600)
+        proc.communicate(timeout=7200)
     except subprocess.TimeoutExpired:
         print("Timeout expired!")
         proc.kill()
