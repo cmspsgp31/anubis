@@ -37,6 +37,7 @@ class AppViewMixin(StateViewMixin):
     record_list = "record_list"
     app_theme = "app_theme"
     extra_control = None
+    no_user_text = ""
 
     @classmethod
     def url_search(cls, app_prefix=None, **kwargs):
@@ -113,6 +114,9 @@ class AppViewMixin(StateViewMixin):
             "user": self.get_user_data(),
             "templates": self.get_templates(),
        })
+
+        if self.user_serializer is None:
+            base_state["noUserText"] = self.no_user_text
 
         return base_state
 

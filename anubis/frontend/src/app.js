@@ -55,6 +55,7 @@ const getStateProps = state => ({
     sidebarLinks: state.getIn(['applicationData', 'sidebarLinks']),
     user: state.get('user'),
     modelName: state.getIn(['searchResults', 'model']),
+    noUserText: state.get('noUserText'),
 });
 
 const getDispatchProps = dispatch => ({
@@ -91,6 +92,7 @@ export default class App extends React.Component {
             profile_link: RPropTypes.string,
             username: RPropTypes.string,
         }),
+        noUserText: RPropTypes.string,
     }
 
     static childContextTypes = {
@@ -472,7 +474,7 @@ export default class App extends React.Component {
 
     renderNoUser() {
         return (
-            <ListItem primaryText="Anubis" />
+            <ListItem primaryText={this.props.noUserText} />
         );
     }
 
