@@ -189,6 +189,7 @@ export default class EditorToken extends Token {
             case 191: // Numpad star
             case 111: // Forward slash
             case 106: // Forward slash
+            case 32: // Space
                 this.handleConnector("__AND__");
                 ev.preventDefault();
                 break;
