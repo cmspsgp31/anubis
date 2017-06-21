@@ -20,6 +20,7 @@
 
 const webpack = require('webpack');
 const path = require('path');
+const Compressor = require('compression-webpack-plugin');
 
 const nodeEnv = process.env.NODE_ENV || 'development';
 const isProd = nodeEnv == 'production';
@@ -73,6 +74,14 @@ if (isProd) {
                 comments: false,
             },
             sourceMap: false,
-        })
+        }),
+        new webpack.optimize.AggressiveMergingPlugin(),
+        new Compressor({
+            asset: "[path].gz[query]",
+            algorithm: "gzip",
+            test: /\.js$|\.css$/,
+            threshold: 10240,
+            minRatio: 0.8,
+        }),
     );
 }
