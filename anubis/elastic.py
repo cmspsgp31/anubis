@@ -322,11 +322,14 @@ class ElasticHasFTSFilter(ElasticFilter):
 
     def make_query_body(self, args):
         return {
-            "filter": {
-                "not": {
-                    "range": {
-                        self.field_name: {}
+            "query": {
+                "bool": {
+                    "must_not": {
+                        "range": {
+                            self.field_name: {}
+                        }
                     }
                 }
             }
         }
+
