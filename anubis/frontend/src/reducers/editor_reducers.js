@@ -61,7 +61,7 @@ const createAction = (state, token) => {
 const unitExpr = obj => {
     const key = obj.get('key');
     let values = obj.get('args')
-        .map(value => value.replace(/\$/g, "$$").replace(/"/g, '$"'))
+        .map(value => value.replace(/\$/g, "$$$").replace(/"/g, '$"'))
         .reduce((agg, value) => agg + `,"${value}"`, "");
 
     if (obj.get('args').size == 0) values = ',""';

@@ -609,7 +609,7 @@ class StateViewMixin:
         try:
             boolean = BooleanBuilder(expression).build()
         except ValueError:
-            error = ValueError(_(("Check your expression for a missing"
+            error = ValueError(_(("Check your expression for a missing "
                                   "connector, for instance.")))
             error.name = lambda: _("Syntax Error")
             raise error
