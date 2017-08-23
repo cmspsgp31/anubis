@@ -26,6 +26,7 @@ Anubis's facilities to perform searches.
 from rest_framework.renderers import JSONRenderer
 
 from django.conf.urls import url
+from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext as _
 
@@ -138,6 +139,7 @@ class AppViewMixin(StateViewMixin):
         full_state = self.get_full_state()
 
         context["anubis_state"] = JSONRenderer().render(full_state)
+        context["analytics_id"] = getattr(settings, "ANALYTICS_ID", None)
 
         return context
 
