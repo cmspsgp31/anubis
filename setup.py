@@ -135,7 +135,7 @@ class DevelopAnubis(CompileFrontendMixin, CompileHaskellMixin, develop):
 
 setup(
     name="anubis",
-    version="1.0a9",
+    version="1.0a10",
     packages=[
         "anubis",
         "anubis.app",
@@ -145,7 +145,7 @@ setup(
         "anubis.operations",
     ],
     install_requires=[
-        "Django >=1.8, <1.9",
+        "Django >=1.11, <2",
         "djangorestframework",
         "psycopg2"],
     extras_require={
