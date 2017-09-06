@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-09-05 14:32-0300\n"
+"POT-Creation-Date: 2017-09-06 19:17-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,10 +18,74 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: models.py:9
-msgid "Term"
-msgstr ""
+#: apps.py:8 models.py:13 models.py:50
+msgid "Thesaurus"
+msgstr "Tesauro"
 
-#: models.py:10
+#: models.py:14
+msgid "Thesauri"
+msgstr "Tesauros"
+
+#: models.py:17
+msgid "Name"
+msgstr "Nome"
+
+#: models.py:24 models.py:33 models.py:144 models.py:168
+msgid "Term"
+msgstr "Termo"
+
+#: models.py:25
 msgid "Terms"
-msgstr ""
+msgstr "Termos"
+
+#: models.py:44
+msgid "Child terms"
+msgstr "Termos específicos"
+
+#: models.py:60
+msgid "App availability"
+msgstr "Disponibilidade nas bases"
+
+#: models.py:70
+msgid "Edge"
+msgstr "Relação"
+
+#: models.py:71
+msgid "Edges"
+msgstr "Relações"
+
+#: models.py:78
+msgid "Parent term"
+msgstr "Termo genérico"
+
+#: models.py:86
+msgid "Child term"
+msgstr "Termo específico"
+
+#: models.py:94
+msgid "Facet indicator"
+msgstr "Rótulo nodal"
+
+#: models.py:136
+msgid "Facet Indicator"
+msgstr "Rótulo Nodal"
+
+#: models.py:137
+msgid "Facet Indicators"
+msgstr "Rótulos Nodais"
+
+#: models.py:150
+msgid "Note"
+msgstr "Nota"
+
+#: models.py:151
+msgid "Notes"
+msgstr "Notas"
+
+#: models.py:154
+msgid "Note title"
+msgstr "Título da nota"
+
+#: models.py:160
+msgid "Note contents"
+msgstr "Conteúdo da nota"
