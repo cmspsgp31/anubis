@@ -135,7 +135,7 @@ class DevelopAnubis(CompileFrontendMixin, CompileHaskellMixin, develop):
 
 setup(
     name="anubis",
-    version="1.0a10",
+    version="1.0b1",
     packages=[
         "anubis",
         "anubis.app",
@@ -149,7 +149,8 @@ setup(
         "djangorestframework",
         "psycopg2"],
     extras_require={
-        'caching': ['redis', 'django-redis']
+        'caching': ['redis', 'django-redis'],
+        'thesaurus': ['django-autocomplete-light'],
     },
     package_data={
         'anubis': [

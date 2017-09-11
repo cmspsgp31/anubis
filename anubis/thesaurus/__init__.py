@@ -5,4 +5,6 @@ from anubis.thesaurus import urls
 
 urls = include(urls)
 
-__all__ = ['urls']
+default_app_config = "anubis.thesaurus.apps.ThesaurusConfig"
+
+__all__ = ['urls', 'default_app_config']
