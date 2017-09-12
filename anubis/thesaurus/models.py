@@ -128,6 +128,7 @@ class Node(BlamableModel):
         to="Thesaurus",
         related_name="nodes",
         verbose_name=_("Thesaurus"),
+        on_delete=models.CASCADE,
         blank=False,
         null=False
     )
@@ -200,6 +201,12 @@ class Correlation(BlamableModel):
                                        node_thes=self.from_node.thesaurus.name
                                    )
                                  )
+
+    def __str__(self):
+        return "{from_node} <-> {to_node}".format(
+            from_node=self.from_node.label,
+            to_node=self.to_node.label
+        )
 
 
 class Edge(BlamableModel):

@@ -1,13 +1,17 @@
 """ Admin definitions for thesaurus app.
 """
 
-from django.utils.translation import ugettext_lazy as _
 from django import forms
+from django.conf import settings
 from django.contrib import admin
+from django.utils.translation import ugettext_lazy as _
 
-from dal import autocomplete
+from dal import autocomplete, forward
 
 from anubis.thesaurus import models
+
+def collapse_if(key):
+    return ['collapse'] if key in settings.THESAURUS_COLLAPSE else []
 
 class NoteForm(forms.ModelForm):
     class Meta:
@@ -22,7 +26,7 @@ class NoteForm(forms.ModelForm):
 class NoteAdmin(admin.StackedInline):
     form = NoteForm
     model = models.Note
-    classes = ['collapse']
+    classes = collapse_if('notes')
     extra = 1
 
 class FacetForm(forms.ModelForm):
@@ -36,7 +40,7 @@ class FacetForm(forms.ModelForm):
 class FacetAdmin(admin.TabularInline):
     form = FacetForm
     model = models.FacetIndicator
-    classes = ['collapse']
+    classes = collapse_if('facets')
     extra = 1
 
 
@@ -83,7 +87,10 @@ class EdgeForm(forms.ModelForm):
         model = models.Edge
         fields = "__all__"
         widgets = {
-            'end_node': autocomplete.ModelSelect2(url='thesaurus-node-ac')
+            'end_node': autocomplete.ModelSelect2(
+                url='thesaurus-node-ac',
+                forward=[forward.Field('start_node', 'thesaurus_node')]
+            )
         }
 
     def __init__(self, *args, **kwargs):
@@ -94,18 +101,13 @@ class EdgeForm(forms.ModelForm):
                 thesaurus = parent_object.thesaurus
 
                 self.declared_fields['dimension'].queryset = models.Dimension. \
-                    objects.filter(
-                        thesaurus=thesaurus
-                    )
+                    objects.filter(thesaurus=thesaurus)
 
-                self.base_fields["end_node"].queryset = models.Node.objects.filter(
-                    thesaurus=thesaurus
-                )
+                self.base_fields["end_node"].queryset = models.Node.objects. \
+                    filter(thesaurus=thesaurus)
 
             self.base_fields["facet"].queryset = models.FacetIndicator. \
-                objects.filter(
-                    for_node=parent_object
-                )
+                objects.filter(for_node=parent_object)
 
         super().__init__(*args, **kwargs)
 
@@ -118,16 +120,17 @@ class EdgeAdmin(admin.StackedInline):
                        'last_modified_at']
     fk_name = "start_node"
     extra = 1
+    classes = collapse_if('edges')
     fieldsets = (
         (None, {
             'fields': ['end_node']
         }),
         (_("Advanced fields"), {
-            'classes': ('collapse',),
+            'classes': collapse_if('advanced_fields'),
             'fields': ['dimension', 'facet']
         }),
         (_("Metadata"), {
-            'classes': ('collapse',),
+            'classes': collapse_if('metadata'),
             'fields': ['created_by', 'created_at', 'last_modified_by',
                        'last_modified_at'],
         }),
@@ -144,7 +147,10 @@ class CorrelationForm(forms.ModelForm):
         model = models.Correlation
         fields = "__all__"
         widgets = {
-            'to_node': autocomplete.ModelSelect2(url='thesaurus-node-ac')
+            'to_node': autocomplete.ModelSelect2(
+                url='thesaurus-node-ac',
+                forward=[forward.Field('from_node', 'thesaurus_node')]
+            )
         }
 
     def __init__(self, *args, **kwargs):
@@ -172,17 +178,18 @@ class CorrelationAdmin(admin.StackedInline):
     readonly_fields = ['created_by', 'created_at', 'last_modified_by',
                        'last_modified_at']
     fk_name = "from_node"
+    classes = collapse_if('correlations')
     extra = 1
     fieldsets = (
         (None, {
             'fields': ['to_node']
         }),
         (_("Advanced fields"), {
-            'classes': ('collapse',),
+            'classes': collapse_if('advanced_fields'),
             'fields': ['dimension']
         }),
         (_("Metadata"), {
-            'classes': ('collapse',),
+            'classes': collapse_if('metadata'),
             'fields': ['created_by', 'created_at', 'last_modified_by',
                        'last_modified_at'],
         }),
@@ -209,17 +216,18 @@ class NodeAdmin(BlameAdminMixin, admin.ModelAdmin):
     readonly_fields = ['created_by', 'created_at', 'last_modified_by',
                        'last_modified_at']
     inlines = (CorrelationAdmin, EdgeAdmin, NoteAdmin, FacetAdmin)
+    list_filter = ('thesaurus',)
     list_display = ("label",)
     fieldsets = (
         (None, {
             'fields': ('label',)
         }),
         (_("Advanced fields"), {
-            'classes': ('collapse',),
+            'classes': collapse_if('advanced_fields'),
             'fields': ('thesaurus', 'apps')
         }),
         (_("Metadata"), {
-            'classes': ('collapse',),
+            'classes': collapse_if('metadata'),
             'fields': ['created_by', 'created_at', 'last_modified_by',
                        'last_modified_at'],
         }),

@@ -124,4 +124,13 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+THESAURUS_COLLAPSE = {
+    # 'edges',
+    # 'correlations',
+    'notes',
+    'facets',
+    'advanced_fields',
+    'metadata',
+}
+
 from .local_settings import *
