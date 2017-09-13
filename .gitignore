@@ -4,3 +4,4 @@ a.out
 *.so
 anubis/app/frontend/build
 .stack-work
+*.pyc

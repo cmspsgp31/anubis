@@ -1,48 +1,81 @@
 """ Admin definitions for thesaurus app.
 """
 
+import copy
+
 from django import forms
+from django.db.models import ManyToOneRel, OneToOneRel
 from django.conf import settings
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.utils.translation import ugettext_lazy as _
 
 from dal import autocomplete, forward
+
+from adminsortable2 import admin as sortable
 
 from anubis.thesaurus import models
 
 def collapse_if(key):
     return ['collapse'] if key in settings.THESAURUS_COLLAPSE else []
 
+def get_text_input(full_width=False):
+    size = 'calc(100% - 184px)' if not full_width else '100%'
+
+    return forms.TextInput(attrs={
+        'style': 'width: {};'.format(size),
+        'size': '',
+    })
+
+class SortableInlineFormSet(sortable.CustomInlineFormSet):
+    ordering = ('ordering',)
+
+class ParentAwareSortableInlineFormSet(SortableInlineFormSet):
+    def get_form_kwargs(self, index):
+        kwargs = super().get_form_kwargs(index)
+        kwargs['parent_object'] = self.instance
+        return kwargs
+
+class ParentAwareInlineFormSet(forms.BaseInlineFormSet):
+    def get_form_kwargs(self, index):
+        kwargs = super().get_form_kwargs(index)
+        kwargs['parent_object'] = self.instance
+        return kwargs
+
 class NoteForm(forms.ModelForm):
+    ordering = forms.HiddenInput()
+
     class Meta:
         model = models.Note
         fields = "__all__"
         widgets = {
-            'title': forms.TextInput(attrs={"size": "100"}),
+            'title': get_text_input(),
             'contents': forms.Textarea(attrs={"rows": "5", "cols": "100"})
         }
 
 
-class NoteAdmin(admin.StackedInline):
+class NoteAdmin(sortable.SortableInlineAdminMixin, admin.StackedInline):
+    formset = SortableInlineFormSet
     form = NoteForm
     model = models.Note
     classes = collapse_if('notes')
-    extra = 1
+    extra = 0
 
 class FacetForm(forms.ModelForm):
+    ordering = forms.HiddenInput()
+
     class Meta:
         model = models.FacetIndicator
         fields = "__all__"
         widgets = {
-            'label': forms.TextInput(attrs={"size": "100"}),
+            'label': get_text_input(full_width=True),
         }
 
-class FacetAdmin(admin.TabularInline):
+class FacetAdmin(sortable.SortableInlineAdminMixin, admin.TabularInline):
+    formset = SortableInlineFormSet
     form = FacetForm
     model = models.FacetIndicator
     classes = collapse_if('facets')
-    extra = 1
-
+    extra = 0
 
 class BlameAdminMixin:
     def _modify_blameable(self, user, obj):
@@ -69,19 +102,13 @@ class BlameAdminMixin:
 
         formset.save_m2m()
 
-class ParentAwareInlineFormSet(forms.BaseInlineFormSet):
-    def get_form_kwargs(self, index):
-        kwargs = super().get_form_kwargs(index)
-        kwargs['parent_object'] = self.instance
-        return kwargs
-
-
 class EdgeForm(forms.ModelForm):
     dimension = forms.ModelChoiceField(
         queryset=models.Dimension.objects.all(),
         label=_("Dimension"),
         required=False
     )
+    ordering = forms.HiddenInput()
 
     class Meta:
         model = models.Edge
@@ -112,18 +139,18 @@ class EdgeForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
 
-class EdgeAdmin(admin.StackedInline):
-    formset = ParentAwareInlineFormSet
+class EdgeAdmin(sortable.SortableInlineAdminMixin, admin.StackedInline):
+    formset = ParentAwareSortableInlineFormSet
     form = EdgeForm
     model = models.Edge
     readonly_fields = ['created_by', 'created_at', 'last_modified_by',
                        'last_modified_at']
     fk_name = "start_node"
-    extra = 1
+    extra = 0
     classes = collapse_if('edges')
     fieldsets = (
         (None, {
-            'fields': ['end_node']
+            'fields': ['end_node', 'ordering']
         }),
         (_("Advanced fields"), {
             'classes': collapse_if('advanced_fields'),
@@ -135,6 +162,7 @@ class EdgeAdmin(admin.StackedInline):
                        'last_modified_at'],
         }),
     )
+    ordering = ('ordering',)
 
 class CorrelationForm(forms.ModelForm):
     dimension = forms.ModelChoiceField(
@@ -179,7 +207,7 @@ class CorrelationAdmin(admin.StackedInline):
                        'last_modified_at']
     fk_name = "from_node"
     classes = collapse_if('correlations')
-    extra = 1
+    extra = 0
     fieldsets = (
         (None, {
             'fields': ['to_node']
@@ -187,6 +215,63 @@ class CorrelationAdmin(admin.StackedInline):
         (_("Advanced fields"), {
             'classes': collapse_if('advanced_fields'),
             'fields': ['dimension']
+        }),
+        (_("Metadata"), {
+            'classes': collapse_if('metadata'),
+            'fields': ['created_by', 'created_at', 'last_modified_by',
+                       'last_modified_at'],
+        }),
+    )
+
+class UsedForWrapper(admin.widgets.RelatedFieldWidgetWrapper):
+    def get_context(self, name, value, attrs):
+        context = copy.copy(super().get_context(name, value, attrs))
+
+        context['url_params'] += "&used_for=1"
+
+        return context
+
+class UsedForForm(forms.ModelForm):
+    verbotten_node = forms.ModelChoiceField(
+        queryset=models.Node.objects.all(),
+        widget=autocomplete.ModelSelect2(
+            url='thesaurus-node-ac',
+            forward=[forward.Field('allowed_node', 'thesaurus_node')]
+        ),
+        label=_("Term")
+    )
+
+    class Meta:
+        models = models.UsedFor
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        field = self.fields['verbotten_node']
+        model = models.Node
+        rel = OneToOneRel(field, model, 'id')
+
+        self.fields['verbotten_node'].widget = UsedForWrapper(
+            self.fields['verbotten_node'].widget,
+            rel,
+            admin.site,
+            can_add_related=True,
+            can_change_related=True
+        )
+
+
+class UserForAdmin(admin.StackedInline):
+    form = UsedForForm
+    fk_name = "allowed_node"
+    classes = collapse_if('used_for')
+    readonly_fields = ['created_by', 'created_at', 'last_modified_by',
+                       'last_modified_at']
+    model = models.UsedFor
+    extra = 0
+    fieldsets = (
+        (None, {
+            'fields': ('verbotten_node',)
         }),
         (_("Metadata"), {
             'classes': collapse_if('metadata'),
@@ -206,8 +291,8 @@ class NodeForm(forms.ModelForm):
         model = models.Node
         fields = "__all__"
         widgets = {
-            'label': forms.TextInput(attrs={"size": "100"}),
-            'apps': forms.TextInput(attrs={"size": "100"}),
+            'label': get_text_input(),
+            'apps': get_text_input(),
         }
 
 @admin.register(models.Node)
@@ -215,7 +300,8 @@ class NodeAdmin(BlameAdminMixin, admin.ModelAdmin):
     form = NodeForm
     readonly_fields = ['created_by', 'created_at', 'last_modified_by',
                        'last_modified_at']
-    inlines = (CorrelationAdmin, EdgeAdmin, NoteAdmin, FacetAdmin)
+    inlines_ = (UserForAdmin, CorrelationAdmin, EdgeAdmin, NoteAdmin,
+                FacetAdmin)
     list_filter = ('thesaurus',)
     list_display = ("label",)
     fieldsets = (
@@ -233,25 +319,52 @@ class NodeAdmin(BlameAdminMixin, admin.ModelAdmin):
         }),
     )
 
+    def add_view(self, request, form_url='', extra_context=None):
+        self.inlines = copy.copy(self.inlines_)
+
+        if request.GET.get('used_for', None) == '1':
+            self.inlines = []
+
+        return super().add_view(request, form_url, extra_context)
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        self.inlines = copy.copy(self.inlines_)
+
+        try:
+            obj = models.Node.objects.get(pk=object_id)
+        except models.Node.DoesNotExist:
+            pass
+        else:
+            if obj.should_use.count() > 0:
+                self.inlines = []
+                messages.add_message(request, messages.WARNING,
+                                     _("This is not a preferred term."))
+
+        return super().change_view(request, object_id, form_url, extra_context)
+
+
 class DimensionForm(forms.ModelForm):
     class Meta:
         model = models.Dimension
         fields = "__all__"
         widgets = {
-            'name': forms.TextInput(attrs={"size": "100"}),
+            'name': get_text_input(full_width=True),
+            'correlation_init': get_text_input(full_width=True),
+            'edge_start_init': get_text_input(full_width=True),
+            'edge_end_init': get_text_input(full_width=True),
         }
 
 class DimensionAdmin(admin.TabularInline):
     model = models.Dimension
     form = DimensionForm
-    extra = 1
+    extra = 0
 
 class ThesaurusForm(forms.ModelForm):
     class Meta:
         model = models.Thesaurus
         fields = "__all__"
         widgets = {
-            'name': forms.TextInput(attrs={"size": "100"}),
+            'name': get_text_input(),
         }
 
 

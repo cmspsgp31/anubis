@@ -150,7 +150,7 @@ setup(
         "psycopg2"],
     extras_require={
         'caching': ['redis', 'django-redis'],
-        'thesaurus': ['django-autocomplete-light'],
+        'thesaurus': ['django-autocomplete-light', 'django-admin-sortable2'],
     },
     package_data={
         'anubis': [
