@@ -5,3 +5,10 @@ a.out
 anubis/app/frontend/build
 .stack-work
 *.pyc
+.cache
+.idea
+.vscode
+yarn.lock
+log.*
+tags
+reference.*
