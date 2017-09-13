@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-09-12 21:16-0300\n"
+"POT-Creation-Date: 2017-09-13 19:52-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,31 +18,46 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: admin.py:108 admin.py:170 models.py:70 models.py:112 models.py:240
-#: models.py:303
+#: admin.py:110 admin.py:208 models.py:113
 msgid "Dimension"
 msgstr "Dimensão"
 
-#: admin.py:155 admin.py:215 admin.py:311
+#: admin.py:171 admin.py:253 admin.py:349
 msgid "Advanced fields"
 msgstr "Campos avançados"
 
-#: admin.py:159 admin.py:219 admin.py:276 admin.py:315
+#: admin.py:175 admin.py:257 admin.py:314 admin.py:353
 msgid "Metadata"
 msgstr "Metadados"
 
-#: admin.py:241 models.py:116 models.py:125 models.py:194 models.py:394
-#: models.py:429
-msgid "Term"
-msgstr "Termo"
+#: admin.py:189
+msgid "downward edge"
+msgstr "relação hierárquica específica"
 
-#: admin.py:287 apps.py:8 models.py:56 models.py:66 models.py:106 models.py:163
+#: admin.py:190
+msgid "downward edges"
+msgstr "relações hierárquicas específicas"
+
+#: admin.py:200
+msgid "upward edge"
+msgstr "relação hierárquica genérica"
+
+#: admin.py:201
+msgid "upward edges"
+msgstr "relações hierárquicas genéricas"
+
+#: admin.py:279
+msgid "Used for"
+msgstr "Usado para"
+
+#: admin.py:325 apps.py:7 models.py:66
 msgid "Thesaurus"
 msgstr "Tesauro"
 
-#: admin.py:341
-msgid "This is not a preferred term."
-msgstr "Este não é um termo preferido."
+#: admin.py:383
+#, python-brace-format
+msgid "This is not a preferred term. Use {link}."
+msgstr "Este não é um termo preferido. Use {link}."
 
 #: django_standard_translations.py:4
 #, python-brace-format
@@ -52,100 +67,128 @@ msgstr ""
 "O {name} \"{obj}\" foi alterado com sucesso. Você pode modificá-lo novamente "
 "abaixo."
 
+#: django_standard_translations.py:6
+#, python-brace-format
+msgid ""
+"The {name} \"{obj}\" was added successfully. You may edit it again below."
+msgstr ""
+"O {name} \"{obj}\" foi adicionado com sucesso. Você pode modificá-lo "
+"novamente abaixo."
+
 #: models.py:26
-msgid "Created by"
-msgstr "Criado por"
+msgid "created by"
+msgstr "criado por"
 
 #: models.py:32
-msgid "Created at"
-msgstr "Criado em"
+msgid "created at"
+msgstr "criado em"
 
 #: models.py:42
-msgid "Last modified by"
-msgstr "Última alteração feita por"
+msgid "last modified by"
+msgstr "última alteração feita por"
 
 #: models.py:48
-msgid "Last modified at"
-msgstr "Última alteração feita em"
+msgid "last modified at"
+msgstr "última alteração feita em"
+
+#: models.py:56 models.py:106 models.py:164
+msgid "thesaurus"
+msgstr "tesauro"
 
 #: models.py:57
-msgid "Thesauri"
-msgstr "Tesauros"
+msgid "thesauri"
+msgstr "tesauros"
 
-#: models.py:60 models.py:74 models.py:384
-msgid "Name"
-msgstr "Nome"
+#: models.py:60 models.py:74 models.py:392
+msgid "name"
+msgstr "nome"
+
+#: models.py:70 models.py:245 models.py:310
+msgid "dimension"
+msgstr "dimensão"
 
 #: models.py:71
-msgid "Dimensions"
-msgstr "Dimensões"
+msgid "dimensions"
+msgstr "dimensões"
 
 #: models.py:83
-msgid "Initials for Correlated Terms"
-msgstr "Sigla para Termos Relacionados"
+msgid "initials for correlated terms"
+msgstr "sigla para termos relacionados"
 
 #: models.py:84
 msgid "RT"
 msgstr "TR"
 
 #: models.py:91
-msgid "Initials for Generic Terms"
-msgstr "Sigla para Termos Genéricos"
+msgid "initials for generic terms"
+msgstr "sigla para termos genéricos"
 
 #: models.py:92
 msgid "GT"
 msgstr "TG"
 
 #: models.py:99
-msgid "Initials for Specific Terms"
-msgstr "Siglas para Termos Específicos"
+msgid "initials for specific terms"
+msgstr "siglas para termos específicos"
 
 #: models.py:100
 msgid "ST"
 msgstr "TE"
 
-#: models.py:117
-msgid "Terms"
-msgstr "Termos"
+#: models.py:117 models.py:126 models.py:403 models.py:438
+msgid "term"
+msgstr "termo"
 
-#: models.py:137
-msgid "Child terms"
-msgstr "Termos específicos"
+#: models.py:118
+msgid "terms"
+msgstr "termos"
 
-#: models.py:148
-msgid "Correlated terms"
-msgstr "Termos relacionados"
+#: models.py:138
+msgid "child terms"
+msgstr "termos específicos"
 
-#: models.py:157 models.py:186 models.py:187
-msgid "Used for"
-msgstr "Usado para"
+#: models.py:149
+msgid "correlated terms"
+msgstr "termos relacionados"
 
-#: models.py:174
-msgid "App availability"
-msgstr "Disponibilidade nas bases"
+#: models.py:158 models.py:195
+msgid "used for"
+msgstr "usado para"
 
-#: models.py:177
+#: models.py:175
+msgid "app availability"
+msgstr "disponibilidade nas bases"
+
+#: models.py:178
 msgid "Comma-separated list of apps that can use this term."
 msgstr "Lista separada por vírgulas de aplicativos que podem usar esse termo."
 
-#: models.py:208
+#: models.py:187
+msgid "equivalence"
+msgstr "relação de equivalência"
+
+#: models.py:188
+msgid "equivalences"
+msgstr "relações de equivalência"
+
+#: models.py:211
 #, python-brace-format
 msgid "\"{verbotten}\": use \"{allowed}\""
 msgstr "\"{verbotten}\": use \"{allowed}\""
 
-#: models.py:215
-msgid "Correlation"
-msgstr "Relação simétrica"
+#: models.py:218
+msgid "correlation"
+msgstr "relação associativa"
 
-#: models.py:216
-msgid "Correlations"
-msgstr "Relações simétricas"
+#: models.py:219
+msgid "correlations"
+msgstr "relações associativas"
 
-#: models.py:223 models.py:231
-msgid "Correlated term"
-msgstr "Termo relacionado"
+#: models.py:227 models.py:236
+msgid "correlated term"
+msgstr "termo relacionado"
 
-#: models.py:249
+#: models.py:254
 #, python-brace-format
 msgid ""
 "Correlated terms \"{from_}\" and \"{to}\" should belong to the same "
@@ -153,7 +196,7 @@ msgid ""
 msgstr ""
 "Os termos correlatos \"{from_}\" e \"{to}\" devem pertencer ao mesmo tesauro."
 
-#: models.py:257 models.py:351
+#: models.py:262 models.py:359
 #, python-brace-format
 msgid ""
 "The dimension thesaurus \"{dim_thes}\" should be the same thesaurus "
@@ -162,59 +205,59 @@ msgstr ""
 "O tesauro da dimensão atual, \"{dim_thes}\", deve ser o mesmo tesauro "
 "(\"{node_thes}\") dos dois termos da relação."
 
-#: models.py:276
-msgid "Edge"
-msgstr "Relação hierárquica"
+#: models.py:281
+msgid "edge"
+msgstr "relação hierárquica"
 
-#: models.py:277
-msgid "Edges"
-msgstr "Relações hierárquicas"
+#: models.py:282
+msgid "edges"
+msgstr "relações hierárquicas"
 
-#: models.py:286
-msgid "Parent term"
-msgstr "Termo genérico"
+#: models.py:292
+msgid "parent term"
+msgstr "termo genérico"
 
-#: models.py:294
-msgid "Child term"
-msgstr "Termo específico"
+#: models.py:301
+msgid "child term"
+msgstr "termo específico"
 
-#: models.py:317 models.py:404
+#: models.py:325 models.py:386
+msgid "facet indicator"
+msgstr "rótulo nodal"
+
+#: models.py:387
+msgid "facet indicators"
+msgstr "rótulo nodal"
+
+#: models.py:413
 msgid "Facet indicator"
 msgstr "Rótulo nodal"
 
-#: models.py:378
-msgid "Facet Indicator"
-msgstr "Rótulo Nodal"
+#: models.py:419
+msgid "note"
+msgstr "nota"
 
-#: models.py:379
-msgid "Facet Indicators"
-msgstr "Rótulos Nodais"
+#: models.py:420
+msgid "notes"
+msgstr "notas"
 
-#: models.py:410
-msgid "Note"
-msgstr "Nota"
+#: models.py:424
+msgid "note title"
+msgstr "título da nota"
 
-#: models.py:411
-msgid "Notes"
-msgstr "Notas"
-
-#: models.py:415
-msgid "Note title"
-msgstr "Título da nota"
-
-#: models.py:421
-msgid "Note contents"
-msgstr "Conteúdo da nota"
+#: models.py:430
+msgid "note contents"
+msgstr "conteúdo da nota"
 
 #: templates/adminsortable2/stacked.html:12
 #: templates/adminsortable2/tabular.html:36
 msgid "Change"
-msgstr ""
+msgstr "Modificar"
 
 #: templates/adminsortable2/stacked.html:14
 #: templates/adminsortable2/tabular.html:38
 msgid "View on site"
-msgstr ""
+msgstr "Ver no site"
 
 #: templates/adminsortable2/tabular.html:12
 msgid "Sort"
@@ -222,7 +265,28 @@ msgstr "Ordenar"
 
 #: templates/adminsortable2/tabular.html:21
 msgid "Delete?"
-msgstr ""
+msgstr "Apagar?"
+
+#~ msgid "Sample Anubis Site Administration"
+#~ msgstr "Administração do Site de Exemplo do Anubis"
+
+#~ msgid "Term"
+#~ msgstr "Termo"
+
+#~ msgid "Name"
+#~ msgstr "Nome"
+
+#~ msgid "Edge"
+#~ msgstr "Relação hierárquica"
+
+#~ msgid "Facet Indicator"
+#~ msgstr "Rótulo Nodal"
+
+#~ msgid "Facet Indicators"
+#~ msgstr "Rótulos Nodais"
+
+#~ msgid "Note"
+#~ msgstr "Nota"
 
 #, fuzzy
 #~| msgid "Metadata"

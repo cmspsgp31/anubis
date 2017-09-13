@@ -15,6 +15,7 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
+from django.utils.translation import ugettext_lazy as _
 
 import anubis.thesaurus
 
@@ -22,3 +23,7 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^thesaurus/', anubis.thesaurus.urls),
 ]
+
+admin.site.site_header = _("Sample Anubis Site Administration")
+admin.site.index_title = _("Sample Anubis Site Administration")
+admin.site.site_title =  _("Sample Anubis Site Administration")

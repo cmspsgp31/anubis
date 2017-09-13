@@ -7,6 +7,8 @@ from django import forms
 from django.db.models import ManyToOneRel, OneToOneRel
 from django.conf import settings
 from django.contrib import admin, messages
+from django.urls import reverse
+from django.utils.html import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
 from dal import autocomplete, forward
@@ -102,23 +104,16 @@ class BlameAdminMixin:
 
         formset.save_m2m()
 
-class EdgeForm(forms.ModelForm):
+class BaseEdgeForm(forms.ModelForm):
     dimension = forms.ModelChoiceField(
         queryset=models.Dimension.objects.all(),
         label=_("Dimension"),
         required=False
     )
-    ordering = forms.HiddenInput()
 
     class Meta:
         model = models.Edge
         fields = "__all__"
-        widgets = {
-            'end_node': autocomplete.ModelSelect2(
-                url='thesaurus-node-ac',
-                forward=[forward.Field('start_node', 'thesaurus_node')]
-            )
-        }
 
     def __init__(self, *args, **kwargs):
         parent_object = kwargs.pop("parent_object", None)
@@ -127,31 +122,52 @@ class EdgeForm(forms.ModelForm):
             if hasattr(parent_object, "thesaurus"):
                 thesaurus = parent_object.thesaurus
 
-                self.declared_fields['dimension'].queryset = models.Dimension. \
-                    objects.filter(thesaurus=thesaurus)
+                self.declared_fields['dimension'].queryset = models \
+                    .Dimension \
+                    .objects \
+                    .filter(thesaurus=thesaurus)
 
-                self.base_fields["end_node"].queryset = models.Node.objects. \
-                    filter(thesaurus=thesaurus)
+                self.base_fields[self._editable_node].queryset = models.Node \
+                    .objects \
+                    .filter(thesaurus=thesaurus)
 
             self.base_fields["facet"].queryset = models.FacetIndicator. \
                 objects.filter(for_node=parent_object)
 
         super().__init__(*args, **kwargs)
 
+class DownwardEdgeForm(BaseEdgeForm):
+    _editable_node = "end_node"
 
-class EdgeAdmin(sortable.SortableInlineAdminMixin, admin.StackedInline):
-    formset = ParentAwareSortableInlineFormSet
-    form = EdgeForm
+    class Meta(BaseEdgeForm.Meta):
+        fields = "__all__"
+        widgets = {
+            # 'ordering': forms.HiddenInput(),
+            'end_node': autocomplete.ModelSelect2(
+                url='thesaurus-node-ac',
+                forward=[forward.Field('start_node', 'thesaurus_node')]
+            )
+        }
+
+class UpwardEdgeForm(BaseEdgeForm):
+    _editable_node = "start_node"
+
+    class Meta(BaseEdgeForm.Meta):
+        exclude = ["ordering"]
+        widgets = {
+            'start_node': autocomplete.ModelSelect2(
+                url='thesaurus-node-ac',
+                forward=[forward.Field('end_node', 'thesaurus_node')]
+            )
+        }
+
+class BaseEdgeAdmin(admin.StackedInline):
     model = models.Edge
     readonly_fields = ['created_by', 'created_at', 'last_modified_by',
-                       'last_modified_at']
-    fk_name = "start_node"
+                    'last_modified_at']
     extra = 0
     classes = collapse_if('edges')
     fieldsets = (
-        (None, {
-            'fields': ['end_node', 'ordering']
-        }),
         (_("Advanced fields"), {
             'classes': collapse_if('advanced_fields'),
             'fields': ['dimension', 'facet']
@@ -159,10 +175,32 @@ class EdgeAdmin(sortable.SortableInlineAdminMixin, admin.StackedInline):
         (_("Metadata"), {
             'classes': collapse_if('metadata'),
             'fields': ['created_by', 'created_at', 'last_modified_by',
-                       'last_modified_at'],
+                    'last_modified_at'],
         }),
     )
+
+class DownwardEdgeAdmin(sortable.SortableInlineAdminMixin, BaseEdgeAdmin):
+    formset = ParentAwareSortableInlineFormSet
+    form = DownwardEdgeForm
+    fieldsets = [[None, {
+        'fields': ['end_node', 'ordering']
+    }]] + list(BaseEdgeAdmin.fieldsets)
+    fk_name = "start_node"
+    verbose_name = _("downward edge")
+    verbose_name_plural = _("downward edges")
     ordering = ('ordering',)
+
+class UpwardEdgeAdmin(BaseEdgeAdmin):
+    formset = ParentAwareInlineFormSet
+    form = UpwardEdgeForm
+    fieldsets = [[None, {
+        'fields': ['start_node']
+    }]] + list(BaseEdgeAdmin.fieldsets)
+    fk_name = "end_node"
+    verbose_name = _("upward edge")
+    verbose_name_plural = _("upward edges")
+    ordering = ('start_node__label',)
+
 
 class CorrelationForm(forms.ModelForm):
     dimension = forms.ModelChoiceField(
@@ -238,7 +276,7 @@ class UsedForForm(forms.ModelForm):
             url='thesaurus-node-ac',
             forward=[forward.Field('allowed_node', 'thesaurus_node')]
         ),
-        label=_("Term")
+        label=_("Used for")
     )
 
     class Meta:
@@ -261,7 +299,7 @@ class UsedForForm(forms.ModelForm):
         )
 
 
-class UserForAdmin(admin.StackedInline):
+class UsedForAdmin(admin.StackedInline):
     form = UsedForForm
     fk_name = "allowed_node"
     classes = collapse_if('used_for')
@@ -300,8 +338,8 @@ class NodeAdmin(BlameAdminMixin, admin.ModelAdmin):
     form = NodeForm
     readonly_fields = ['created_by', 'created_at', 'last_modified_by',
                        'last_modified_at']
-    inlines_ = (UserForAdmin, CorrelationAdmin, EdgeAdmin, NoteAdmin,
-                FacetAdmin)
+    inlines_ = (UsedForAdmin, CorrelationAdmin, UpwardEdgeAdmin,
+                DownwardEdgeAdmin, NoteAdmin, FacetAdmin)
     list_filter = ('thesaurus',)
     list_display = ("label",)
     fieldsets = (
@@ -337,8 +375,16 @@ class NodeAdmin(BlameAdminMixin, admin.ModelAdmin):
         else:
             if obj.should_use.count() > 0:
                 self.inlines = []
+                node = obj.should_use.first()
+                link = '<a href="{link}" target="_blank">{name}</a>' \
+                    .format(link=reverse('admin:thesaurus_node_change',
+                                         args=[node.id]),
+                            name=node.label)
+                message = _("This is not a preferred term. Use "
+                            "{link}.").format(link=link)
+
                 messages.add_message(request, messages.WARNING,
-                                     _("This is not a preferred term."))
+                                     mark_safe(message))
 
         return super().change_view(request, object_id, form_url, extra_context)
 

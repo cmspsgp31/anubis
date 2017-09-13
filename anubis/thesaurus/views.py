@@ -12,7 +12,7 @@ class NodeAutocomplete(autocomplete.Select2QuerySetView):
         qs = models.Node.objects.all()
         thesaurus_node_id = self.forwarded.get('thesaurus_node', None)
 
-        if thesaurus_node_id is not None:
+        if thesaurus_node_id is not None and thesaurus_node_id != "":
             try:
                 thesaurus_node = models.Node.objects \
                     .get(pk=thesaurus_node_id)

@@ -23,13 +23,13 @@ class BlamableModel(models.Model):
         null=True,
         related_name="created_%(class)s_objects",
         on_delete=models.SET_NULL,
-        verbose_name=_("Created by")
+        verbose_name=_("created by")
     )
 
     created_at = models.DateTimeField(
         null=False,
         auto_now_add=True,
-        verbose_name=_("Created at"),
+        verbose_name=_("created at"),
     )
 
     last_modified_by = models.ForeignKey(
@@ -39,13 +39,13 @@ class BlamableModel(models.Model):
         null=True,
         related_name="modified_%(class)s_objects",
         on_delete=models.SET_NULL,
-        verbose_name=_("Last modified by")
+        verbose_name=_("last modified by")
     )
 
     last_modified_at = models.DateTimeField(
         null=False,
         auto_now=True,
-        verbose_name=_("Last modified at"),
+        verbose_name=_("last modified at"),
     )
 
     class Meta:
@@ -53,11 +53,11 @@ class BlamableModel(models.Model):
 
 class Thesaurus(models.Model):
     class Meta:
-        verbose_name = _("Thesaurus")
-        verbose_name_plural = _("Thesauri")
+        verbose_name = _("thesaurus")
+        verbose_name_plural = _("thesauri")
 
     name = models.TextField(
-        verbose_name=_("Name"),
+        verbose_name=_("name"),
         null=False,
         blank=False
     )
@@ -67,11 +67,11 @@ class Thesaurus(models.Model):
 
 class Dimension(models.Model):
     class Meta:
-        verbose_name = _("Dimension")
-        verbose_name_plural = _("Dimensions")
+        verbose_name = _("dimension")
+        verbose_name_plural = _("dimensions")
 
     name = models.TextField(
-        verbose_name=_("Name"),
+        verbose_name=_("name"),
         null=False,
         blank=False
     )
@@ -80,7 +80,7 @@ class Dimension(models.Model):
         max_length=20,
         null=False,
         blank=False,
-        verbose_name=_("Initials for Correlated Terms"),
+        verbose_name=_("initials for correlated terms"),
         default=_("RT")
     )
 
@@ -88,7 +88,7 @@ class Dimension(models.Model):
         max_length=20,
         null=False,
         blank=False,
-        verbose_name=_("Initials for Generic Terms"),
+        verbose_name=_("initials for generic terms"),
         default=_("GT")
     )
 
@@ -96,14 +96,14 @@ class Dimension(models.Model):
         max_length=20,
         null=False,
         blank=False,
-        verbose_name=_("Initials for Specific Terms"),
+        verbose_name=_("initials for specific terms"),
         default=_("ST")
     )
 
     thesaurus = models.ForeignKey(
         to="Thesaurus",
         related_name="dimensions",
-        verbose_name=_("Thesaurus"),
+        verbose_name=_("thesaurus"),
         on_delete=models.CASCADE,
         blank=False,
         null=False
@@ -114,8 +114,8 @@ class Dimension(models.Model):
 
 class Node(BlamableModel):
     class Meta:
-        verbose_name = _("Term")
-        verbose_name_plural = _("Terms")
+        verbose_name = _("term")
+        verbose_name_plural = _("terms")
 
     class QuerySet(ProcedureQuerySet):
         pass
@@ -123,7 +123,7 @@ class Node(BlamableModel):
     objects = QuerySet.as_manager()
 
     label = models.TextField(
-        verbose_name=_("Term"),
+        verbose_name=_("term"),
         null=False,
         blank=False,
         unique=True
@@ -135,7 +135,7 @@ class Node(BlamableModel):
         through="Edge",
         through_fields=("start_node", "end_node"),
         related_name="parents",
-        verbose_name=_("Child terms"),
+        verbose_name=_("child terms"),
     )
 
     correlated = models.ManyToManyField(
@@ -146,7 +146,7 @@ class Node(BlamableModel):
         through="Correlation",
         through_fields=("from_node", "to_node"),
         related_name="reverse_correlated+",
-        verbose_name=_("Correlated terms")
+        verbose_name=_("correlated terms")
     )
 
     used_for = models.ManyToManyField(
@@ -155,13 +155,13 @@ class Node(BlamableModel):
         through="UsedFor",
         through_fields=("allowed_node", "verbotten_node"),
         related_name="should_use",
-        verbose_name=_("Used for")
+        verbose_name=_("used for")
     )
 
     thesaurus = models.ForeignKey(
         to="Thesaurus",
         related_name="nodes",
-        verbose_name=_("Thesaurus"),
+        verbose_name=_("thesaurus"),
         on_delete=models.CASCADE,
         blank=False,
         null=False
@@ -172,7 +172,7 @@ class Node(BlamableModel):
             blank=False,
             null=False
         ),
-        verbose_name=_("App availability"),
+        verbose_name=_("app availability"),
         blank=True,
         null=False,
         help_text=_("Comma-separated list of apps "
@@ -184,15 +184,15 @@ class Node(BlamableModel):
 
 class UsedFor(BlamableModel):
     class Meta:
-        verbose_name = _("Used for")
-        verbose_name_plural = _("Used for")
+        verbose_name = _("equivalence")
+        verbose_name_plural = _("equivalences")
 
     verbotten_node = models.ForeignKey(
         to="Node",
         related_name="prohibition",
         blank=False,
         null=False,
-        verbose_name=_("Term"),
+        verbose_name=_("used for"),
         on_delete=models.CASCADE,
         unique=True # Emulates a One to Many relationship with an
                     # intermediary table
@@ -207,7 +207,7 @@ class UsedFor(BlamableModel):
     )
 
     def __str__(self):
-        return self.verbotten_node.label
+        # return self.verbotten_node.label
         return ugettext("\"{verbotten}\": use \"{allowed}\""). \
             format(verbotten=self.verbotten_node.label,
                    allowed=self.allowed_node.label)
@@ -215,8 +215,8 @@ class UsedFor(BlamableModel):
 
 class Correlation(BlamableModel):
     class Meta:
-        verbose_name = _("Correlation")
-        verbose_name_plural = _("Correlations")
+        verbose_name = _("correlation")
+        verbose_name_plural = _("correlations")
 
     from_node = models.ForeignKey(
         to="Node",
@@ -224,7 +224,7 @@ class Correlation(BlamableModel):
         blank=False,
         null=False,
         on_delete=models.CASCADE,
-        verbose_name=_("Correlated term")
+        verbose_name=_("correlated term")
     )
 
     to_node = models.ForeignKey(
@@ -233,7 +233,7 @@ class Correlation(BlamableModel):
         blank=False,
         null=False,
         on_delete=models.CASCADE,
-        verbose_name=_("Correlated term")
+        verbose_name=_("correlated term")
     )
 
     dimension = models.ForeignKey(
@@ -242,7 +242,7 @@ class Correlation(BlamableModel):
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
-        verbose_name=_("Dimension")
+        verbose_name=_("dimension")
     )
 
     def clean(self):
@@ -278,8 +278,8 @@ class Correlation(BlamableModel):
 
 class Edge(BlamableModel):
     class Meta:
-        verbose_name = _("Edge")
-        verbose_name_plural = _("Edges")
+        verbose_name = _("edge")
+        verbose_name_plural = _("edges")
         unique_together = [['start_node', 'end_node', 'dimension']]
         ordering = ('start_node', 'dimension', 'ordering',)
 
@@ -289,7 +289,7 @@ class Edge(BlamableModel):
         blank=False,
         null=False,
         on_delete=models.CASCADE,
-        verbose_name=_("Parent term")
+        verbose_name=_("parent term")
     )
 
     end_node = models.ForeignKey(
@@ -298,7 +298,7 @@ class Edge(BlamableModel):
         blank=False,
         null=False,
         on_delete=models.CASCADE,
-        verbose_name=_("Child term")
+        verbose_name=_("child term")
     )
 
     dimension = models.ForeignKey(
@@ -307,7 +307,7 @@ class Edge(BlamableModel):
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
-        verbose_name=_("Dimension")
+        verbose_name=_("dimension")
     )
 
     ordering = models.PositiveIntegerField(
@@ -322,7 +322,7 @@ class Edge(BlamableModel):
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
-        verbose_name=_("Facet indicator"),
+        verbose_name=_("facet indicator"),
         default=None
     )
 
@@ -383,13 +383,13 @@ class Edge(BlamableModel):
 
 class FacetIndicator(models.Model):
     class Meta:
-        verbose_name = _("Facet Indicator") # rótulo nodal
-        verbose_name_plural = _("Facet Indicators")
+        verbose_name = _("facet indicator") # rótulo nodal
+        verbose_name_plural = _("facet indicators")
         unique_together = [['label', 'for_node']]
         ordering = ('for_node', 'ordering')
 
     label = models.TextField(
-        verbose_name=_("Name"),
+        verbose_name=_("name"),
         blank=False,
         null=False
     )
@@ -400,7 +400,7 @@ class FacetIndicator(models.Model):
         blank=False,
         null=False,
         on_delete=models.CASCADE,
-        verbose_name=_("Term")
+        verbose_name=_("term")
     )
 
     ordering = models.PositiveIntegerField(
@@ -416,18 +416,18 @@ class FacetIndicator(models.Model):
 
 class Note(models.Model):
     class Meta:
-        verbose_name = _("Note")
-        verbose_name_plural = _("Notes")
+        verbose_name = _("note")
+        verbose_name_plural = _("notes")
         ordering = ['node', 'ordering']
 
     title = models.TextField(
-        verbose_name=_("Note title"),
+        verbose_name=_("note title"),
         blank=True,
         null=False
     )
 
     contents = models.TextField(
-        verbose_name=_("Note contents"),
+        verbose_name=_("note contents"),
         blank=False,
         null=False
     )
@@ -435,7 +435,7 @@ class Note(models.Model):
     node = models.ForeignKey(
         to="Node",
         related_name="notes",
-        verbose_name=_("Term"),
+        verbose_name=_("term"),
         on_delete=models.CASCADE,
         blank=False,
         null=False
