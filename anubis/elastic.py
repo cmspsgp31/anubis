@@ -172,7 +172,7 @@ class ElasticQuerySet(ProcedureQuerySet):
         if timeout is not None:
             timeout = {"request_timeout": timeout,
                        "scroll": timeout
-                       }
+                      }
         else:
             timeout = {}
 
@@ -267,38 +267,56 @@ class ElasticFilter(Filter):
 
         return queryset
 
-
 class ElasticMatchPhraseFilter(ElasticFilter):
-    def __init__(self, es_field_name, prefix=False, fuzziness="0",
-                 has_score=False, **es_kwargs):
-
-        super().__init__(es_field_name, **es_kwargs)
-
-        prefix = prefix or not fuzziness == "0"
-
-        self.field_base = {"fuzziness": fuzziness}
-        self.query_type = "match_phrase_prefix" if prefix else "match_phrase"
-
-        if prefix:
-            self.field_base["max_expansions"] = 100
-
-        self.has_score = has_score
-
     def make_query_body(self, args):
-        from pprint import pprint
-
         text = args[0]
 
-        body = {"query": {self.query_type: {self.field_name: self.field_base}}}
+        return {
+            "query": {
+                "match_phrase": {
+                    self.field_name: text
+                }
 
-        if self.has_score:
-            body["min_score"] = float(args[1])
+            }
+        }
 
-        body["query"][self.query_type][self.field_name]["query"] = text
+class ElasticMatchPhrasePrefixFilter(ElasticFilter):
+    def make_query_body(self, args):
+        text = args[0]
 
-        pprint(body)
+        return {
+            "query": {
+                "match_phrase_prefix": {
+                    self.field_name: text
+                }
 
-        return body
+            }
+        }
+
+class ElasticMatchFilter(ElasticFilter):
+    def __init__(self, es_field_name, operator="and", **es_kwargs):
+        super().__init__(es_field_name, **es_kwargs)
+
+        self.operator = operator
+
+    def make_query_body(self, args):
+        text = args[0]
+        cutoff = float(args[1])
+
+        return {
+            "query": {
+                "match": {
+                    self.field_name: {
+                        "fuzziness": "AUTO",
+                        "operator": self.operator,
+                        "cutoff_frequency": cutoff,
+                        "query": text,
+                    }
+                }
+
+            }
+        }
+
 
 
 class ElasticHasFTSFilter(ElasticFilter):
