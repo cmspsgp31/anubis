@@ -276,8 +276,8 @@ class ElasticMatchPhraseFilter(ElasticFilter):
 
         prefix = prefix or not fuzziness == "0"
 
-        self.field_base = {"fuzziness": fuzziness,
-                           "type": "phrase_prefix" if prefix else "phrase"}
+        self.field_base = {"fuzziness": fuzziness}
+        self.query_type = "match_phrase_prefix" if prefix else "match_phrase"
 
         if prefix:
             self.field_base["max_expansions"] = 100
@@ -289,12 +289,12 @@ class ElasticMatchPhraseFilter(ElasticFilter):
 
         text = args[0]
 
-        body = {"query": {"match": {self.field_name: self.field_base}}}
+        body = {"query": {self.query_type: {self.field_name: self.field_base}}}
 
         if self.has_score:
             body["min_score"] = float(args[1])
 
-        body["query"]["match"][self.field_name]["query"] = text
+        body["query"][self.query_type][self.field_name]["query"] = text
 
         pprint(body)
 
