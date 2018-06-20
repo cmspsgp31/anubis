@@ -37,6 +37,7 @@ from django.core.paginator import Paginator
 from django.core.exceptions import ImproperlyConfigured
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext as _
+from django.utils.cache import add_never_cache_headers
 from django import forms
 
 from anubis.aggregators import QuerySetAggregator, ListAggregator
@@ -125,6 +126,8 @@ class StateViewMixin:
         default_filter (str): The default filter to perform a search if text
             is entered on the filter selector area and a search is performed.
             If :const:`None`, defaults to the first key of the first model.
+        allow_client_cache (boolean): Whether the answer should allow
+            client-side caching. Defaults to :const:`False`.
     """
 
     base_url = ""
@@ -139,6 +142,7 @@ class StateViewMixin:
     expression_parameter = "search"
     filters = {}
     default_filter = None
+    allow_client_cache = False
 
     objects_per_page = None
     page_parameter = "page"
@@ -326,14 +330,24 @@ class StateViewMixin:
     def get(self, request, *args, **kwargs):
         self._prepare_attributes()
 
-        return super().get(request, *args, **kwargs)
+        response = super().get(request, *args, **kwargs)
+
+        return self.set_headers(response)
 
     def post(self, *args, **kwargs):
         self._prepare_attributes()
 
         self.perform_actions()
 
-        return super().get(*args, **kwargs)
+        response = super().get(*args, **kwargs)
+
+        return self.set_headers(response)
+
+    def set_headers(self, response):
+        if not self.allow_client_cache:
+            add_never_cache_headers(response)
+
+        return response
 
     def perform_actions(self):
         action_name = self.request.POST.get('action_name', None)
