@@ -147,7 +147,7 @@ setup(
     install_requires=[
         "Django >=1.11, <2",
         "djangorestframework",
-        "psycopg2"],
+        "psycopg2-binary"],
     extras_require={
         'caching': ['redis', 'django-redis']
     },
